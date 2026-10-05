@@ -1,6 +1,7 @@
 #include <combo.h>
 #include <combo/player.h>
 #include <combo/souls.h>
+#include <combo/mm/giant_mask.h>
 
 #include "combo/custom.h"
 
@@ -103,9 +104,21 @@ extern s8 gPlayerFormCustomItemRestrictions[5][ITEM_MM_CUSTOM_USABLE_MAX - ITEM_
 /* button and item are stored in SP10 and SP14 by HOOK_SAVE */
 s8 Interface_GetItemRestriction(u8 playerForm, PlayState* play, s16* restoreHudVisibility, s32 nothing, u8 item, s16 button)
 {
-    if (item == ITEM_MM_MASK_GIANT && !comboHasSoulMm(GI_MM_SOUL_BOSS_TWINMOLD))
+    if (item == ITEM_MM_MASK_GIANT && Player_GetMask(play) != PLAYER_MASK_GIANT)
     {
-        return 0;
+        if (!GiantMask_CanPutOn(play))
+            return 0;
+
+        /* Outside of Twinmold's Lair, enable the button ourselves to skip the vanilla scene check */
+        if (play->sceneId != SCE_MM_LAIR_TWINMOLD && gPlayerFormItemRestrictions[playerForm][item] && GET_PLAYER(play)->actor.id == ACTOR_PLAYER)
+        {
+            if (gSaveContext.buttonStatus[button] == 0xFF) /* BTN_DISABLED */
+            {
+                *restoreHudVisibility = 1;
+                gSaveContext.buttonStatus[button] = 0; /* BTN_ENABLED */
+            }
+            return -1;
+        }
     }
 
     if (item < ITEM_MM_CUSTOM_MIN)
