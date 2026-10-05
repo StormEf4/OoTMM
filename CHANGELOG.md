@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Add gossip fairies / big fairies shuffle.
 - Added MM Adult Mask
 - Added MM item age requirements
+- Add a setting to use the Giant's Mask anywhere in MM, not just in Twinmold's Lair.
 - Added MM Starting Age Selection
 - Add a qol setting to allow time selection when playing song of double time.
 - Add a setting to shuffle a shovel in the item pool, locking grottoes.

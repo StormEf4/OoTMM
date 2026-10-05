@@ -1681,6 +1681,14 @@ export const SETTINGS = [{
   default: false,
   cond: hasMM,
 }, {
+  key: 'giantMaskAnywhere',
+  name: 'Giant\'s Mask Anywhere in MM',
+  category: 'main.nologic',
+  type: 'boolean',
+  description: 'Allows the Giant\'s Mask to be used outside of Twinmold\'s Lair, as long as there is enough room above Link. The mask is removed when leaving the area. No logical applications',
+  default: false,
+  cond: hasMM,
+}, {
   key: 'hookshotAnywhereOot',
   name: 'Hookshot Anywhere (OoT)',
   category: 'main.misc',

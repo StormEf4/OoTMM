@@ -448,6 +448,7 @@ export const CONFVARS = [
   'MM_AGE_REQ_ADULT_PENDANT_OF_MEMORIES',
   'MM_AGE_REQ_CHILD_STRENGTH',
   'MM_AGE_REQ_ADULT_STRENGTH',
+  'MM_GIANT_MASK_ANYWHERE',
 ] as const;
 
 export type Confvar = typeof CONFVARS[number];
