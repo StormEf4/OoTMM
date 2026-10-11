@@ -1,0 +1,69 @@
+name: Build My App
+
+# Builds the desktop app (Windows, Mac, Linux) from this fork. Every push to
+# master publishes a new release; the newest is always at
+# https://github.com/StormEf4/OoTMM/releases/latest
+# Pull requests build the app too, without publishing it, to catch breakage.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: my-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/ootmm/toolchain:1.4
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Mark the directory as safe
+        run: git config --global --add safe.directory $PWD
+
+      - uses: ./.github/actions/setup
+
+      - name: Set version
+        run: |
+          short_sha=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "VERSION=custom" >> $GITHUB_ENV
+          echo "VERSION_SUFFIX=${short_sha}" >> $GITHUB_ENV
+          echo "ENV_KEYS=dev" >> $GITHUB_ENV
+
+      - name: Build GUI
+        run: pnpm nx run @ootmm/gui:build:desktop --prod
+
+      - name: Build Desktop
+        run: pnpm nx run @ootmm/desktop:build --prod
+
+      - name: Upload Build
+        if: ${{ github.event_name != 'push' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: my-app
+          path: packages/desktop/dist/ootmm-*.zip
+
+      - name: Publish Release
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: OoTMM Custom (build ${{ github.run_number }}, ${{ env.VERSION_SUFFIX }})
+          make_latest: true
+          files: packages/desktop/dist/ootmm-*.zip
+          body: |
+            Download the zip for your computer, unzip it, and open the `ootmm` app inside. Then drag your ROMs in, just like on ootmm.com.
+
+            - Windows: `ootmm-win_x64.zip`, open `ootmm-win_x64.exe`. If Windows warns you, click "More info" then "Run anyway".
+            - Mac (Apple Silicon): `ootmm-mac_arm64.zip`. Mac (Intel): `ootmm-mac_x64.zip`. The first time, right-click `ootmm-mac_...` and choose Open.
+            - Linux: `ootmm-linux_x64.zip`, run `ootmm-linux_x64`.
+
+            Keep the `resources.neu` file next to the app.

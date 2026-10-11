@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-11: One-click desktop app
+
+- Where in the app: the whole app. Download it from https://github.com/StormEf4/OoTMM/releases/latest, and the General page shows its version as `custom-<commit>`
+- What it does: every push to master builds the desktop app for Windows, Mac and Linux and publishes it as a release, so using the generator is just opening a file and dragging in the ROMs
+- Files: `.github/workflows/my-app.yml` (build and release), `packages/desktop/neutralino.config.json` (window title "OoTMM Custom"), `CUSTOMIZING.md`
+
 ## 2026-10-11: Set up the local app and the Custom page
 
 - Where in the app: the new "Custom" page in the left sidebar, with General, Ocarina of Time, Majora's Mask and Change Log tabs
