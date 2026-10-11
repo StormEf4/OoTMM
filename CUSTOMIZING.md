@@ -2,7 +2,17 @@
 
 This fork runs the same generator as ootmm.com on your own computer, with a **Custom** page for your own settings.
 
-## Run the app
+## Use the app (easiest)
+
+Download the zip for your computer from https://github.com/StormEf4/OoTMM/releases/latest, unzip it, and open the `ootmm` app inside. It opens straight to your generator, with the Custom page. Drag your ROMs in just like on ootmm.com. Keep `resources.neu` next to the app.
+
+- Windows: `ootmm-win_x64.zip`. If Windows warns you, click "More info" then "Run anyway".
+- Mac: `ootmm-mac_arm64.zip` (Apple Silicon) or `ootmm-mac_x64.zip` (Intel). The first time, right-click the app and choose Open.
+- Linux: `ootmm-linux_x64.zip`.
+
+Every change merged into `master` builds a new version automatically (`.github/workflows/my-app.yml`, in the repo's Actions tab). Download it again to get your latest changes. The General page shows the version as `custom-<commit>`.
+
+## Run it from the code (for developing)
 
 One-time setup (Linux, WSL2 on Windows, or the repo's DevContainer in VS Code):
 
