@@ -10,7 +10,11 @@
     "test": "nx run-many --parallel --output-style=stream --target=test",
     "typecheck": "nx run-many -t typecheck",
     "gui:dev": "nx run @ootmm/gui:dev",
-    "web:dev": "nx run @ootmm/web:dev"
+    "web:dev": "nx run @ootmm/web:dev",
+    "local": "nx run @ootmm/gui:dev",
+    "local:ui": "pnpm --filter @ootmm/gui exec vite dev",
+    "custom:add": "tsx scripts/custom.mts add",
+    "custom:log": "tsx scripts/custom.mts log"
   },
   "dependencies": {
     "tailwind-merge": "^3.7.0"

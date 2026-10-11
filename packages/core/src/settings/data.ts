@@ -1,5 +1,6 @@
 import type { Game } from '@ootmm/data';
 import { MM_AGE_REQ_ITEMS } from '../mm-age-requirements';
+import { CUSTOM_SETTINGS } from './custom';
 function hasGame(x: any, g: Game) {
   return x.games === g || x.games === 'ootmm';
 }
@@ -4359,7 +4360,9 @@ export const SETTINGS = [{
   description: 'Skips the intro cutscene for Majora.',
   default: false,
   cond: hasMM,
-}] as const;
+},
+  ...CUSTOM_SETTINGS,
+] as const;
 
 export const SUBCATEGORIES = [{
   key: "misc",

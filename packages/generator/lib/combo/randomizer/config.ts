@@ -10,7 +10,7 @@ import { DUNGEONS, DUNGEON_ENTRANCES, makeLocation, Items } from '@ootmm/logic';
 import { toI8Buffer, toU16Buffer, toU32Buffer, toU8Buffer } from '../util';
 import { bufWriteU16BE, bufWriteU32BE } from '../util/buffer';
 import { worldConfig } from './world-config';
-import { CONFVARS_VALUES } from '../confvars';
+import { CONFVARS_VALUES, customConfvars } from '../confvars';
 import { gi } from './util';
 
 const BOMBCHU_BEHAVIORS = {
@@ -218,8 +218,8 @@ export class RandomizerPatcherConfig {
   }
 
   private randomizerConfig(): Uint8Array {
-    const config = worldConfig(this.world, this.ctx.settings);
-    const bits = Array.from(config).map((c) => {
+    const config = [...worldConfig(this.world, this.ctx.settings), ...customConfvars(this.ctx.settings)];
+    const bits = config.map((c) => {
       const bit = CONFVARS_VALUES[c];
       if (bit === undefined) {
         throw new Error(`Unknown config ${c}`);
