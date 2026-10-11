@@ -1,5 +1,5 @@
 import type { Game } from '@ootmm/data';
-
+import { MM_AGE_REQ_ITEMS } from '../mm-age-requirements';
 function hasGame(x: any, g: Game) {
   return x.games === g || x.games === 'ootmm';
 }
@@ -18,6 +18,41 @@ const SETTING_PRICE = {
   ],
   category: 'main.prices',
   default: 'vanilla',
+} as const;
+
+const MM_AGE_REQ_SETTINGS = MM_AGE_REQ_ITEMS.flatMap(item => [
+  {
+    key: item.childSetting,
+    name: `${item.label} requires Child Link`,
+    category: 'items.mmAgeRequirements',
+    type: 'boolean',
+    description: `Requires Child Link to equip ${item.label} in MM.`,
+    default: false,
+    cond: hasMM,
+  },
+  {
+    key: item.adultSetting,
+    name: `${item.label} requires Adult Link`,
+    category: 'items.mmAgeRequirements',
+    type: 'boolean',
+    description: `Requires Adult Link to equip ${item.label} in MM.`,
+    default: false,
+    cond: hasMM,
+  },
+] as const);
+
+const MM_AGE_REQ_RANDOM_SETTING = {
+  key: 'mmAgeReqRandom',
+  name: 'Random MM Age Requirements',
+  category: 'items.mmAgeRequirements',
+  type: 'set',
+  description: 'Items whose MM age requirement is chosen randomly from the seed.',
+  values: MM_AGE_REQ_ITEMS.map(item => ({
+    value: item.id,
+    name: item.label,
+  })),
+  default: 'none',
+  cond: hasMM,
 } as const;
 
 export const SETTINGS = [{
@@ -2482,7 +2517,7 @@ export const SETTINGS = [{
   type: 'boolean',
   description: 'Allows Ocarina of Time to have up to six bottles by using the Adult and Child trade slots for the fifth and sixth bottles.',
   default: false,
-  cond: (s: any) => hasOoT(s) && !s.sharedBottles,
+  cond: (s: any) => hasOoT(s),
 }, {
   key: 'ocarinaButtonsShuffleOot',
   name: 'Ocarina Buttons (OoT)',
@@ -3512,7 +3547,7 @@ export const SETTINGS = [{
   type: 'boolean',
   description: 'Combines the bottles from OoT and MM into six items for both games. The six bottles are: Red Potion, Gold Dust, Chateau, Milk, Ruto\'s Letter and an Empty Bottle. Bottle refills are also shared.',
   default: false,
-  cond: (s: any) => hasOoTMM(s),
+  cond: (s: any) => hasOoTMM(s) && s.extraBottlesOot,
 }, {
   key: 'agelessSwords',
   name: 'Ageless Swords',
@@ -3625,7 +3660,10 @@ export const SETTINGS = [{
   description: 'Allows Link to use the Song of Soaring in OoT independently of his age',
   default: false,
   cond: (s: any) => s.songSoaringOot,
-}, {
+},
+  ...MM_AGE_REQ_SETTINGS,
+  MM_AGE_REQ_RANDOM_SETTING,
+{
   key: 'erSelfLoops',
   name: 'Allow Self-Loops',
   category: 'entrances',

@@ -9,3 +9,20 @@ PATCH_END
 PATCH_START 0x800b9e14
   li a0, 3
 PATCH_END
+
+/* Let Final Hours preservation handling run for negative-scene entrances. */
+PATCH_START 0x80166D38
+    nop
+PATCH_END
+
+/* Allow positional actor music without incorrectly blocking SUB-BGM. */
+PATCH_START 0x801A1FB4
+    j       Audio_PlaySequenceAtPos_Hook
+     nop
+PATCH_END
+
+/* Prevent positional music cleanup from stopping Final Hours. */
+PATCH_START 0x801A2090
+    j       Audio_UpdateSequenceAtPos_Hook
+     nop
+PATCH_END
