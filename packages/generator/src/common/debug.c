@@ -726,6 +726,7 @@ static void cheatAllItems(PlayState* play)
     gSave.info.playerData.rupees = 500;
 
     gOotExtraTrade.child = 0xffff;
+    gSharedCustomSave.ootTradeChildExt = 0x0001;
     gOotExtraTrade.adult = 0xffff;
     gOotExtraTrade.adult |= (1 << XITEM_OOT_ADULT_EYEBALL_FROG);
     gOotExtraTrade.adult |= (1 << XITEM_OOT_ADULT_EYE_DROPS);

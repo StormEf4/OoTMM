@@ -204,6 +204,7 @@ int SpecialConds_Eval(int special)
     u8 hasMaskStone;
     u8 hasMaskKamaro;
     u8 hasMaskGiant;
+    u8 hasMaskFierceDeity;
     u8 hasMaskGerudo;
     u8 hasMaskSkull;
     u8 hasMaskSpooky;
@@ -219,6 +220,7 @@ int SpecialConds_Eval(int special)
     hasMaskStone = 0;
     hasMaskKamaro = 0;
     hasMaskGiant = 0;
+    hasMaskFierceDeity = 0;
     hasMaskGerudo = 0;
     hasMaskSkull = 0;
     hasMaskSpooky = 0;
@@ -374,7 +376,14 @@ int SpecialConds_Eval(int special)
         }
 
         if (gMmSave.info.inventory.items[ITS_MM_MASK_DEKU] == ITEM_MM_MASK_DEKU) count++;
-        if (gMmExtraItems.fierceDeityAdult & (1 << 0)) count++;
+        if (Config_Flag(CFG_CUSTOM_SHARED_MASK_FIERCE_DEITY))
+        {
+            if (gMmExtraItems.fierceDeityAdult & (1 << 0)) hasMaskFierceDeity = 1;
+        }
+        else
+        {
+            if (gMmExtraItems.fierceDeityAdult & (1 << 0)) count++;
+        }
         if (gMmExtraItems.fierceDeityAdult & (1 << 1)) count++;
     }
 
@@ -460,6 +469,15 @@ int SpecialConds_Eval(int special)
         {
             if (gOotExtraTrade.child & (1 << XITEM_OOT_CHILD_MASK_GIANT)) count++;
         }
+
+        if (Config_Flag(CFG_CUSTOM_SHARED_MASK_FIERCE_DEITY))
+        {
+            if (OotTradeChild_Has(XITEM_OOT_CHILD_MASK_FIERCE_DEITY)) hasMaskFierceDeity = 1;
+        }
+        else
+        {
+            if (OotTradeChild_Has(XITEM_OOT_CHILD_MASK_FIERCE_DEITY)) count++;
+        }
         if (Config_Flag(CFG_SHARED_MASK_GERUDO))
         {
             if (gOotExtraTrade.child & (1 << XITEM_OOT_CHILD_GERUDO_MASK)) hasMaskGerudo = 1;
@@ -512,6 +530,7 @@ int SpecialConds_Eval(int special)
     count += hasMaskStone;
     count += hasMaskKamaro;
     count += hasMaskGiant;
+    count += hasMaskFierceDeity;
     count += hasMaskGerudo;
     count += hasMaskSkull;
     count += hasMaskSpooky;

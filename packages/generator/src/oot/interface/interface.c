@@ -71,6 +71,9 @@ void comboItemIcon(void* dst, int itemId)
     case ITEM_OOT_MASK_GIANT:
         LoadMmItemIcon(dst, ITEM_MM_MASK_GIANT);
         break;
+    case ITEM_OOT_MASK_FIERCE_DEITY:
+        LoadMmItemIcon(dst, ITEM_MM_MASK_FIERCE_DEITY);
+        break;
     case ITEM_OOT_GREAT_FAIRY_SWORD:
          LoadMmItemIcon(dst, ITEM_MM_GREAT_FAIRY_SWORD);
          break;
@@ -222,6 +225,7 @@ void Interface_UpdateButtonsPart2Wrapper(PlayState* play)
         case ITEM_OOT_MASK_KAMARO:
         case ITEM_OOT_MASK_STONE:
         case ITEM_OOT_MASK_GIANT:
+        case ITEM_OOT_MASK_FIERCE_DEITY:
             *ptr = ITEM_OOT_KEATON_MASK;
             break;
         }

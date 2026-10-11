@@ -13,6 +13,7 @@
 #include <actors/En_Kanban/En_Kanban.h>
 #include <combo/oot/player_action.h>
 #include <combo/oot/giant_mask.h>
+#include <combo/oot/fierce_deity.h>
 #include <actors/Custom_En_Bom/Custom_En_Bom.h>
 
 void ArrowCycle_Handle(Player* link, PlayState* play);
@@ -64,8 +65,8 @@ void Player_UseItem(PlayState* play, Player* link, s16 itemId)
 
     prevMask = link->mask;
 
-    /* A giant can't use any item, except for taking the mask off */
-    if (GiantMaskOot_IsGiant() && itemId != ITEM_OOT_MASK_GIANT)
+    /* A giant or Fierce Deity can't use any item, except for taking the mask off */
+    if ((GiantMaskOot_IsGiant() && itemId != ITEM_OOT_MASK_GIANT) || (FierceDeityOot_IsActive() && itemId != ITEM_OOT_MASK_FIERCE_DEITY))
     {
         PlaySound(NA_SE_SY_ERROR);
         return;
@@ -90,6 +91,9 @@ void Player_UseItem(PlayState* play, Player* link, s16 itemId)
         break;
     case ITEM_OOT_MASK_GIANT:
         GiantMaskOot_UseMask(play, link);
+        break;
+    case ITEM_OOT_MASK_FIERCE_DEITY:
+        FierceDeityOot_UseMask(play, link);
         break;
     case ITEM_OOT_BOOTS_IRON:
         Player_UseBoots(play, link, 2);
@@ -289,6 +293,17 @@ static void DrawExtendedMaskGiant(PlayState* play, Player* link)
     CLOSE_DISPS();
 }
 
+static void DrawExtendedMaskFierceDeity(PlayState* play, Player* link)
+{
+    /* MM object_mask_boy */
+    if (!prepareMask(play, 0x1e4 | MASK_FOREIGN_OBJECT, 1))
+        return;
+
+    OPEN_DISPS(play->state.gfxCtx);
+    gSPDisplayList(POLY_OPA_DISP++, 0x0a000900);
+    CLOSE_DISPS();
+}
+
 typedef void (*MaskCallback)(PlayState*, Player*);
 
 static const MaskCallback kMaskCallbacks[] = {
@@ -304,6 +319,7 @@ static const MaskCallback kMaskCallbacks[] = {
     DrawExtendedMaskStone,
     DrawExtendedMaskKamaro,
     DrawExtendedMaskGiant,
+    DrawExtendedMaskFierceDeity,
 };
 
 void comboDrawExtendedMask(void)
@@ -457,8 +473,10 @@ void Player_UpdateWrapper(Player* this, PlayState* play)
     ArrowCycle_Handle(this, play);
     sKamaroInputValid = 0;
     GiantMaskOot_BeforePlayerUpdate(this, play);
+    FierceDeityOot_BeforePlayerUpdate(this, play);
     Player_Update(this, play);
     GiantMaskOot_AfterPlayerUpdate(this, play);
+    FierceDeityOot_AfterPlayerUpdate(this, play);
     input = *(Input**)(OverlayAddr(0x80856734));
     kamaroInput = sKamaroInputValid ? &sKamaroInput : input;
     if (!(this->stateFlags1 & (PLAYER_ACTOR_STATE_HOLD_ITEM | PLAYER_ACTOR_STATE_CUTSCENE_FROZEN)) && !Player_UsingItem(this) && GET_PLAYER(play)->rideActor == NULL)
@@ -1233,6 +1251,7 @@ static s32 sCustomItemActions[] =
     PLAYER_CUSTOM_IA_POWDER_KEG,        /* ITEM_OOT_POWDER_KEG */
     PLAYER_CUSTOM_IA_GREAT_FAIRY_SWORD, /* ITEM_GFS_MM */
     0,                                  /* ITEM_OOT_MASK_GIANT */
+    0,                                  /* ITEM_OOT_MASK_FIERCE_DEITY */
 };
 
 s32 Player_CustomItemToItemAction(s32 item, s32 itemAction)
@@ -1643,6 +1662,7 @@ void Player_AfterInit(PlayState* play)
 
     Player_ResetKamaroMaskStateOoT(player);
     GiantMaskOot_Reset(play, player);
+    FierceDeityOot_Reset(play, player);
 
     Player_SetLastSafePos(play, player);
     gPlayerLastSafeExists = 0;

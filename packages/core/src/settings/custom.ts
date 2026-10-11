@@ -60,5 +60,27 @@ export const CUSTOM_SETTINGS = [
     default: false,
     cond: (s: any) => hasOoTMM(s) && s.giantMaskOot,
   },
+  {
+    key: 'fierceDeityMaskOot',
+    name: "Fierce Deity's Mask (OoT)",
+    category: 'items.extensions.crossGame.masks',
+    game: 'oot',
+    group: "Fierce Deity's Mask",
+    type: 'boolean',
+    description: "Add the Fierce Deity's Mask in Ocarina of Time. Wearing it turns Link into the Fierce Deity, like in Majora's Mask: full size, a stronger sword that shoots beams with magic, and no other items. It comes off when leaving the area.",
+    default: false,
+    cond: hasOoT,
+  },
+  {
+    key: 'sharedMaskFierceDeity',
+    name: "Shared Fierce Deity's Mask",
+    category: 'items.extensions.crossGame.masks',
+    game: 'shared',
+    group: "Fierce Deity's Mask",
+    type: 'boolean',
+    description: "Combines the Fierce Deity's Masks from OoT and MM into one item for both games",
+    default: false,
+    cond: (s: any) => hasOoTMM(s) && s.fierceDeityMaskOot,
+  },
   // @custom-settings-end
 ] as const;

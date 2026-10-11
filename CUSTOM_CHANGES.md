@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-11: Fierce Deity's Mask in Ocarina of Time + shared option (in progress)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "Fierce Deity's Mask" row. Tick OoT to add it to Ocarina of Time; tick Shared (needs OoT ticked) to make the OoT and MM masks one item.
+- What it does so far: adds the Fierce Deity's Mask to OoT as a child trade item that cycles with the other masks (pause menu, L or C-Up), counts it for mask special conditions, and supports the shared option. The transformation itself is not written yet; using the mask plays the error sound for now. The OoT child trade slot was full (16 items), so items past the 16th are now stored in `gSharedCustomSave.ootTradeChildExt` through the `OotTradeChild_*` helpers in `include/combo/save.h`.
+- Files: `packages/core/src/settings/custom.ts`, `packages/core/src/settings/special-conds.ts`, `packages/logic/src/items/defs.ts`, `packages/logic/src/items/groups.ts`, `packages/logic/src/world/transform.ts`, `packages/logic/tests/seeds/fierce-deity-oot.test.ts`, `data/defs/gi.yml`, `data/macros/macros_mm.yml`, `packages/generator/lib/combo/names.ts`, `packages/generator/lib/combo/randomizer/checks.ts`, `packages/generator/include/combo/save.h`, `packages/generator/include/combo/data/items.h`, `packages/generator/include/combo/mask.h`, `packages/generator/include/combo/oot/fierce_deity.h`, `packages/generator/src/oot/fierce_deity.c`, `packages/generator/src/common/trade.c`, `packages/generator/src/oot/trade.c`, `packages/generator/src/common/item/item_add.c`, `packages/generator/src/common/text/text.c`, `packages/generator/src/common/special_conds.c`, `packages/generator/src/common/dpad.c`, `packages/generator/src/common/debug.c`, `packages/generator/src/oot/actors/Player.c`, `packages/generator/src/oot/interface/interface.c`, `packages/generator/src/oot/ovl_patch/kaleido_scope.c`, `packages/generator/src/oot/ovl/gamemodes/ovl_file_choose/file_choose_custom_file_info.c`
+
 ## 2026-10-11: Giant's Mask in Ocarina of Time + shared option
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "Giant's Mask" row. Tick OoT to add it to Ocarina of Time; tick Shared (needs OoT ticked) to make the OoT and MM masks one item.

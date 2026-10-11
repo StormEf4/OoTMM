@@ -246,6 +246,7 @@ const ITEM_POOL_PLENTIFUL = new Set([
   Items.SHARED_MASK_KAMARO,
   Items.OOT_MASK_GIANT,
   Items.SHARED_MASK_GIANT,
+  Items.OOT_MASK_FIERCE_DEITY,
   Items.MM_MASK_SCENTS,
   Items.MM_MASK_KAFEI,
   Items.MM_MAGIC_UPGRADE,
@@ -962,6 +963,13 @@ class LogicPassWorldTransform {
       this.replaceItem(Items.MM_MASK_GIANT, Items.SHARED_MASK_GIANT);
     } else if (settings.giantMaskOot) {
       this.addItem(Items.OOT_MASK_GIANT);
+    }
+
+    /* Fork: Fierce Deity's Mask in OoT (custom.ts) */
+    if (settings.sharedMaskFierceDeity) {
+      this.replaceItem(Items.MM_MASK_FIERCE_DEITY, Items.SHARED_MASK_FIERCE_DEITY);
+    } else if (settings.fierceDeityMaskOot) {
+      this.addItem(Items.OOT_MASK_FIERCE_DEITY);
     }
 
     if (settings.sharedMaskGerudo) {

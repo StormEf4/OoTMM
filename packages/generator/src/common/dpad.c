@@ -16,6 +16,7 @@
 
 #if defined(GAME_OOT)
 # include <combo/oot/giant_mask.h>
+# include <combo/oot/fierce_deity.h>
 #endif
 
 #define DPAD_DOWN   0
@@ -92,6 +93,10 @@ static int canUseDpadItem(PlayState* play, s16 itemId, int flags)
     /* Giant mask can't use any item, except for taking the mask off */
     if (GiantMaskOot_IsGiant())
         return itemId == ITEM_OOT_MASK_GIANT && !GiantMaskOot_IsTransforming();
+
+    /* Same for Fierce Deity */
+    if (FierceDeityOot_IsActive())
+        return itemId == ITEM_OOT_MASK_FIERCE_DEITY && !FierceDeityOot_IsTransforming();
 #endif
 
 #if defined(GAME_MM)

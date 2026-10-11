@@ -49,7 +49,7 @@ Worked example: Giant's Mask in OoT (`giantMaskOot`, `sharedMaskGiant`), see `CU
 
 ## Limits to watch
 
-- OoT child trade bits: `gOotExtraTrade.child` is a u16, and bit `0xf` (Giant's Mask) was the **last free bit**. The next OoT child trade item needs a wider field or a different save slot.
+- OoT child trade bits: `gOotExtraTrade.child` is a u16 and is full (bit `0xf` is the Giant's Mask). Items from `0x10` up (Fierce Deity's Mask is `0x10`) are stored in `gSharedCustomSave.ootTradeChildExt` / `ootTradeChildExtSave`. Always read and write child trade bits through the `OotTradeChild_*` helpers in `include/combo/save.h`, which combine both into one 32-bit mask. `kOotTradeChild` order must match the bit numbers.
 - Game flags: about 65 `CFG_CUSTOM_*` flags are left (see `CUSTOMIZING.md`).
 
 ## Checking the C without the N64 toolchain

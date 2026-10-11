@@ -1969,6 +1969,10 @@ void KaleidoScope_LoadItemName(void* dst, s16 id)
     {
         comboLoadMmIcon(dst, 0xa27660, ITEM_MM_MASK_GIANT);
     }
+    else if (itemId == ITEM_OOT_MASK_FIERCE_DEITY)
+    {
+        comboLoadMmIcon(dst, 0xa27660, ITEM_MM_MASK_FIERCE_DEITY);
+    }
     else if (itemId == ITEM_OOT_KEATON_MASK)
     {
         /* Fixes 1.0 spelling mistake */

@@ -17,6 +17,7 @@
 # define MASK_STONE     0x0a
 # define MASK_KAMARO    0x0b
 # define MASK_GIANT     0x0c
+# define MASK_FIERCE_DEITY 0x0d
 #endif
 
 #if defined(GAME_MM)

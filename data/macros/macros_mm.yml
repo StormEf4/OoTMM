@@ -384,7 +384,7 @@
 "has_mask_deku": "age_mask_deku && has(MASK_DEKU)"
 "has_mask_goron": "age_mask_goron && (has(MASK_GORON) || has(SHARED_MASK_GORON))"
 "has_mask_zora": "age_mask_zora && (has(MASK_ZORA) || has(SHARED_MASK_ZORA))"
-"has_mask_fierce_deity": "age_mask_fierce_deity && has(MASK_FIERCE_DEITY)"
+"has_mask_fierce_deity": "age_mask_fierce_deity && (has(MASK_FIERCE_DEITY) || has(SHARED_MASK_FIERCE_DEITY))"
 
 "has_mask_postman": "age_mask_postman && has(MASK_POSTMAN)"
 "has_mask_all_night": "age_mask_all_night && has(MASK_ALL_NIGHT)"

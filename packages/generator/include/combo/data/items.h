@@ -166,7 +166,8 @@
 #define ITEM_OOT_POWDER_KEG             0xa7
 #define ITEM_OOT_GREAT_FAIRY_SWORD      0xa8
 #define ITEM_OOT_MASK_GIANT             0xa9
-#define ITEM_OOT_CUSTOM_MAX             0xaa
+#define ITEM_OOT_MASK_FIERCE_DEITY      0xaa
+#define ITEM_OOT_CUSTOM_MAX             0xab
 
 #if defined(GAME_OOT)
 # define ITEM_STICK                     ITEM_OOT_STICK
@@ -321,6 +322,7 @@
 # define ITEM_MASK_STONE                ITEM_OOT_MASK_STONE
 # define ITEM_MASK_KAMARO               ITEM_OOT_MASK_KAMARO
 # define ITEM_MASK_GIANT                ITEM_OOT_MASK_GIANT
+# define ITEM_MASK_FIERCE_DEITY         ITEM_OOT_MASK_FIERCE_DEITY
 # define ITEM_GREAT_FAIRY_SWORD         ITEM_OOT_GREAT_FAIRY_SWORD
 #endif
 
@@ -588,6 +590,7 @@
 #define XITEM_OOT_CHILD_MASK_KAMARO     0xd
 #define XITEM_OOT_CHILD_BOTTLE          0xe
 #define XITEM_OOT_CHILD_MASK_GIANT      0xf
+#define XITEM_OOT_CHILD_MASK_FIERCE_DEITY 0x10 /* Stored in gSharedCustomSave.ootTradeChildExt */
 
 #define XITEM_OOT_ADULT_POCKET_EGG              0x0
 #define XITEM_OOT_ADULT_POCKET_CUCCO            0x1
