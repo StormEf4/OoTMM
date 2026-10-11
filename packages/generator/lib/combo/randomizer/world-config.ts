@@ -220,7 +220,6 @@ export function worldConfig(world: LogicResultWorld, settings: Settings): Set<Co
     SHARED_POWDER_KEG: settings.sharedPowderKeg,
     OOT_EXTRA_BOTTLES: settings.extraBottlesOot,
     MM_FD_ANYWHERE: settings.fierceDeityAnywhere,
-    MM_GIANT_MASK_ANYWHERE: settings.giantMaskAnywhere,
     MM_CLOCK_SPEED_VERYSLOW: settings.clockSpeed === 'veryslow',
     MM_CLOCK_SPEED_SLOW: settings.clockSpeed === 'slow',
     MM_CLOCK_SPEED_FAST: settings.clockSpeed === 'fast',

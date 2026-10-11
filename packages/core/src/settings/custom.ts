@@ -29,5 +29,14 @@ export const CUSTOM_CATEGORIES = [
 ] as const;
 
 export const CUSTOM_SETTINGS = [
+  {
+    key: 'giantMaskAnywhere',
+    name: 'Giant\'s Mask Anywhere',
+    category: 'custom.mm',
+    type: 'boolean',
+    description: 'Allows the Giant\'s Mask to be used outside of Twinmold\'s Lair, as long as there is enough room above Link. The mask is removed when leaving the area. No logical applications',
+    default: false,
+    cond: hasMM,
+  },
   // @custom-settings-end
 ] as const;

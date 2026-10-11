@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-11: Giant's Mask Anywhere
+
+- Where in the app: Custom > Majora's Mask > "Giant's Mask Anywhere" (toggle, off by default)
+- What it does: lets Link put on the Giant's Mask anywhere in MM where there is room above him, not just in Twinmold's Lair. He really grows 10x, his movement and physics scale with him, his sword hits like a giant's, and the mask comes off when he leaves the area. Twinmold's Lair keeps the vanilla behavior. No logic changes.
+- Files: `packages/core/src/settings/custom.ts` (setting), `packages/generator/src/mm/giant_mask.c` and `packages/generator/include/combo/mm/giant_mask.h` (transformation, reads `CFG_CUSTOM_GIANT_MASK_ANYWHERE`), `packages/generator/src/mm/patches/giant_mask_anywhere.S` (physics hooks, patch group `MM_GIANT_MASK_ANYWHERE` in `patch-build/group.ts` and `patch-build/index.ts`), `packages/generator/src/mm/actors/Player.c`, `packages/generator/src/mm/z_parameter.c`, `packages/generator/src/common/dpad.c` (when the mask can be used), `packages/generator/src/link_mm.in` (game function addresses)
+
 ## 2026-10-11: One-click desktop app
 
 - Where in the app: the whole app. Download it from https://github.com/StormEf4/OoTMM/releases/latest, and the General page shows its version as `custom-<commit>`

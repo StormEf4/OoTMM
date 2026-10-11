@@ -47,7 +47,7 @@ A new setting is only a control until code reads it. There are three places code
 - **Logic YAML** (`data/world/`, `data/macros/`): `setting(fasterEpona)` or `setting(eponaSpeed, double)`.
 - **TypeScript generator or logic** (`packages/generator/lib/`, `packages/logic/src/`): `settings.fasterEpona`.
 
-Hooking new C code into the game is the hard part; the "Giant's Mask Anywhere" branch is a full worked example of a setting that changes the game.
+Hooking new C code into the game is the hard part; "Giant's Mask Anywhere" (`packages/generator/src/mm/giant_mask.c` and `src/mm/patches/giant_mask_anywhere.S`, see its `CUSTOM_CHANGES.md` entry) is a full worked example of a setting that changes the game. Assembly hooks that should only apply when a setting is on go in their own patch group (`patch-build/group.ts` and `patch-build/index.ts`).
 
 ## Log every change
 

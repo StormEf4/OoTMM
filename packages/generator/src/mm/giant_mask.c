@@ -80,7 +80,7 @@ static s32 sAddedHeavySwitchFlag;
 
 static s32 GiantMask_IsEnabled(PlayState* play)
 {
-    return Config_Flag(CFG_MM_GIANT_MASK_ANYWHERE) && play->sceneId != SCE_MM_LAIR_TWINMOLD;
+    return Config_Flag(CFG_CUSTOM_GIANT_MASK_ANYWHERE) && play->sceneId != SCE_MM_LAIR_TWINMOLD;
 }
 
 s32 GiantMask_IsGiant(void)
@@ -118,7 +118,7 @@ s32 GiantMask_CanPutOn(PlayState* play)
     /* Twinmold's lair requires the boss to drive the transformation */
     if (play->sceneId == SCE_MM_LAIR_TWINMOLD)
         return comboHasSoulMm(GI_MM_SOUL_BOSS_TWINMOLD);
-    return Config_Flag(CFG_MM_GIANT_MASK_ANYWHERE) && !play->interfaceCtx.restrictions.masks;
+    return Config_Flag(CFG_CUSTOM_GIANT_MASK_ANYWHERE) && !play->interfaceCtx.restrictions.masks;
 }
 
 s32 GiantMask_ShouldBlockUse(PlayState* play, Player* player)
