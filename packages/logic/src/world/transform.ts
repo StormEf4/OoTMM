@@ -244,6 +244,8 @@ const ITEM_POOL_PLENTIFUL = new Set([
   Items.SHARED_MASK_STONE,
   Items.OOT_MASK_KAMARO,
   Items.SHARED_MASK_KAMARO,
+  Items.OOT_MASK_GIANT,
+  Items.SHARED_MASK_GIANT,
   Items.MM_MASK_SCENTS,
   Items.MM_MASK_KAFEI,
   Items.MM_MAGIC_UPGRADE,
@@ -953,6 +955,13 @@ class LogicPassWorldTransform {
       this.replaceItem(Items.MM_MASK_KAMARO, Items.SHARED_MASK_KAMARO);
     } else if (settings.kamaroMaskOot) {
       this.addItem(Items.OOT_MASK_KAMARO);
+    }
+
+    /* Fork: Giant's Mask in OoT (custom.ts) */
+    if (settings.sharedMaskGiant) {
+      this.replaceItem(Items.MM_MASK_GIANT, Items.SHARED_MASK_GIANT);
+    } else if (settings.giantMaskOot) {
+      this.addItem(Items.OOT_MASK_GIANT);
     }
 
     if (settings.sharedMaskGerudo) {

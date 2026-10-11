@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-11: Giant's Mask in Ocarina of Time + shared option
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "Giant's Mask" row. Tick OoT to add it to Ocarina of Time; tick Shared (needs OoT ticked) to make the OoT and MM masks one item.
+- What it does: adds a Giant's Mask to OoT as a child trade item (C button or D-pad up). Wearing it makes Link grow 10x if there is room above him, with a short grow animation. He runs like a giant, his sword hits like a hammer and an explosion, other items are blocked, magic drains 1 point every 20 frames, and the mask comes off when magic runs out or he leaves the area. Limits: jumps, gravity, wall and ledge heights stay normal in OoT (see `docs/custom/giant-mask.md`). The shared option works like the other shared masks. The logic counts the OoT mask for mask special conditions; it isn't required anywhere in OoT.
+- Files: `packages/core/src/settings/custom.ts` (settings), `packages/core/src/settings/special-conds.ts`, `packages/logic/src/items/defs.ts`, `packages/logic/src/items/groups.ts`, `packages/logic/src/world/transform.ts` (item pool), `packages/logic/tests/seeds/giant-mask-oot.test.ts`, `data/defs/gi.yml`, `data/macros/macros_mm.yml`, `packages/generator/lib/combo/names.ts`, `packages/generator/lib/combo/randomizer/checks.ts`, `packages/generator/include/combo/data/items.h`, `packages/generator/include/combo/mask.h`, `packages/generator/src/common/trade.c`, `packages/generator/src/common/item/item_add.c`, `packages/generator/src/common/text/text.c`, `packages/generator/src/common/special_conds.c`, `packages/generator/src/common/dpad.c`, `packages/generator/src/oot/giant_mask.c` and `packages/generator/include/combo/oot/giant_mask.h` (the growing), `packages/generator/src/oot/actors/Player.c`, `packages/generator/src/oot/interface/interface.c`, `packages/generator/src/oot/ovl_patch/kaleido_scope.c`, `packages/generator/src/oot/ovl/gamemodes/ovl_file_choose/file_choose_custom_file_info.c`, `docs/custom/cross-game-items.md` and `docs/custom/giant-mask.md` (notes for future additions), `CUSTOMIZING.md`
+
 ## 2026-10-11: Giant's Mask Anywhere
 
 - Where in the app: Custom > Majora's Mask > "Giant's Mask Anywhere" (toggle, off by default)

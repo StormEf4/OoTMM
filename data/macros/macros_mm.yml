@@ -405,7 +405,7 @@
 "has_mask_gibdo": "age_mask_gibdo && has(MASK_GIBDO)"
 "has_mask_garo": "age_mask_garo && has(MASK_GARO)"
 "has_mask_captain": "age_mask_captain && has(MASK_CAPTAIN)"
-"has_mask_giant": "age_mask_giant && has(MASK_GIANT)"
+"has_mask_giant": "age_mask_giant && (has(MASK_GIANT) || has(SHARED_MASK_GIANT))"
 "has_mask_gerudo": "age_mask_gerudo && cond(setting(sharedMaskGerudo), has(SHARED_MASK_GERUDO), has(MASK_GERUDO))"
 "has_mask_skull": "age_mask_skull && cond(setting(sharedMaskSkull), has(SHARED_MASK_SKULL), has(MASK_SKULL))"
 "has_mask_spooky": "age_mask_spooky && cond(setting(sharedMaskSpooky), has(SHARED_MASK_SPOOKY), has(MASK_SPOOKY))"

@@ -929,6 +929,8 @@ static void FileSelect_CustomFileInfoPrepareOotInventory(FileSelectState* this, 
         x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_STONE | ICONF_MM,     gOotExtraTradeSave.child & (1 << XITEM_OOT_CHILD_MASK_STONE));
     if (Config_Flag(CFG_OOT_MASK_KAMARO))
         x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_KAMARO | ICONF_MM,     gOotExtraTradeSave.child & (1 << XITEM_OOT_CHILD_MASK_KAMARO));
+    if (Config_Flag(CFG_CUSTOM_GIANT_MASK_OOT))
+        x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_GIANT | ICONF_MM,      gOotExtraTradeSave.child & (1 << XITEM_OOT_CHILD_MASK_GIANT));
 
     /* Row 5 - Adult Trade */
     x = startX;

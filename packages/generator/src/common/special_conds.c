@@ -203,6 +203,7 @@ int SpecialConds_Eval(int special)
     u8 hasMaskBlast;
     u8 hasMaskStone;
     u8 hasMaskKamaro;
+    u8 hasMaskGiant;
     u8 hasMaskGerudo;
     u8 hasMaskSkull;
     u8 hasMaskSpooky;
@@ -217,6 +218,7 @@ int SpecialConds_Eval(int special)
     hasMaskBlast = 0;
     hasMaskStone = 0;
     hasMaskKamaro = 0;
+    hasMaskGiant = 0;
     hasMaskGerudo = 0;
     hasMaskSkull = 0;
     hasMaskSpooky = 0;
@@ -341,7 +343,14 @@ int SpecialConds_Eval(int special)
         if (gMmSave.info.inventory.items[ITS_MM_MASK_COUPLE] == ITEM_MM_MASK_COUPLE) count++;
         if (gMmSave.info.inventory.items[ITS_MM_MASK_GARO] == ITEM_MM_MASK_GARO) count++;
         if (gMmSave.info.inventory.items[ITS_MM_MASK_CAPTAIN] == ITEM_MM_MASK_CAPTAIN) count++;
-        if (gMmSave.info.inventory.items[ITS_MM_MASK_GIANT] == ITEM_MM_MASK_GIANT) count++;
+        if (Config_Flag(CFG_CUSTOM_SHARED_MASK_GIANT))
+        {
+            if (gMmSave.info.inventory.items[ITS_MM_MASK_GIANT] == ITEM_MM_MASK_GIANT) hasMaskGiant = 1;
+        }
+        else
+        {
+            if (gMmSave.info.inventory.items[ITS_MM_MASK_GIANT] == ITEM_MM_MASK_GIANT) count++;
+        }
     }
 
     if (cond->flags & SPF_MASKS_TRANSFORM)
@@ -442,6 +451,15 @@ int SpecialConds_Eval(int special)
         {
             if (gOotExtraTrade.child & (1 << XITEM_OOT_CHILD_MASK_KAMARO)) count++;
         }
+
+        if (Config_Flag(CFG_CUSTOM_SHARED_MASK_GIANT))
+        {
+            if (gOotExtraTrade.child & (1 << XITEM_OOT_CHILD_MASK_GIANT)) hasMaskGiant = 1;
+        }
+        else
+        {
+            if (gOotExtraTrade.child & (1 << XITEM_OOT_CHILD_MASK_GIANT)) count++;
+        }
         if (Config_Flag(CFG_SHARED_MASK_GERUDO))
         {
             if (gOotExtraTrade.child & (1 << XITEM_OOT_CHILD_GERUDO_MASK)) hasMaskGerudo = 1;
@@ -493,6 +511,7 @@ int SpecialConds_Eval(int special)
     count += hasMaskBlast;
     count += hasMaskStone;
     count += hasMaskKamaro;
+    count += hasMaskGiant;
     count += hasMaskGerudo;
     count += hasMaskSkull;
     count += hasMaskSpooky;

@@ -38,5 +38,27 @@ export const CUSTOM_SETTINGS = [
     default: false,
     cond: hasMM,
   },
+  {
+    key: 'giantMaskOot',
+    name: "Giant's Mask (OoT)",
+    category: 'items.extensions.crossGame.masks',
+    game: 'oot',
+    group: "Giant's Mask",
+    type: 'boolean',
+    description: "Add the Giant's Mask in Ocarina of Time. Wearing it makes Link grow, like Giant's Mask Anywhere does in Majora's Mask, as long as there is enough room above him. It drains magic and comes off when leaving the area.",
+    default: false,
+    cond: hasOoT,
+  },
+  {
+    key: 'sharedMaskGiant',
+    name: "Shared Giant's Mask",
+    category: 'items.extensions.crossGame.masks',
+    game: 'shared',
+    group: "Giant's Mask",
+    type: 'boolean',
+    description: "Combines the Giant's Masks from OoT and MM into one item for both games",
+    default: false,
+    cond: (s: any) => hasOoTMM(s) && s.giantMaskOot,
+  },
   // @custom-settings-end
 ] as const;

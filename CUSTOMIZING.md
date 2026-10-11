@@ -49,6 +49,13 @@ A new setting is only a control until code reads it. There are three places code
 
 Hooking new C code into the game is the hard part; "Giant's Mask Anywhere" (`packages/generator/src/mm/giant_mask.c` and `src/mm/patches/giant_mask_anywhere.S`, see its `CUSTOM_CHANGES.md` entry) is a full worked example of a setting that changes the game. Assembly hooks that should only apply when a setting is on go in their own patch group (`patch-build/group.ts` and `patch-build/index.ts`).
 
+More reference notes live in `docs/custom/`:
+
+- [cross-game-items.md](docs/custom/cross-game-items.md): every file to touch to bring an item into the other game, with a shared version (worked example: Giant's Mask in OoT). It also covers checking C code without the N64 toolchain.
+- [giant-mask.md](docs/custom/giant-mask.md): how the Giant's Mask works in both games, what is scaled, known limits, and the game addresses used.
+
+A custom setting can also use an upstream category when it belongs next to upstream options, as long as it stays in `custom.ts`. The Giant's Mask (OoT) settings use `items.extensions.crossGame.masks`, so they show in Items > Extended Items > Cross-Game Masks with the other masks.
+
 ## Log every change
 
 Every change goes in `CUSTOM_CHANGES.md`, newest first, including where it shows up in the app. `pnpm custom:add` does this for new settings; for anything else run `pnpm custom:log`. The app shows the log under Custom > Change Log.

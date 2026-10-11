@@ -12,6 +12,7 @@
 #include <combo/entrance.h>
 #include <actors/En_Kanban/En_Kanban.h>
 #include <combo/oot/player_action.h>
+#include <combo/oot/giant_mask.h>
 #include <actors/Custom_En_Bom/Custom_En_Bom.h>
 
 void ArrowCycle_Handle(Player* link, PlayState* play);
@@ -62,6 +63,14 @@ void Player_UseItem(PlayState* play, Player* link, s16 itemId)
     u8 prevMask;
 
     prevMask = link->mask;
+
+    /* A giant can't use any item, except for taking the mask off */
+    if (GiantMaskOot_IsGiant() && itemId != ITEM_OOT_MASK_GIANT)
+    {
+        PlaySound(NA_SE_SY_ERROR);
+        return;
+    }
+
     switch (itemId)
     {
     case ITEM_OOT_WEIRD_EGG:
@@ -78,6 +87,9 @@ void Player_UseItem(PlayState* play, Player* link, s16 itemId)
         break;
     case ITEM_OOT_MASK_KAMARO:
         maskToggle(play, link, MASK_KAMARO);
+        break;
+    case ITEM_OOT_MASK_GIANT:
+        GiantMaskOot_UseMask(play, link);
         break;
     case ITEM_OOT_BOOTS_IRON:
         Player_UseBoots(play, link, 2);
@@ -266,6 +278,17 @@ static void DrawExtendedMaskKamaro(PlayState* play, Player* link)
     CLOSE_DISPS();
 }
 
+static void DrawExtendedMaskGiant(PlayState* play, Player* link)
+{
+    /* MM object_mask_kyojin */
+    if (!prepareMask(play, 0x214 | MASK_FOREIGN_OBJECT, 1))
+        return;
+
+    OPEN_DISPS(play->state.gfxCtx);
+    gSPDisplayList(POLY_OPA_DISP++, 0x0a000380);
+    CLOSE_DISPS();
+}
+
 typedef void (*MaskCallback)(PlayState*, Player*);
 
 static const MaskCallback kMaskCallbacks[] = {
@@ -280,6 +303,7 @@ static const MaskCallback kMaskCallbacks[] = {
     DrawExtendedMaskBlast,
     DrawExtendedMaskStone,
     DrawExtendedMaskKamaro,
+    DrawExtendedMaskGiant,
 };
 
 void comboDrawExtendedMask(void)
@@ -432,7 +456,9 @@ void Player_UpdateWrapper(Player* this, PlayState* play)
 
     ArrowCycle_Handle(this, play);
     sKamaroInputValid = 0;
+    GiantMaskOot_BeforePlayerUpdate(this, play);
     Player_Update(this, play);
+    GiantMaskOot_AfterPlayerUpdate(this, play);
     input = *(Input**)(OverlayAddr(0x80856734));
     kamaroInput = sKamaroInputValid ? &sKamaroInput : input;
     if (!(this->stateFlags1 & (PLAYER_ACTOR_STATE_HOLD_ITEM | PLAYER_ACTOR_STATE_CUTSCENE_FROZEN)) && !Player_UsingItem(this) && GET_PLAYER(play)->rideActor == NULL)
@@ -1206,6 +1232,7 @@ static s32 sCustomItemActions[] =
     PLAYER_CUSTOM_IA_ZORA_EGG,          /* ITEM_OOT_ZORA_EGG */
     PLAYER_CUSTOM_IA_POWDER_KEG,        /* ITEM_OOT_POWDER_KEG */
     PLAYER_CUSTOM_IA_GREAT_FAIRY_SWORD, /* ITEM_GFS_MM */
+    0,                                  /* ITEM_OOT_MASK_GIANT */
 };
 
 s32 Player_CustomItemToItemAction(s32 item, s32 itemAction)
@@ -1615,6 +1642,7 @@ void Player_AfterInit(PlayState* play)
     Player* player = GET_PLAYER(play);
 
     Player_ResetKamaroMaskStateOoT(player);
+    GiantMaskOot_Reset(play, player);
 
     Player_SetLastSafePos(play, player);
     gPlayerLastSafeExists = 0;
