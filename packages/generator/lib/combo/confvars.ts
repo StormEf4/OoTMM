@@ -1,3 +1,6 @@
+import type { Settings } from '@ootmm/core';
+import { CUSTOM_SETTINGS } from '@ootmm/core';
+
 export const CONFVARS = [
   'GANON_NO_BOSS_KEY',
   'SMALL_KEY_SHUFFLE',
@@ -449,7 +452,39 @@ export const CONFVARS = [
 
 export type Confvar = typeof CONFVARS[number];
 
-export const CONFVARS_VALUES: { [k in Confvar]: number } = {} as any;
+export const CONFVARS_VALUES: { [k in Confvar]: number } & { [k: string]: number } = {} as any;
 for (let i = 0; i < CONFVARS.length; ++i) {
   CONFVARS_VALUES[CONFVARS[i]] = i;
+}
+
+/* Custom fork settings: each boolean and enum value gets its own flag (CFG_CUSTOM_...) */
+function customConfvarName(...parts: string[]) {
+  return ['CUSTOM', ...parts].map(p => p.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/[^A-Za-z0-9]+/g, '_').toUpperCase()).join('_');
+}
+
+export function customConfvars(settings: Settings): string[] {
+  const result: string[] = [];
+  for (const s of CUSTOM_SETTINGS as ReadonlyArray<any>) {
+    const value = (settings as any)[s.key];
+    if (s.type === 'boolean' && value) {
+      result.push(customConfvarName(s.key));
+    } else if (s.type === 'enum') {
+      result.push(customConfvarName(s.key, value));
+    }
+  }
+  return result;
+}
+
+for (const s of CUSTOM_SETTINGS as ReadonlyArray<any>) {
+  const names = s.type === 'boolean' ? [customConfvarName(s.key)]
+    : s.type === 'enum' ? s.values.map((v: { value: string }) => customConfvarName(s.key, v.value))
+    : [];
+  for (const name of names) {
+    CONFVARS_VALUES[name] = Object.keys(CONFVARS_VALUES).length;
+  }
+}
+
+/* The config block sent to the game is 0x40 bytes */
+if (Object.keys(CONFVARS_VALUES).length > 0x40 * 8) {
+  throw new Error('Too many config flags');
 }
