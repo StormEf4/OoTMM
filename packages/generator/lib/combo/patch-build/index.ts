@@ -29,6 +29,7 @@ function asmPatchGroups(world: LogicResultWorld, settings: Settings) {
     OOT_CLIMB_ANYWHERE: settings.climbMostSurfacesOot !== 'off',
     MM_FD_ANYWHERE: settings.fierceDeityAnywhere,
     MM_GIANT_MASK_ANYWHERE: settings.giantMaskAnywhere,
+    OOT_GIANT_MASK: settings.giantMaskOot,
     MM_HOOKSHOT_ANYWHERE: settings.hookshotAnywhereMm !== 'off',
     MM_BLAST_MASK_DELAY_INSTANT: settings.blastMaskCooldown === 'instant',
     MM_BLAST_MASK_DELAY_VERYSHORT: settings.blastMaskCooldown === 'veryshort',

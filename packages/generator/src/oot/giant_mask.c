@@ -16,13 +16,15 @@
  * An OoT port of Giant's Mask Anywhere (see src/mm/giant_mask.c). Wearing the mask makes Link
  * grow 10x, drains magic like in Twinmold's Lair, and the mask comes off when leaving the area.
  *
- * Unlike the MM version, there are no assembly hooks into the OoT player overlay (finding the
- * hook sites needs the ROM). What scales:
+ * What scales:
  * - Link's model, sword hitbox and body collider
- * - movement speed, acceleration and deceleration (player REGs)
  * - ceiling, wall and ledge heights (player age properties)
  * - Player_GetHeight, which the camera and many actors use
- * Jump height, gravity and fall speed keep their normal values.
+ * - movement: the player code keeps normal speeds, jump velocities and gravity, and the asm hooks
+ *   in src/oot/patches/giant_mask_oot.S multiply the step applied to Link's position, so he runs,
+ *   jumps and falls like normal Link at 10x the size. The same hooks scale the collision distances
+ *   the player code hard-codes (wall height, floor check, ledge walk-off) and convert the world
+ *   distances it reads back (floor distance, fall distance, ledge heights) into normal units.
  */
 
 #define GIANT_SCALE_FACTOR          10.0f
@@ -141,21 +143,6 @@ static s32 GiantMaskOot_CanGrow(PlayState* play, Player* player)
     return GiantMaskOot_HasRoomAbove(play, player);
 }
 
-static void GiantMaskOot_GrowRegs(void)
-{
-    REG(48) *= 10;          /* Slow backwalk animation threshold */
-    REG(19) *= 10;          /* Run acceleration */
-    REG(32) /= 10;          /* Sidewalk animation speed multiplier */
-    REG(36) /= 10;          /* Slow backwalk animation speed multiplier */
-    REG(37) /= 10;          /* Walk speed threshold */
-    REG(38) /= 10;          /* Walk animation speed multiplier */
-    R_DECELERATE_RATE *= 10;
-    R_RUN_SPEED_LIMIT *= 10;
-    IREG(66) *= 10;         /* Baby jump threshold */
-    IREG(69) /= 10;         /* Baby jump speed multiplier */
-    MREG(95) /= 10;         /* Bow sidewalk animation */
-}
-
 static void GiantMaskOot_GrowAgeProperties(GiantMaskAgeProperties* props)
 {
     props->ceilingCheckHeight *= GIANT_SCALE_FACTOR;
@@ -168,7 +155,7 @@ static void GiantMaskOot_GrowAgeProperties(GiantMaskAgeProperties* props)
     props->unk_28 *= GIANT_SCALE_FACTOR;
     props->unk_2C *= GIANT_SCALE_FACTOR;
     props->unk_30 *= GIANT_SCALE_FACTOR;
-    props->unk_34 *= GIANT_SCALE_FACTOR;
+    /* unk_34 is compared to sYDistToFloor, which the hooks keep in normal units */
     props->wallCheckRadius *= GIANT_SCALE_FACTOR;
     props->unk_3C *= GIANT_SCALE_FACTOR;
     props->unk_40 *= GIANT_SCALE_FACTOR;
@@ -208,10 +195,6 @@ static void GiantMaskOot_UpdateAgeProperties(Player* player)
 static void GiantMaskOot_ApplyPhysics(Player* player)
 {
     GiantMaskOot_UpdateAgeProperties(player);
-
-    /* Player_SetBootData resets these on boot changes and room changes */
-    if (sState != GIANT_STATE_NORMAL && R_RUN_SPEED_LIMIT < 2000)
-        GiantMaskOot_GrowRegs();
 
     if (sState != GIANT_STATE_NORMAL)
         Actor_SetScale(&player->actor, sPlayerScale);
@@ -318,10 +301,6 @@ void GiantMaskOot_Reset(PlayState* play, Player* player)
     {
         GiantMaskOot_RestoreAgeProperties(player);
         GiantMaskOot_RemoveMask(play, player);
-
-        /* Don't carry a giant's running speed into the next area */
-        if (sState != GIANT_STATE_NORMAL && player->speedXZ > 6.0f)
-            player->speedXZ = 6.0f;
     }
 
     sState = GIANT_STATE_NORMAL;
@@ -387,9 +366,6 @@ static void GiantMaskOot_UpdateState(Player* player, PlayState* play)
             GiantMaskOot_Unfreeze(play, player);
 
             Actor_SetScale(&player->actor, NORMAL_PLAYER_SCALE);
-
-            /* Restores the movement REGs through Player_SetBootData */
-            UpdateEquipment(play, player);
         }
         break;
     }
@@ -435,3 +411,105 @@ float GiantMaskOot_PlayerGetHeight(Player* player)
 }
 
 PATCH_FUNC(0x80021600, GiantMaskOot_PlayerGetHeight);
+
+/*
+ * Movement physics, called from src/oot/patches/giant_mask_oot.S
+ * Those hooks are only in the ROM when the Giant's Mask is in OoT (patch group PG_OOT_GIANT_MASK).
+ */
+static f32 GiantMaskOot_GetActorModifier(Actor* actor)
+{
+    if (sState == GIANT_STATE_NORMAL || gPlay == NULL || actor != &GET_PLAYER(gPlay)->actor)
+        return 1.0f;
+    return GIANT_SCALE_FACTOR;
+}
+
+/* Player_UpdateCommon: moves Link by his velocity, scaled so a normal jump or run becomes a giant one */
+void GiantMaskOot_PlayerUpdatePos(Actor* actor)
+{
+    Vec3f velocity;
+    f32 modifier;
+
+    modifier = GiantMaskOot_GetActorModifier(actor);
+    if (modifier == 1.0f)
+    {
+        Actor_UpdatePos(actor);
+        return;
+    }
+
+    velocity = actor->velocity;
+    actor->velocity.x *= modifier;
+    actor->velocity.y *= modifier;
+    actor->velocity.z *= modifier;
+    Actor_UpdatePos(actor);
+    actor->velocity = velocity;
+}
+
+/* Player_ProcessSceneCollision and climbing: the wall height (26) is hard-coded */
+void GiantMaskOot_PlayerUpdateBgCheckInfo(PlayState* play, Actor* actor, float wallCheckHeight, float wallCheckRadius, float ceilingCheckHeight, u32 flags)
+{
+    Actor_UpdateBgCheckInfo(play, actor, wallCheckHeight * GiantMaskOot_GetActorModifier(actor), wallCheckRadius, ceilingCheckHeight, flags);
+}
+
+/* Actor floor check: how far above the actor the floor is looked up */
+f32 GiantMaskOot_GetFloorCheckOffset(Actor* actor)
+{
+    return 50.0f * GiantMaskOot_GetActorModifier(actor);
+}
+
+/* Replaces func_8002E234: how far above the floor an actor can be and still stand on it */
+s32 GiantMaskOot_FloorLeaveCheck(Actor* actor, f32 floorHeightDiff, s32 flags)
+{
+    if ((actor->bgCheckFlags & BGCHECKFLAG_GROUND) && (floorHeightDiff < -11.0f * GiantMaskOot_GetActorModifier(actor)))
+    {
+        actor->bgCheckFlags &= ~BGCHECKFLAG_GROUND;
+        actor->bgCheckFlags |= BGCHECKFLAG_GROUND_LEAVE;
+
+        if ((actor->velocity.y < 0.0f) && (flags & UPDBGCHECKINFO_FLAG_OOT_4))
+            actor->velocity.y = 0.0f;
+
+        return 0;
+    }
+
+    return 1;
+}
+
+/* Converts a player world distance (floor distance) into normal units */
+f32 GiantMaskOot_ScaleDownDistance(f32 distance)
+{
+    if (sState == GIANT_STATE_NORMAL)
+        return distance;
+    return distance * (1.0f / GIANT_SCALE_FACTOR);
+}
+
+/* func_8083AA10: returns the fall start height that gives the fall distance in normal units */
+s32 GiantMaskOot_ScaleFallStart(s32 fallStartHeight, s32 posY)
+{
+    if (sState == GIANT_STATE_NORMAL)
+        return fallStartHeight;
+    return posY + (s32)((fallStartHeight - posY) * (1.0f / GIANT_SCALE_FACTOR));
+}
+
+/*
+ * Player_ActionHandler_12: the climb animation raises Link by a fixed height (in model units), and
+ * shape.yOffset (also in model units) covers the rest of the ledge height.
+ * offset = yDistToLedge - animationHeight, the result is multiplied by 100 (1 / normal scale).
+ */
+f32 GiantMaskOot_GetLedgeClimbOffset(Player* player, f32 offset)
+{
+    f32 modifier;
+    f32 animationHeight;
+
+    modifier = GiantMaskOot_GetActorModifier(&player->actor);
+    if (modifier == 1.0f)
+        return offset;
+
+    /* At giant scale the animation covers modifier times more, and yOffset counts modifier times more */
+    animationHeight = (player->yDistToLedge - offset) * modifier;
+    return (player->yDistToLedge - animationHeight) / modifier;
+}
+
+/* Jumps whose velocity comes from the ledge height use it in normal units */
+f32 GiantMaskOot_GetJumpYDistToLedge(Player* player)
+{
+    return player->yDistToLedge / GiantMaskOot_GetActorModifier(&player->actor);
+}

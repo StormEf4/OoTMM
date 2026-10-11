@@ -65,6 +65,7 @@ export const PATCH_GROUPS = [
   'MM_CS_TWINMOLD',
   'MM_CS_MAJORA',
   'MM_GIANT_MASK_ANYWHERE',
+  'OOT_GIANT_MASK',
 ] as const;
 
 export type PatchGroup = typeof PATCH_GROUPS[number];
