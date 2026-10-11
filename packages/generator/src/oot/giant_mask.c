@@ -8,6 +8,7 @@
 #include <combo/collision.h>
 #include <combo/age.h>
 #include <combo/oot/giant_mask.h>
+#include <combo/oot/fierce_deity.h>
 
 /*
  * Giant's Mask (OoT)
@@ -420,6 +421,10 @@ void GiantMaskOot_AfterPlayerUpdate(Player* player, PlayState* play)
 float GiantMaskOot_PlayerGetHeight(Player* player)
 {
     f32 height;
+
+    /* Fierce Deity's Mask uses MM's Fierce Deity height */
+    if (player->actor.id == ACTOR_PLAYER && FierceDeityOot_IsFdForm())
+        return ((player->stateFlags1 & PLAYER_STATE1_23) ? 32.0f : 0.0f) + FierceDeityOot_GetHeight();
 
     height = (player->stateFlags1 & PLAYER_STATE1_23) ? 32.0f : 0.0f;
     height += (gSave.age == AGE_ADULT) ? 68.0f : 44.0f;

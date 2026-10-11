@@ -295,6 +295,10 @@ static void DrawExtendedMaskGiant(PlayState* play, Player* link)
 
 static void DrawExtendedMaskFierceDeity(PlayState* play, Player* link)
 {
+    /* Transformed: Link is drawn as Fierce Deity, no mask on top */
+    if (FierceDeityOot_DrawMask(play, link))
+        return;
+
     /* MM object_mask_boy */
     if (!prepareMask(play, 0x1e4 | MASK_FOREIGN_OBJECT, 1))
         return;
@@ -1007,6 +1011,10 @@ void Player_DrawFlexLod(PlayState* play, void** skeleton, Vec3s* jointTable, s32
     u32 bootsList;
     u32 bootsList2;
 
+    /* Fierce Deity's Mask: draw MM's Fierce Deity instead */
+    if (arg == GET_PLAYER(play) && FierceDeityOot_DrawSkeleton(play, jointTable, dListCount, overrideLimbDraw, postLimbDraw, arg, lod))
+        return;
+
     /* Load hookshot data if child */
     if (gSave.age == AGE_CHILD)
     {
@@ -1096,6 +1104,8 @@ PATCH_FUNC(0x80079af8, Player_GetStrength);
 
 static int Player_IsStrengthGoronBracelet(void)
 {
+    if (FierceDeityOot_IsFdForm())
+        return 0;
     return Player_GetStrength() == 1;
 }
 

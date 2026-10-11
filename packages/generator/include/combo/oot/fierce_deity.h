@@ -12,5 +12,9 @@ void FierceDeityOot_UseMask(PlayState* play, Player* player);
 void FierceDeityOot_Reset(PlayState* play, Player* player);
 void FierceDeityOot_BeforePlayerUpdate(Player* player, PlayState* play);
 void FierceDeityOot_AfterPlayerUpdate(Player* player, PlayState* play);
+s32  FierceDeityOot_IsFdForm(void);
+f32  FierceDeityOot_GetHeight(void);
+s32  FierceDeityOot_DrawSkeleton(PlayState* play, Vec3s* jointTable, s32 dListCount, void* overrideLimbDraw, void* postLimbDraw, void* arg, s32 lod);
+s32  FierceDeityOot_DrawMask(PlayState* play, Player* player);
 
 #endif
