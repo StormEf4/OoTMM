@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-12: Fix: Fierce Deity's sword beam crashed the game (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "Fierce Deity's Mask" row, OoT column (no new control; fixes that item).
+- What it does: Z-targeting and slashing as Fierce Deity no longer crashes. The beam graphics come from MM's gameplay_keep, which is compressed in the ROM, and the game's file loader unpacks compressed files whole: loading just the beam part wrote the whole 600 KB file into a 6 KB buffer. A new loader unpacks only the needed part of a compressed file (`comboDmaLoadFileRange`, usable for any future MM keep graphics). The beam graphics now load when the mask is put on, so the first beam doesn't stutter.
+- Files: `packages/generator/src/common/dma_range.c` (new), `packages/generator/include/combo/dma_range.h` (new), `packages/generator/src/oot/fierce_deity.c`, `docs/custom/fierce-deity.md`
+
 ## 2026-10-12: Goron and Zora punches, Zora jump kick and Deku spin in OoT
 
 - Where in the app: Items > Extended Items > Cross-Game Masks, OoT column of the "Deku Mask", "MM Goron Transformation Mask" and "MM Zora Transformation Mask" rows (no new control; this is what those items do).

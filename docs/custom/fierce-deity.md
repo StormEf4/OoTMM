@@ -42,7 +42,8 @@ Reference for future changes. Settings: `fierceDeityMaskOot` and `sharedMaskFier
 - Each beam has a `ColliderCylinder` owned by the player, registered with `CollisionCheck_SetAT` every frame. The timing and size follow MM's `EnMThunder_SwordBeam_Attack`.
 - **Trigger:** the first active frame of a slash (`meleeWeaponState` going from 0 to nonzero) with `meleeWeaponAnimation < 22`, while Z-targeting and holding a sword. It aims at `focusActor` when locked on.
 - **Graphics:**
-  - `LoadFile` brings in only MM gameplay_keep 0x269E0–0x281DC: the two beam textures, vertices and `gSwordBeamDL` at 0x04027CA0.
+  - Only MM gameplay_keep 0x269E0–0x281DC is loaded: the two beam textures, vertices and `gSwordBeamDL` at 0x04027CA0. It is loaded with `comboDmaLoadFileRange` (`src/common/dma_range.c`) when the mask is put on.
+  - MM gameplay_keep is Yaz0 compressed in the output ROM, and the DMA manager (`DmaManagerRunRequest` in `src/common/dma.c`) loads compressed files whole whatever size is asked. The first version used `LoadFile` for this range, which unpacked the whole 0x925E0-byte file into the 0x17FC-byte buffer and crashed the game on the first beam. `comboDmaLoadFileRange` streams the Yaz0 data through a 4 KiB window and keeps only the range (then writes back the CPU cache so the RSP sees it). Use it for any part of a compressed file.
   - The beam is drawn on XLU with segment 04 temporarily pointed at that buffer.
 
 ## Not verified without the game

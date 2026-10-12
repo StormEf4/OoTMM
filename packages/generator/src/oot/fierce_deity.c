@@ -9,6 +9,7 @@
 #include <combo/collision.h>
 #include <combo/age.h>
 #include <combo/oot/fierce_deity.h>
+#include <combo/dma_range.h>
 
 /*
  * Fierce Deity's Mask (OoT)
@@ -323,6 +324,8 @@ static void FierceDeityOot_Unfreeze(PlayState* play, Player* player)
     sFrozePlayer = 0;
 }
 
+static void FierceDeityOot_LoadBeamData(void);
+
 static void FierceDeityOot_StartPuttingOn(PlayState* play, Player* player)
 {
     sState = FD_STATE_PUTTING_ON;
@@ -330,8 +333,9 @@ static void FierceDeityOot_StartPuttingOn(PlayState* play, Player* player)
     FierceDeityOot_Freeze(play, player);
     PlaySound(NA_SE_PL_MAGIC_WIND_WARP);
 
-    /* Start loading the model now */
+    /* Start loading the model now, and the beam graphics while Link is frozen (they take a moment to unpack) */
     comboGetObject(FD_OBJECT_ID);
+    FierceDeityOot_LoadBeamData();
 }
 
 static void FierceDeityOot_StartTakingOff(PlayState* play, Player* player)
@@ -537,8 +541,16 @@ static void FierceDeityOot_LoadBeamData(void)
     sBeamData = malloc(BEAM_DATA_END - BEAM_DATA_START);
     if (!sBeamData)
         return;
+    /*
+     * MM's gameplay_keep is compressed in the ROM, and the DMA manager only loads compressed files whole: a plain
+     * LoadFile() of this range decompressed the whole 0x925E0-byte file into this small buffer and crashed the game.
+     */
     keep = comboGetObjectData(MM_KEEP_OBJECT_ID);
-    LoadFile(sBeamData, keep->vromStart + BEAM_DATA_START, BEAM_DATA_END - BEAM_DATA_START);
+    if (!comboDmaLoadFileRange(sBeamData, keep->vromStart, BEAM_DATA_START, BEAM_DATA_END - BEAM_DATA_START))
+    {
+        free(sBeamData);
+        sBeamData = NULL;
+    }
 }
 
 static void FierceDeityOot_SpawnBeam(PlayState* play, Player* player)
