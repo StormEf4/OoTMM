@@ -63,3 +63,114 @@ animations:
     home_game: oot
     header_offset: 0x2628
     frame_data_offset: 0x79090
+
+  # MM transformation masks in OoT (src/oot/transform_mask.c): Goron and Zora punches, Zora jump kick, Deku spin
+  - name: gPlayerAnim_pg_punchA
+    home_game: mm
+    header_offset: 0xE218
+    frame_data_offset: 0x2963B0
+
+  - name: gPlayerAnim_pg_punchAend
+    home_game: mm
+    header_offset: 0xE228
+    frame_data_offset: 0x849B0
+
+  - name: gPlayerAnim_pg_punchAendR
+    home_game: mm
+    header_offset: 0xE220
+    frame_data_offset: 0x1CDCB0
+
+  - name: gPlayerAnim_pg_punchB
+    home_game: mm
+    header_offset: 0xE230
+    frame_data_offset: 0x2959B0
+
+  - name: gPlayerAnim_pg_punchBend
+    home_game: mm
+    header_offset: 0xE240
+    frame_data_offset: 0x83F30
+
+  - name: gPlayerAnim_pg_punchBendR
+    home_game: mm
+    header_offset: 0xE238
+    frame_data_offset: 0x1CD230
+
+  - name: gPlayerAnim_pg_punchC
+    home_game: mm
+    header_offset: 0xE248
+    frame_data_offset: 0x294F30
+
+  - name: gPlayerAnim_pg_punchCend
+    home_game: mm
+    header_offset: 0xE258
+    frame_data_offset: 0x84470
+
+  - name: gPlayerAnim_pg_punchCendR
+    home_game: mm
+    header_offset: 0xE250
+    frame_data_offset: 0x1CD770
+
+  - name: gPlayerAnim_pz_attackA
+    home_game: mm
+    header_offset: 0xE308
+    frame_data_offset: 0x282A40
+
+  - name: gPlayerAnim_pz_attackAend
+    home_game: mm
+    header_offset: 0xE318
+    frame_data_offset: 0x2B4A20
+
+  - name: gPlayerAnim_pz_attackAendR
+    home_game: mm
+    header_offset: 0xE310
+    frame_data_offset: 0x2C4670
+
+  - name: gPlayerAnim_pz_attackB
+    home_game: mm
+    header_offset: 0xE320
+    frame_data_offset: 0x282500
+
+  - name: gPlayerAnim_pz_attackBend
+    home_game: mm
+    header_offset: 0xE330
+    frame_data_offset: 0x2B3E90
+
+  - name: gPlayerAnim_pz_attackBendR
+    home_game: mm
+    header_offset: 0xE328
+    frame_data_offset: 0x2C41A0
+
+  - name: gPlayerAnim_pz_attackC
+    home_game: mm
+    header_offset: 0xE338
+    frame_data_offset: 0x281A80
+
+  - name: gPlayerAnim_pz_attackCend
+    home_game: mm
+    header_offset: 0xE348
+    frame_data_offset: 0x2B44E0
+
+  - name: gPlayerAnim_pz_attackCendR
+    home_game: mm
+    header_offset: 0xE340
+    frame_data_offset: 0x2C44D0
+
+  - name: gPlayerAnim_pz_jumpAT
+    home_game: mm
+    header_offset: 0xE3F0
+    frame_data_offset: 0xD82E0
+
+  - name: gPlayerAnim_pz_jumpATend
+    home_game: mm
+    header_offset: 0xE3F8
+    frame_data_offset: 0x89310
+
+  - name: gPlayerAnim_pz_wait
+    home_game: mm
+    header_offset: 0xE410
+    frame_data_offset: 0xFB6C0
+
+  - name: gPlayerAnim_pn_attack
+    home_game: mm
+    header_offset: 0xE270
+    frame_data_offset: 0xA44C0

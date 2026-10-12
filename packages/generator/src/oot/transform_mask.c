@@ -8,6 +8,9 @@
 #include <combo/age.h>
 #include <combo/oot/fierce_deity.h>
 #include <combo/oot/transform_mask.h>
+#include <combo/oot/player_action.h>
+#include <combo/common/animation.h>
+#include <combo/custom_animations.h>
 
 /*
  * MM transformation masks (OoT): Deku Mask, MM Goron Transformation Mask, MM Zora Transformation Mask
@@ -24,6 +27,9 @@
  * - Rules: Goron is heat proof, Zora never drowns, Goron and Deku sink and void out in deep water, Deku and Zora
  *   void out when set on fire, Goron and Zora can't crawl.
  * - The form stays on through loading zones, like in MM.
+ * - Attacks, with MM's animations (imported from MM's link_animetion, see data/defs/link-animations.yml):
+ *   Goron and Zora punch combos and the Zora jump kick reuse OoT's sword attack code with MM's entries in its
+ *   attack table; the Deku spin (A button) is its own player action.
  *
  * See docs/custom/transform-masks.md.
  */
@@ -793,6 +799,426 @@ static void TransformOot_UpdateDamage(Player* player)
     }
 }
 
+/*
+ * Attacks (phase 2)
+ *
+ * Goron and Zora punch combos and the Zora jump kick go through OoT's sword attack code (B with the lent sword).
+ * While a Goron or Zora updates, MM's entries are written into OoT's attack table (sMeleeAttackAnimInfo) for the
+ * attacks the forms use, then put back. MM picks the punches in a fixed order (left, right, finisher); OoT picks
+ * them from the stick, so the attack choice is redirected. The Deku spin is MM's Player_Action_95, ported as a
+ * player action in this file.
+ */
+
+/* OoT 1.0 player overlay */
+#define OOT_PLAYER_MELEE_ATTACK_ANIM_INFO   0x80852050 /* D_80854190 */
+#define OOT_PLAYER_GET_MELEE_WEAPON_ANIM    0x80835908 /* func_80837818 */
+#define OOT_PLAYER_START_MELEE_ATTACK       0x80835a38 /* func_80837948 */
+#define OOT_PLAYER_START_SPIN_CHARGE        0x808358c4 /* func_808377DC */
+#define OOT_PLAYER_START_JUMP_ATTACK        0x80839b4c /* func_8083BA90 */
+#define OOT_PLAYER_TRY_AIR_ATTACK           0x80839c64 /* func_8083BBA0 */
+#define OOT_PLAYER_SETUP_ROLL               0x80839ccc /* Player_SetupRoll */
+#define OOT_PLAYER_TRY_ROLL                 0x80839d44 /* Player_TryRoll */
+#define OOT_PLAYER_ACTION_MELEE_ATTACK      0x8084e104 /* Player_Action_808502D0 */
+#define OOT_PLAYER_ANIM_CHANGE_ONCE_MORPH   0x80830acc /* Player_AnimChangeOnceMorph */
+#define OOT_PLAYER_GET_SPEED_AND_YAW        0x80835338 /* Player_GetMovementSpeedAndYaw */
+#define OOT_PLAYER_SETUP_IDLE               0x808380a4 /* func_80839F90 */
+
+#define OOT_LINK_ANIMATION_UPDATE           0x8008bca4
+
+/* PlayerMeleeWeaponAnimation slots used by the forms */
+#define MWA_PUNCH_A             0  /* PLAYER_MWA_FORWARD_SLASH_1H */
+#define MWA_PUNCH_B             4  /* PLAYER_MWA_RIGHT_SLASH_1H */
+#define MWA_PUNCH_C             8  /* PLAYER_MWA_LEFT_SLASH_1H */
+#define MWA_FLIPSLASH_START     16
+#define MWA_JUMPSLASH_START     17
+#define MWA_JUMPSLASH_FINISH    19
+
+#define SPEED_MODE_CURVED       0.018f
+
+#define ANIM(x) ((LinkAnimationHeader*)&(x))
+
+typedef struct
+{
+    LinkAnimationHeader* start;
+    LinkAnimationHeader* end;
+    LinkAnimationHeader* endLockOn;
+    u8 activeStart;
+    u8 activeEnd;
+}
+MeleeAttackAnimInfo;
+
+static const u8 kFormAttackSlots[] = { MWA_PUNCH_A, MWA_PUNCH_B, MWA_PUNCH_C, MWA_JUMPSLASH_START, MWA_JUMPSLASH_FINISH };
+
+/* MM's sMeleeAttackAnimInfo (z_player.c), PLAYER_MWA_GORON_PUNCH_LEFT .. BUTT */
+static const MeleeAttackAnimInfo kGoronAttacks[] = {
+    { ANIM(gPlayerAnim_pg_punchA), ANIM(gPlayerAnim_pg_punchAend), ANIM(gPlayerAnim_pg_punchAendR), 6, 8 },
+    { ANIM(gPlayerAnim_pg_punchB), ANIM(gPlayerAnim_pg_punchBend), ANIM(gPlayerAnim_pg_punchBendR), 12, 18 },
+    { ANIM(gPlayerAnim_pg_punchC), ANIM(gPlayerAnim_pg_punchCend), ANIM(gPlayerAnim_pg_punchCendR), 8, 14 },
+};
+
+/* PLAYER_MWA_ZORA_PUNCH_LEFT .. KICK, then ZORA_JUMPKICK_START and FINISH */
+static const MeleeAttackAnimInfo kZoraAttacks[] = {
+    { ANIM(gPlayerAnim_pz_attackA), ANIM(gPlayerAnim_pz_attackAend), ANIM(gPlayerAnim_pz_attackAendR), 2, 5 },
+    { ANIM(gPlayerAnim_pz_attackB), ANIM(gPlayerAnim_pz_attackBend), ANIM(gPlayerAnim_pz_attackBendR), 3, 8 },
+    { ANIM(gPlayerAnim_pz_attackC), ANIM(gPlayerAnim_pz_attackCend), ANIM(gPlayerAnim_pz_attackCendR), 3, 10 },
+    { ANIM(gPlayerAnim_pz_jumpAT), ANIM(gPlayerAnim_pz_jumpATend), ANIM(gPlayerAnim_pz_jumpATend), 8, 99 },
+    { ANIM(gPlayerAnim_pz_jumpATend), ANIM(gPlayerAnim_pz_wait), ANIM(gPlayerAnim_pz_wait), 1, 2 },
+};
+
+static MeleeAttackAnimInfo sAttackTableBackup[ARRAY_COUNT(kFormAttackSlots)];
+static s32 sAttackTableSwapped;
+static u8  sPunchQueued;
+static u8  sInjectedB;
+
+static f32 sSpinSpeed;
+static f32 sSpinLeft;
+static ColliderCylinder sSpinCollider;
+static Actor* sSpinColliderOwner;
+
+/* MM's Player_SetCylinderForAttack(this, DMG_DEKU_SPIN, 1, 30), with an OoT damage type (see the research notes) */
+static ColliderCylinderInit sSpinColliderInit = {
+    {
+        COL_MATERIAL_NONE,
+        AT_ON | AT_TYPE_PLAYER,
+        AC_NONE,
+        OC1_NONE,
+        OC2_TYPE_1,
+        COLSHAPE_CYLINDER,
+    },
+    {
+        ELEM_MATERIAL_UNK2,
+        { DMG_SLASH_KOKIRI, 0x00, 1 },
+        { 0x00000000, 0x00, 0x00 },
+        ATELEM_ON | ATELEM_NEAREST | ATELEM_SFX_NORMAL,
+        ACELEM_NONE,
+        OCELEM_NONE,
+    },
+    { 30, 40, 0, { 0, 0, 0 } },
+};
+
+static s32 TransformOot_Punches(void)
+{
+    return sDrawnForm == TRANSFORM_OOT_FORM_GORON || sDrawnForm == TRANSFORM_OOT_FORM_ZORA;
+}
+
+static s32 TransformOot_IsPunch(s32 mwa)
+{
+    return mwa == MWA_PUNCH_A || mwa == MWA_PUNCH_B || mwa == MWA_PUNCH_C;
+}
+
+static void TransformOot_SwapAttackTable(void)
+{
+    MeleeAttackAnimInfo* table;
+    const MeleeAttackAnimInfo* attacks;
+    s32 count;
+    s32 i;
+
+    if (sDrawnForm == TRANSFORM_OOT_FORM_GORON)
+    {
+        attacks = kGoronAttacks;
+        count = ARRAY_COUNT(kGoronAttacks);
+    }
+    else if (sDrawnForm == TRANSFORM_OOT_FORM_ZORA)
+    {
+        attacks = kZoraAttacks;
+        count = ARRAY_COUNT(kZoraAttacks);
+    }
+    else
+    {
+        return;
+    }
+
+    table = OverlayAddr(OOT_PLAYER_MELEE_ATTACK_ANIM_INFO);
+    for (i = 0; i < count; ++i)
+    {
+        sAttackTableBackup[i] = table[kFormAttackSlots[i]];
+        table[kFormAttackSlots[i]] = attacks[i];
+    }
+    sAttackTableSwapped = count;
+}
+
+static void TransformOot_RestoreAttackTable(void)
+{
+    MeleeAttackAnimInfo* table;
+    s32 i;
+
+    if (!sAttackTableSwapped)
+        return;
+
+    table = OverlayAddr(OOT_PLAYER_MELEE_ATTACK_ANIM_INFO);
+    for (i = 0; i < sAttackTableSwapped; ++i)
+        table[kFormAttackSlots[i]] = sAttackTableBackup[i];
+    sAttackTableSwapped = 0;
+}
+
+/* Player_ActionHandler_7: MM's func_808335F4 picks left, right, then the finisher while the combo is open */
+static s32 TransformOot_GetMeleeWeaponAnim(Player* player)
+{
+    s32 (*Player_GetMeleeWeaponAnim)(Player*);
+
+    if (!TransformOot_Punches())
+    {
+        Player_GetMeleeWeaponAnim = OverlayAddr(OOT_PLAYER_GET_MELEE_WEAPON_ANIM);
+        return Player_GetMeleeWeaponAnim(player);
+    }
+
+    if (player->unk_845 != 0)
+    {
+        if (player->meleeWeaponAnimation == MWA_PUNCH_A)
+            return MWA_PUNCH_B;
+        if (player->meleeWeaponAnimation == MWA_PUNCH_B)
+            return MWA_PUNCH_C;
+    }
+    return MWA_PUNCH_A;
+}
+
+PATCH_CALL(0x8084e090, TransformOot_GetMeleeWeaponAnim);
+
+/* func_80837948: every melee attack start */
+static void TransformOot_StartMeleeAttack(PlayState* play, Player* player, s32 mwa)
+{
+    void (*Player_StartMeleeAttack)(PlayState*, Player*, s32);
+
+    Player_StartMeleeAttack = OverlayAddr(OOT_PLAYER_START_MELEE_ATTACK);
+    if (TransformOot_Punches() && TransformOot_IsPunch(mwa))
+    {
+        /* No OoT third-slash variant (+2): the punch order is MM's */
+        player->unk_845 = 0;
+        Player_StartMeleeAttack(play, player, mwa);
+
+        /* MM keeps the combo open for the punch's length + 4 frames (OoT: 8) */
+        player->unk_844 = (s8)(player->skelAnime.animLength + 4.0f);
+        sPunchQueued = 0;
+        return;
+    }
+
+    if (sDrawnForm == TRANSFORM_OOT_FORM_ZORA && mwa == MWA_FLIPSLASH_START)
+        mwa = MWA_JUMPSLASH_START;
+    Player_StartMeleeAttack(play, player, mwa);
+}
+
+PATCH_CALL(0x80839b68, TransformOot_StartMeleeAttack);
+PATCH_CALL(0x80842c6c, TransformOot_StartMeleeAttack);
+PATCH_CALL(0x80842d44, TransformOot_StartMeleeAttack);
+PATCH_CALL(0x8084e0a4, TransformOot_StartMeleeAttack);
+
+/* Player_ActionHandler_8: Goron and Zora can't charge a spin attack, like in MM */
+static void TransformOot_StartSpinCharge(PlayState* play, Player* player)
+{
+    void (*Player_StartSpinCharge)(PlayState*, Player*);
+
+    if (TransformOot_Punches())
+        return;
+
+    Player_StartSpinCharge = OverlayAddr(OOT_PLAYER_START_SPIN_CHARGE);
+    Player_StartSpinCharge(play, player);
+}
+
+PATCH_CALL(0x8083a6cc, TransformOot_StartSpinCharge);
+
+/* func_8083BA90: jump attacks. Zora jump kicks (MM's func_808395F0), Goron rolls instead (MM has no Goron jump attack) */
+static void TransformOot_StartJumpAttack(PlayState* play, Player* player, s32 mwa, f32 xzSpeed, f32 yVelocity)
+{
+    void (*Player_StartJumpAttack)(PlayState*, Player*, s32, f32, f32);
+    void (*Player_SetupRoll)(Player*, PlayState*);
+
+    if (sDrawnForm == TRANSFORM_OOT_FORM_GORON)
+    {
+        Player_SetupRoll = OverlayAddr(OOT_PLAYER_SETUP_ROLL);
+        Player_SetupRoll(player, play);
+        return;
+    }
+
+    if (sDrawnForm == TRANSFORM_OOT_FORM_ZORA)
+    {
+        mwa = MWA_JUMPSLASH_START;
+        xzSpeed *= 1.1f;
+        yVelocity *= 0.9f;
+    }
+
+    Player_StartJumpAttack = OverlayAddr(OOT_PLAYER_START_JUMP_ATTACK);
+    Player_StartJumpAttack(play, player, mwa, xzSpeed, yVelocity);
+}
+
+PATCH_CALL(0x80839ca8, TransformOot_StartJumpAttack);
+PATCH_CALL(0x80839fcc, TransformOot_StartJumpAttack);
+
+/* Player_Action_8084411C: B in the air. No jump attack for Goron */
+static s32 TransformOot_TryAirAttack(Player* player, PlayState* play)
+{
+    s32 (*Player_TryAirAttack)(Player*, PlayState*);
+
+    if (sDrawnForm == TRANSFORM_OOT_FORM_GORON)
+        return 0;
+
+    Player_TryAirAttack = OverlayAddr(OOT_PLAYER_TRY_AIR_ATTACK);
+    return Player_TryAirAttack(player, play);
+}
+
+PATCH_CALL(0x80842324, TransformOot_TryAirAttack);
+
+/*
+ * MM buffers B during a punch and chains the next one when it ends (Player_Action_84). OoT's attack action only
+ * reads B on the frame the animation ends, so a B pressed during the punch is replayed on that frame.
+ */
+static void TransformOot_QueuePunch(PlayState* play, Player* player)
+{
+    u16* press;
+
+    sInjectedB = 0;
+    if (!TransformOot_Punches() || player->actionFunc != OverlayAddr(OOT_PLAYER_ACTION_MELEE_ATTACK)
+        || (player->meleeWeaponAnimation != MWA_PUNCH_A && player->meleeWeaponAnimation != MWA_PUNCH_B))
+    {
+        sPunchQueued = 0;
+        return;
+    }
+
+    press = &play->state.input[0].press.button;
+    if (*press & BTN_B)
+    {
+        sPunchQueued = 1;
+        return;
+    }
+
+    /* LinkAnimation_Once reports the end on the frame curFrame is already endFrame */
+    if (sPunchQueued && player->skelAnime.curFrame == player->skelAnime.endFrame)
+    {
+        *press |= BTN_B;
+        sInjectedB = 1;
+    }
+}
+
+static void TransformOot_ClearQueuedPunch(PlayState* play)
+{
+    if (!sInjectedB)
+        return;
+
+    play->state.input[0].press.button &= ~BTN_B;
+    sInjectedB = 0;
+}
+
+/* Deku spin: MM's func_80839A84 / func_808373A4 / Player_Action_95 */
+static void TransformOot_DekuSpinAction(Player* player, PlayState* play);
+
+static void TransformOot_StartDekuSpin(PlayState* play, Player* player)
+{
+    void (*Player_AnimChangeOnceMorph)(PlayState*, Player*, LinkAnimationHeader*);
+
+    Player_SetupActionOoT(play, player, TransformOot_DekuSpinAction, 0);
+    player->stateFlags1 &= ~(PLAYER_STATE1_PARALLEL | PLAYER_STATE1_LOCK_ON_FORCED_TO_RELEASE);
+
+    Player_AnimChangeOnceMorph = OverlayAddr(OOT_PLAYER_ANIM_CHANGE_ONCE_MORPH);
+    Player_AnimChangeOnceMorph(play, player, ANIM(gPlayerAnim_pn_attack));
+
+    /* Spin speed (binary angle per frame) and the angle left: three turns */
+    sSpinSpeed = 20000.0f;
+    sSpinLeft = 0x30000;
+    Player_PlaySfx(player, NA_SE_IT_SWORD_SWING_HARD);
+}
+
+static void TransformOot_SpinAttack(PlayState* play, Player* player)
+{
+    if (sSpinColliderOwner != &player->actor)
+    {
+        Collider_InitCylinder(play, &sSpinCollider);
+        Collider_SetCylinder(play, &sSpinCollider, &player->actor, &sSpinColliderInit);
+        sSpinColliderOwner = &player->actor;
+    }
+
+    Collider_UpdateCylinder(&player->actor, &sSpinCollider);
+    CollisionCheck_SetAT(play, &play->colChkCtx, &sSpinCollider.base);
+}
+
+static void TransformOot_DekuSpinAction(Player* player, PlayState* play)
+{
+    s32 (*LinkAnimation_Update)(PlayState*, SkelAnime*);
+    s32 (*Player_GetMovementSpeedAndYaw)(Player*, f32*, s16*, f32, PlayState*);
+    void (*Player_SetupIdle)(Player*, PlayState*);
+    f32 speedTarget;
+    s16 yawTarget;
+    s16 prevYaw;
+    s16 yawDiff;
+    s32 braking;
+
+    /* Player_UpdateShapeYaw leaves the spinning model alone */
+    player->stateFlags2 |= PLAYER_STATE2_5 | PLAYER_STATE2_6;
+
+    LinkAnimation_Update = (void*)OOT_LINK_ANIMATION_UPDATE;
+    LinkAnimation_Update(play, &player->skelAnime);
+    TransformOot_SpinAttack(play, player);
+
+    /* Steering slows down with the spin */
+    prevYaw = player->yaw;
+    Player_GetMovementSpeedAndYaw = OverlayAddr(OOT_PLAYER_GET_SPEED_AND_YAW);
+    Player_GetMovementSpeedAndYaw(player, &speedTarget, &yawTarget, SPEED_MODE_CURVED, play);
+    speedTarget *= 1.0f - (0.9f * ((11100.0f - sSpinSpeed) / 11100.0f));
+
+    /* func_8083A4A4: brake before turning around */
+    braking = 0;
+    yawDiff = player->yaw - yawTarget;
+    if (ABS(yawDiff) > 0x6000)
+    {
+        if (Math_StepToF(&player->speedXZ, 0.0f, R_DECELERATE_RATE / 100.0f))
+        {
+            speedTarget = 0.0f;
+            yawTarget = player->yaw;
+        }
+        else
+        {
+            braking = 1;
+        }
+    }
+    if (!braking)
+    {
+        Math_AsymStepToF(&player->speedXZ, speedTarget, REG(19) / 100.0f, 1.5f);
+        Math_ScaledStepToS(&player->yaw, yawTarget, REG(27));
+    }
+
+    sSpinSpeed -= 800.0f;
+    player->actor.shape.rot.y += (s16)sSpinSpeed + (s16)(player->yaw - prevYaw);
+
+    if (Math_StepToF(&sSpinLeft, 0.0f, sSpinSpeed))
+    {
+        player->actor.shape.rot.y = player->yaw;
+        Player_SetupIdle = OverlayAddr(OOT_PLAYER_SETUP_IDLE);
+        Player_SetupIdle(player, play);
+    }
+}
+
+/* Player_ActionHandler_Roll: A spins as Deku, like MM's Player_ActionHandler_6 */
+static s32 TransformOot_TryRoll(Player* player, PlayState* play)
+{
+    s32 (*Player_TryRoll)(Player*, PlayState*);
+
+    if (sDrawnForm == TRANSFORM_OOT_FORM_DEKU && sState == TF_STATE_FORM)
+    {
+        TransformOot_StartDekuSpin(play, player);
+        return 1;
+    }
+
+    Player_TryRoll = OverlayAddr(OOT_PLAYER_TRY_ROLL);
+    return Player_TryRoll(player, play);
+}
+
+PATCH_CALL(0x8083a314, TransformOot_TryRoll);
+
+/* Player_ActionHandler_10: Z-target + A forward with no sword spins as Deku, like MM */
+static void TransformOot_SetupLockOnRoll(Player* player, PlayState* play)
+{
+    void (*Player_SetupRoll)(Player*, PlayState*);
+
+    if (sDrawnForm == TRANSFORM_OOT_FORM_DEKU && sState == TF_STATE_FORM)
+    {
+        TransformOot_StartDekuSpin(play, player);
+        return;
+    }
+
+    Player_SetupRoll = OverlayAddr(OOT_PLAYER_SETUP_ROLL);
+    Player_SetupRoll(player, play);
+}
+
+PATCH_CALL(0x80839fe0, TransformOot_SetupLockOnRoll);
+
 void TransformOot_BeforePlayerUpdate(Player* player, PlayState* play)
 {
     if (player != GET_PLAYER(play))
@@ -808,6 +1234,8 @@ void TransformOot_BeforePlayerUpdate(Player* player, PlayState* play)
         TransformOot_LendEquipment(player);
     }
     TransformOot_LendSword();
+    TransformOot_SwapAttackTable();
+    TransformOot_QueuePunch(play, player);
 }
 
 void TransformOot_AfterPlayerUpdate(Player* player, PlayState* play)
@@ -817,6 +1245,8 @@ void TransformOot_AfterPlayerUpdate(Player* player, PlayState* play)
     if (player != GET_PLAYER(play))
         return;
 
+    TransformOot_ClearQueuedPunch(play);
+    TransformOot_RestoreAttackTable();
     TransformOot_ReturnSword();
     TransformOot_ReturnEquipment(player);
 

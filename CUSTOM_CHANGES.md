@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-12: Goron and Zora punches, Zora jump kick and Deku spin in OoT
+
+- Where in the app: Items > Extended Items > Cross-Game Masks, OoT column of the "Deku Mask", "MM Goron Transformation Mask" and "MM Zora Transformation Mask" rows (no new control; this is what those items do).
+- What it does: the forms now attack like in MM, with MM's own animations. B as a Goron or Zora throws MM's three-hit punch combo (left, right, then the finisher); pressing B again during a punch queues the next one, like in MM. Goron punches hit like the hammer, Zora's like the Master Sword. Goron and Zora can't charge a spin attack. A Zora jump attack (B in the air, or Z-target + A) is MM's jump kick; a Goron has no jump attack (Z-target + A rolls). As a Deku Scrub, A spins (three turns, slowing down, steerable) and the spin hits like the Kokiri Sword. The 22 animations are streamed from MM's ROM like the existing Kamaro dance. How it hooks into OoT's sword code, and what is still not done: `docs/custom/transform-masks.md`.
+- Files: `packages/generator/src/oot/transform_mask.c` (attack table swap, combo order, jump kick, Deku spin action), `packages/generator/src/oot/patches/transform_mask_oot.S` (relocations of the redirected calls), `data/defs/link-animations.yml` and `packages/generator/include/combo/custom_animations.h` (MM animations), `docs/custom/transform-masks.md`
+
 ## 2026-10-12: Deku, Goron and Zora forms in OoT
 
 - Where in the app: Items > Extended Items > Cross-Game Masks, OoT column of the "Deku Mask", "MM Goron Transformation Mask" and "MM Zora Transformation Mask" rows (no new control; this is what those items do).
