@@ -512,6 +512,7 @@
 - { id: OOT_SHOVEL, type: MAJOR, add: [SAVE_FLAG, SAVE_FLAG_SHOVEL_OOT], flags: 0x80, draw: SHOVEL, object: GI_SHOVEL, name: "the <C1>Shovel" }
 - { id: OOT_MASK_GIANT, type: MASK, add: [OOT_TRADE_CHILD, XITEM_OOT_CHILD_MASK_GIANT], flags: 0x80, draw: MM_MASK_GIANT, object: [mm, 0x0226], name: "the <C1>Giant's Mask" }
 - { id: OOT_MASK_FIERCE_DEITY, type: MASK, add: [OOT_TRADE_CHILD, XITEM_OOT_CHILD_MASK_FIERCE_DEITY], flags: 0x80, draw: MM_MASK_FIERCE_DEITY, object: [mm, 0x0242], name: "the <C1>Fierce Deity's Mask" }
+- { id: OOT_MASK_DEKU, type: MASK, add: [OOT_TRADE_CHILD, XITEM_OOT_CHILD_MASK_DEKU], flags: 0x80, draw: MM_MASK_DEKU, object: [mm, 0x01bd], name: "the <C1>Deku Mask" }
 - { id: MM_RUPEE_GREEN, item: MM_RUPEE_GREEN, type: RUPEE, add: [MM_RUPEE, 1], flags: 0x00, draw: [RUPEE, 1], object: [mm, 0x013f], name: "a <C0>Green Rupee" }
 - { id: MM_RUPEE_BLUE, item: MM_RUPEE_BLUE, type: RUPEE, add: [MM_RUPEE, 5], flags: 0x01, draw: [RUPEE, 2], object: [mm, 0x013f], name: "a <C0>Blue Rupee" }
 - { id: MM_RUPEE_RED_10, item: MM_RUPEE_RED10, type: RUPEE, add: [MM_RUPEE, 10], flags: 0x02, draw: [RUPEE, 3], object: [mm, 0x013f], name: "a <C0>Red Rupee" }

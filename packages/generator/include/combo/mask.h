@@ -18,6 +18,7 @@
 # define MASK_KAMARO    0x0b
 # define MASK_GIANT     0x0c
 # define MASK_FIERCE_DEITY 0x0d
+# define MASK_DEKU      0x0e
 #endif
 
 #if defined(GAME_MM)
