@@ -54,6 +54,7 @@ More reference notes live in `docs/custom/`:
 - [cross-game-items.md](docs/custom/cross-game-items.md): every file to touch to bring an item into the other game, with a shared version (worked example: Giant's Mask in OoT). It also covers checking C code without the N64 toolchain.
 - [giant-mask.md](docs/custom/giant-mask.md): how the Giant's Mask works in both games, what is scaled, the OoT movement hooks, and the game addresses used.
 - [fierce-deity.md](docs/custom/fierce-deity.md): how the OoT Fierce Deity's Mask draws MM's model, its sword beam, and what still needs checking in game.
+- [transform-masks.md](docs/custom/transform-masks.md): the Deku Mask and the MM Goron and Zora Transformation Masks in OoT: items, forms, per-form data, hooks, and what is left to do.
 - [oot-addresses.md](docs/custom/oot-addresses.md): finding OoT 1.0 addresses without the ROM (rebuilt from the decomp), and the rules for hooking the player overlay.
 
 A custom setting can also use an upstream category when it belongs next to upstream options, as long as it stays in `custom.ts`. The Giant's Mask (OoT) settings use `items.extensions.crossGame.masks`, so they show in Items > Extended Items > Cross-Game Masks with the other masks.

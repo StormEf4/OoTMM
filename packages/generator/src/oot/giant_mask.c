@@ -9,6 +9,7 @@
 #include <combo/age.h>
 #include <combo/oot/giant_mask.h>
 #include <combo/oot/fierce_deity.h>
+#include <combo/oot/transform_mask.h>
 
 /*
  * Giant's Mask (OoT)
@@ -401,6 +402,10 @@ float GiantMaskOot_PlayerGetHeight(Player* player)
     /* Fierce Deity's Mask uses MM's Fierce Deity height */
     if (player->actor.id == ACTOR_PLAYER && FierceDeityOot_IsFdForm())
         return ((player->stateFlags1 & PLAYER_STATE1_23) ? 32.0f : 0.0f) + FierceDeityOot_GetHeight();
+
+    /* Deku, Goron and Zora use MM's heights */
+    if (player->actor.id == ACTOR_PLAYER && TransformOot_GetForm() != TRANSFORM_OOT_FORM_NONE)
+        return ((player->stateFlags1 & PLAYER_STATE1_23) ? 32.0f : 0.0f) + TransformOot_GetHeight(player);
 
     height = (player->stateFlags1 & PLAYER_STATE1_23) ? 32.0f : 0.0f;
     height += (gSave.age == AGE_ADULT) ? 68.0f : 44.0f;

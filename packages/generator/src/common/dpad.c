@@ -17,6 +17,7 @@
 #if defined(GAME_OOT)
 # include <combo/oot/giant_mask.h>
 # include <combo/oot/fierce_deity.h>
+# include <combo/oot/transform_mask.h>
 #endif
 
 #define DPAD_DOWN   0
@@ -94,9 +95,13 @@ static int canUseDpadItem(PlayState* play, s16 itemId, int flags)
     if (GiantMaskOot_IsGiant())
         return itemId == ITEM_OOT_MASK_GIANT && !GiantMaskOot_IsTransforming();
 
-    /* Same for Fierce Deity */
+    /* Same for Fierce Deity, which can also switch to another form */
     if (FierceDeityOot_IsActive())
-        return itemId == ITEM_OOT_MASK_FIERCE_DEITY && !FierceDeityOot_IsTransforming();
+        return (itemId == ITEM_OOT_MASK_FIERCE_DEITY || TransformOot_IsFormMaskItem(itemId)) && !FierceDeityOot_IsTransforming();
+
+    /* Deku, Goron and Zora forms: the items they can use in MM */
+    if (TransformOot_IsActive())
+        return TransformOot_CanUseItem(itemId);
 #endif
 
 #if defined(GAME_MM)

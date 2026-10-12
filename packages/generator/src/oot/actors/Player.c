@@ -14,6 +14,7 @@
 #include <combo/oot/player_action.h>
 #include <combo/oot/giant_mask.h>
 #include <combo/oot/fierce_deity.h>
+#include <combo/oot/transform_mask.h>
 #include <actors/Custom_En_Bom/Custom_En_Bom.h>
 
 void ArrowCycle_Handle(Player* link, PlayState* play);
@@ -81,11 +82,20 @@ void Player_UseItem(PlayState* play, Player* link, s16 itemId)
 
     prevMask = link->mask;
 
-    /* A giant or Fierce Deity can only use the sword, and the mask to take it off */
+    /* A giant or Fierce Deity can only use the sword, and the mask to take it off (Fierce Deity can also switch to another form) */
     if (!Player_IsAllowedWhileTransformed(itemId)
-        && ((GiantMaskOot_IsGiant() && itemId != ITEM_OOT_MASK_GIANT) || (FierceDeityOot_IsActive() && itemId != ITEM_OOT_MASK_FIERCE_DEITY)))
+        && ((GiantMaskOot_IsGiant() && itemId != ITEM_OOT_MASK_GIANT) || (FierceDeityOot_IsActive() && itemId != ITEM_OOT_MASK_FIERCE_DEITY && !TransformOot_IsFormMaskItem(itemId))))
     {
         PlaySound(NA_SE_SY_ERROR);
+        return;
+    }
+
+    /* Deku, Goron and Zora forms: the items they can use in MM */
+    if (!TransformOot_CanUseItem(itemId))
+    {
+        /* Deku has no sword: B does nothing rather than buzz */
+        if (!Player_IsAllowedWhileTransformed(itemId))
+            PlaySound(NA_SE_SY_ERROR);
         return;
     }
 
@@ -110,7 +120,15 @@ void Player_UseItem(PlayState* play, Player* link, s16 itemId)
         GiantMaskOot_UseMask(play, link);
         break;
     case ITEM_OOT_MASK_FIERCE_DEITY:
+        /* From a Deku, Goron or Zora form: back to Link first */
+        if (TransformOot_IsActive())
+            TransformOot_ForceLeave(play, link);
         FierceDeityOot_UseMask(play, link);
+        break;
+    case ITEM_OOT_MASK_DEKU:
+    case ITEM_OOT_MASK_GORON_MM_TRANSFORM:
+    case ITEM_OOT_MASK_ZORA_MM_TRANSFORM:
+        TransformOot_UseMask(play, link, itemId);
         break;
     case ITEM_OOT_BOOTS_IRON:
         Player_UseBoots(play, link, 2);
@@ -325,6 +343,21 @@ static void DrawExtendedMaskFierceDeity(PlayState* play, Player* link)
     CLOSE_DISPS();
 }
 
+static void DrawExtendedMaskDeku(PlayState* play, Player* link)
+{
+    TransformOot_DrawMask(play, link, TRANSFORM_OOT_FORM_DEKU);
+}
+
+static void DrawExtendedMaskGoronMmTransform(PlayState* play, Player* link)
+{
+    TransformOot_DrawMask(play, link, TRANSFORM_OOT_FORM_GORON);
+}
+
+static void DrawExtendedMaskZoraMmTransform(PlayState* play, Player* link)
+{
+    TransformOot_DrawMask(play, link, TRANSFORM_OOT_FORM_ZORA);
+}
+
 typedef void (*MaskCallback)(PlayState*, Player*);
 
 static const MaskCallback kMaskCallbacks[] = {
@@ -341,6 +374,9 @@ static const MaskCallback kMaskCallbacks[] = {
     DrawExtendedMaskKamaro,
     DrawExtendedMaskGiant,
     DrawExtendedMaskFierceDeity,
+    DrawExtendedMaskDeku,
+    DrawExtendedMaskGoronMmTransform,
+    DrawExtendedMaskZoraMmTransform,
 };
 
 void comboDrawExtendedMask(void)
@@ -495,9 +531,11 @@ void Player_UpdateWrapper(Player* this, PlayState* play)
     sKamaroInputValid = 0;
     GiantMaskOot_BeforePlayerUpdate(this, play);
     FierceDeityOot_BeforePlayerUpdate(this, play);
+    TransformOot_BeforePlayerUpdate(this, play);
     Player_Update(this, play);
     GiantMaskOot_AfterPlayerUpdate(this, play);
     FierceDeityOot_AfterPlayerUpdate(this, play);
+    TransformOot_AfterPlayerUpdate(this, play);
     input = *(Input**)(OverlayAddr(0x80856734));
     kamaroInput = sKamaroInputValid ? &sKamaroInput : input;
     if (!(this->stateFlags1 & (PLAYER_ACTOR_STATE_HOLD_ITEM | PLAYER_ACTOR_STATE_CUTSCENE_FROZEN)) && !Player_UsingItem(this) && GET_PLAYER(play)->rideActor == NULL)
@@ -1032,6 +1070,10 @@ void Player_DrawFlexLod(PlayState* play, void** skeleton, Vec3s* jointTable, s32
     if (arg == GET_PLAYER(play) && FierceDeityOot_DrawSkeleton(play, jointTable, dListCount, overrideLimbDraw, postLimbDraw, arg, lod))
         return;
 
+    /* Deku, Goron and Zora forms: draw MM's form model */
+    if (arg == GET_PLAYER(play) && TransformOot_DrawSkeleton(play, jointTable, dListCount, overrideLimbDraw, postLimbDraw, arg, lod))
+        return;
+
     /* Load hookshot data if child */
     if (gSave.age == AGE_CHILD)
     {
@@ -1121,7 +1163,7 @@ PATCH_FUNC(0x80079af8, Player_GetStrength);
 
 static int Player_IsStrengthGoronBracelet(void)
 {
-    if (FierceDeityOot_IsFdForm())
+    if (FierceDeityOot_IsFdForm() || TransformOot_GetForm() != TRANSFORM_OOT_FORM_NONE)
         return 0;
     return Player_GetStrength() == 1;
 }
@@ -1690,6 +1732,7 @@ void Player_AfterInit(PlayState* play)
     Player_ResetKamaroMaskStateOoT(player);
     GiantMaskOot_Reset(play, player);
     FierceDeityOot_Reset(play, player);
+    TransformOot_AfterPlayerInit(play, player);
 
     Player_SetLastSafePos(play, player);
     gPlayerLastSafeExists = 0;
