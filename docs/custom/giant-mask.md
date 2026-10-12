@@ -21,7 +21,7 @@ OoT has no Giant's Mask code at all, so this is new. The transformation is in C;
 
 **While giant:**
 - Magic drains 1 point every 20 frames (none while the Chateau Romani effect is active). At 0 magic the mask comes off.
-- Every item except the Giant's Mask is blocked (`Player_UseItem` in `src/oot/actors/Player.c`, and `canUseDpadItem` in `src/common/dpad.c`).
+- Every item except the sword (B button) and the Giant's Mask is blocked (`Player_UseItem` and `Player_IsAllowedWhileTransformed` in `src/oot/actors/Player.c`, and `canUseDpadItem` in `src/common/dpad.c`). The B-button sword goes through `Player_UseItem` too, so the swords and `ITEM_NONE` (putting items away) must stay allowed, or Link can't attack.
 - The sword gets `DMG_EXPLOSIVE | DMG_HAMMER_SWING` so it breaks what a hammer or bomb would.
 - Leaving the area (`Player_AfterInit` calls `GiantMaskOot_Reset`) takes the mask off and restores everything.
 

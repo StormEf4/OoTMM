@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-12: Sword works while giant or Fierce Deity in OoT
+
+- Where in the app: Items > Extended Items > Cross-Game Masks, OoT column of the "Giant's Mask" and "Fierce Deity's Mask" rows (no new control; fixes those items).
+- What it does: the B-button sword now swings while wearing the OoT Giant's or Fierce Deity's Mask. The item block also caught the sword, because OoT sends the B button through the same `Player_UseItem` call as the C buttons, so Link couldn't attack at all, and Fierce Deity's sword beams (which fire on Z-targeted slashes) never had a slash to fire from. Other items stay blocked.
+- Files: `packages/generator/src/oot/actors/Player.c` (`Player_IsAllowedWhileTransformed`), `docs/custom/giant-mask.md`, `docs/custom/fierce-deity.md`
+
 ## 2026-10-12: Fierce Deity always holds his sword in OoT
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "Fierce Deity's Mask" row, OoT column (no new control; fixes that item).

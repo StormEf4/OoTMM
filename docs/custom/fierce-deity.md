@@ -11,7 +11,7 @@ Reference for future changes. Settings: `fierceDeityMaskOot` and `sharedMaskFier
   - The adult age properties are scaled by 1.5, for a child Link too; MM's Fierce Deity values are exactly OoT adult × 1.5.
   - The sword hits like Biggoron's Sword (4, or 8 for jump attacks, same as MM) and reaches 5500 units.
   - A slash while Z-targeting fires a sword beam for 1 magic: 80 units per frame, about 20 frames, damage 3 as `DMG_SPIN_GIANT`.
-  - Every other item is blocked.
+  - Every other item is blocked; the sword on B still works (`Player_IsAllowedWhileTransformed` in OoT `Player.c`).
 - The mask comes off when the item is used again, when something else removes the mask, or when Link leaves the area.
 
 ## How the model is drawn (C only)

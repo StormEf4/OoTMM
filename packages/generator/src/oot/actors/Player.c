@@ -58,6 +58,22 @@ static void Player_UseBoots(PlayState* play, Player* this, int bootsId)
     PlaySound(0x835);
 }
 
+/* What a giant or Fierce Deity can still do with the item buttons: swing the sword and put items away */
+static int Player_IsAllowedWhileTransformed(s16 itemId)
+{
+    switch (itemId)
+    {
+    case ITEM_NONE:
+    case ITEM_OOT_SWORD_KOKIRI:
+    case ITEM_OOT_SWORD_MASTER:
+    case ITEM_OOT_SWORD_KNIFE_BIGGORON:
+    case ITEM_OOT_SWORD_KNIFE_BROKEN:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 void Player_UseItem(PlayState* play, Player* link, s16 itemId)
 {
     void (*Player_UseItemImpl)(PlayState* play, Player* link, s16 itemId);
@@ -65,8 +81,9 @@ void Player_UseItem(PlayState* play, Player* link, s16 itemId)
 
     prevMask = link->mask;
 
-    /* A giant or Fierce Deity can't use any item, except for taking the mask off */
-    if ((GiantMaskOot_IsGiant() && itemId != ITEM_OOT_MASK_GIANT) || (FierceDeityOot_IsActive() && itemId != ITEM_OOT_MASK_FIERCE_DEITY))
+    /* A giant or Fierce Deity can only use the sword, and the mask to take it off */
+    if (!Player_IsAllowedWhileTransformed(itemId)
+        && ((GiantMaskOot_IsGiant() && itemId != ITEM_OOT_MASK_GIANT) || (FierceDeityOot_IsActive() && itemId != ITEM_OOT_MASK_FIERCE_DEITY)))
     {
         PlaySound(NA_SE_SY_ERROR);
         return;
