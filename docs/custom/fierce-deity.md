@@ -10,7 +10,7 @@ Reference for future changes. Settings: `fierceDeityMaskOot` and `sharedMaskFier
   - Link is drawn with MM's Fierce Deity model at scale 0.015, and runs 1.5× faster.
   - The adult age properties are scaled by 1.5, for a child Link too; MM's Fierce Deity values are exactly OoT adult × 1.5.
   - The sword hits like Biggoron's Sword (4, or 8 for jump attacks, same as MM) and reaches 5500 units.
-  - A slash while Z-targeting fires a sword beam for 1 magic: 80 units per frame, about 20 frames, damage 3 as `DMG_SPIN_GIANT`.
+  - A slash while Z-targeting fires a sword beam for 1 magic: 80 units per frame, about 20 frames, damage 3 as `DMG_SPIN_GIANT`. The magic is taken directly (`magic -= 1`) instead of through `Magic_RequestChange`: OoT's consume state drains 2 per frame and only stops on an exact match, so any odd cost empties the meter.
   - Every other item is blocked; the sword on B still works (`Player_IsAllowedWhileTransformed` in OoT `Player.c`).
   - He always has a sword, like in MM, even with no sword in the inventory or something else on B. `FierceDeityOot_LendSword` puts the Master Sword (Kokiri Sword for child Link) on B only while `Player_Update` runs, where OoT reads the B button, and `FierceDeityOot_ReturnSword` puts the real B item back right after. The HUD, pause menu and save never see the lent sword.
 - The mask comes off when the item is used again, when something else removes the mask, or when Link leaves the area.

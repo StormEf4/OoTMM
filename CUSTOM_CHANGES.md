@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-12: Fix: Fierce Deity's sword beam drained all magic (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "Fierce Deity's Mask" row, OoT column (no new control; fixes that item).
+- What it does: each sword beam now costs exactly 1 magic, like in MM. Before, one beam emptied the meter because OoT's magic drain takes 2 points per frame and only stops when it lands exactly on the target, which an odd cost never does. The beam now takes its 1 point directly; no beam fires with an empty meter, and the Chateau Romani still makes it free.
+- Files: `packages/generator/src/oot/fierce_deity.c`, `docs/custom/fierce-deity.md`
+
 ## 2026-10-12: Fix: Fierce Deity's sword beam crashed the game (OoT)
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "Fierce Deity's Mask" row, OoT column (no new control; fixes that item).

@@ -573,11 +573,19 @@ static void FierceDeityOot_SpawnBeam(PlayState* play, Player* player)
     if (!beam)
         return;
 
-    /* 1 magic, like MM */
+    /*
+     * 1 magic, like MM. Taken directly: OoT's consume state drains 2 per
+     * frame and only stops on an exact match, so an odd cost like 1 would
+     * overshoot and empty the whole meter.
+     */
     if (!gSave.info.playerData.isMagicAcquired || gSaveContext.magicState != MAGIC_STATE_IDLE)
         return;
-    if (!comboIsChateauActive() && !Magic_RequestChangeCustom(play, 1, MAGIC_CONSUME_NOW))
-        return;
+    if (!comboIsChateauActive())
+    {
+        if (gSave.info.playerData.magic < 1)
+            return;
+        gSave.info.playerData.magic -= 1;
+    }
 
     FierceDeityOot_LoadBeamData();
 
