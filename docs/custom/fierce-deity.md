@@ -25,7 +25,7 @@ Reference for future changes. Settings: `fierceDeityMaskOot` and `sharedMaskFier
   - draws the FD limb table;
   - restores segment 6 and the age.
 - **Limb override:** `FierceDeityOot_OverrideLimbDraw` calls the vanilla override (head look, IK, body part positions, OoTMM's wrappers) and then puts back the FD display list.
-  - The left hand holding a sword uses `0x060080F0` (`gLinkFierceDeityLeftHandHoldingSwordDL`).
+  - The left hand always uses `0x060080F0` (`gLinkFierceDeityLeftHandHoldingSwordDL`, hand plus sword), like MM where Fierce Deity never sheathes his sword. Only a bottle, boomerang or hammer in that hand falls back to the empty hand. (The first version only showed the sword while OoT Link had his sword out, so Fierce Deity walked around empty-handed.)
   - In first person it draws nothing.
   - It resets the env color to white, because OoTMM tints some limbs with the tunic color.
   - The vanilla post-limb draw is kept, because sword collision depends on it.

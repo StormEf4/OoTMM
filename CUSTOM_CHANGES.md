@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-12: Fierce Deity always holds his sword in OoT
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "Fierce Deity's Mask" row, OoT column (no new control; fixes that item).
+- What it does: Fierce Deity now always has his sword in his left hand, like in MM. Before, the sword only showed while OoT Link had his sword drawn, so Fierce Deity walked around empty-handed.
+- Files: `packages/generator/src/oot/fierce_deity.c` (`FierceDeityOot_ShowsSword`), `docs/custom/fierce-deity.md`
+
 ## 2026-10-11: Giant's Mask in Ocarina of Time moves like in MM
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "Giant's Mask" row, OoT column (same toggle as before; the new behavior is always on with it).

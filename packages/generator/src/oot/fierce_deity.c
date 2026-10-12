@@ -508,6 +508,20 @@ static s32 FierceDeityOot_HoldsSword(Player* player)
         || player->leftHandType == PLAYER_MODELTYPE_LH_BGS;
 }
 
+/* Like in MM, Fierce Deity always has his sword in hand, even when OoT Link would have it sheathed */
+static s32 FierceDeityOot_ShowsSword(Player* player)
+{
+    switch (player->leftHandType)
+    {
+    case PLAYER_MODELTYPE_LH_HAMMER:
+    case PLAYER_MODELTYPE_LH_BOOMERANG:
+    case PLAYER_MODELTYPE_LH_BOTTLE:
+        return 0;
+    default:
+        return 1;
+    }
+}
+
 static void FierceDeityOot_LoadBeamData(void)
 {
     const ObjectData* keep;
@@ -677,7 +691,7 @@ static s32 FierceDeityOot_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx**
 
     if (sDrawFirstPerson)
         *dList = NULL;
-    else if (limbIndex == PLAYER_LIMB_L_HAND && fdList != NULL && FierceDeityOot_HoldsSword(player))
+    else if (limbIndex == PLAYER_LIMB_L_HAND && fdList != NULL && FierceDeityOot_ShowsSword(player))
         *dList = (Gfx*)FD_DL_LHAND_SWORD;
     else
         *dList = fdList;
