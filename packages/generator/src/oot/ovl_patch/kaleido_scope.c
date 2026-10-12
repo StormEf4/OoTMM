@@ -1977,6 +1977,14 @@ void KaleidoScope_LoadItemName(void* dst, s16 id)
     {
         comboLoadMmIcon(dst, 0xa27660, ITEM_MM_MASK_DEKU);
     }
+    else if (itemId == ITEM_OOT_MASK_GORON_MM_TRANSFORM)
+    {
+        comboLoadMmIcon(dst, 0xa27660, ITEM_MM_MASK_GORON);
+    }
+    else if (itemId == ITEM_OOT_MASK_ZORA_MM_TRANSFORM)
+    {
+        comboLoadMmIcon(dst, 0xa27660, ITEM_MM_MASK_ZORA);
+    }
     else if (itemId == ITEM_OOT_KEATON_MASK)
     {
         /* Fixes 1.0 spelling mistake */

@@ -168,7 +168,9 @@
 #define ITEM_OOT_MASK_GIANT             0xa9
 #define ITEM_OOT_MASK_FIERCE_DEITY      0xaa
 #define ITEM_OOT_MASK_DEKU              0xab
-#define ITEM_OOT_CUSTOM_MAX             0xac
+#define ITEM_OOT_MASK_GORON_MM_TRANSFORM   0xac
+#define ITEM_OOT_MASK_ZORA_MM_TRANSFORM    0xad
+#define ITEM_OOT_CUSTOM_MAX             0xae
 
 #if defined(GAME_OOT)
 # define ITEM_STICK                     ITEM_OOT_STICK
@@ -325,6 +327,8 @@
 # define ITEM_MASK_GIANT                ITEM_OOT_MASK_GIANT
 # define ITEM_MASK_FIERCE_DEITY         ITEM_OOT_MASK_FIERCE_DEITY
 # define ITEM_MASK_DEKU                 ITEM_OOT_MASK_DEKU
+# define ITEM_MASK_GORON_MM_TRANSFORM      ITEM_OOT_MASK_GORON_MM_TRANSFORM
+# define ITEM_MASK_ZORA_MM_TRANSFORM       ITEM_OOT_MASK_ZORA_MM_TRANSFORM
 # define ITEM_GREAT_FAIRY_SWORD         ITEM_OOT_GREAT_FAIRY_SWORD
 #endif
 
@@ -594,6 +598,8 @@
 #define XITEM_OOT_CHILD_MASK_GIANT      0xf
 #define XITEM_OOT_CHILD_MASK_FIERCE_DEITY 0x10 /* Stored in gSharedCustomSave.ootTradeChildExt */
 #define XITEM_OOT_CHILD_MASK_DEKU       0x11 /* Stored in gSharedCustomSave.ootTradeChildExt */
+#define XITEM_OOT_CHILD_MASK_GORON_MM_TRANSFORM 0x12 /* Stored in gSharedCustomSave.ootTradeChildExt */
+#define XITEM_OOT_CHILD_MASK_ZORA_MM_TRANSFORM  0x13 /* Stored in gSharedCustomSave.ootTradeChildExt */
 
 #define XITEM_OOT_ADULT_POCKET_EGG              0x0
 #define XITEM_OOT_ADULT_POCKET_CUCCO            0x1

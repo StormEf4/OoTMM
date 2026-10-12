@@ -248,6 +248,8 @@ const ITEM_POOL_PLENTIFUL = new Set([
   Items.SHARED_MASK_GIANT,
   Items.OOT_MASK_FIERCE_DEITY,
   Items.OOT_MASK_DEKU,
+  Items.OOT_MASK_GORON_MM_TRANSFORM,
+  Items.OOT_MASK_ZORA_MM_TRANSFORM,
   Items.MM_MASK_SCENTS,
   Items.MM_MASK_KAFEI,
   Items.MM_MAGIC_UPGRADE,
@@ -978,6 +980,19 @@ class LogicPassWorldTransform {
       this.replaceItem(Items.MM_MASK_DEKU, Items.SHARED_MASK_DEKU);
     } else if (settings.dekuMaskOot) {
       this.addItem(Items.OOT_MASK_DEKU);
+    }
+
+    /* Fork: MM Goron and Zora Masks in OoT (custom.ts). OoT's own Goron and Zora Masks are unchanged. */
+    if (settings.sharedMaskGoronMmTransform && !settings.sharedMaskGoron) {
+      this.replaceItem(Items.MM_MASK_GORON, Items.SHARED_MASK_GORON_MM_TRANSFORM);
+    } else if (settings.goronMmTransformMaskOot) {
+      this.addItem(Items.OOT_MASK_GORON_MM_TRANSFORM);
+    }
+
+    if (settings.sharedMaskZoraMmTransform && !settings.sharedMaskZora) {
+      this.replaceItem(Items.MM_MASK_ZORA, Items.SHARED_MASK_ZORA_MM_TRANSFORM);
+    } else if (settings.zoraMmTransformMaskOot) {
+      this.addItem(Items.OOT_MASK_ZORA_MM_TRANSFORM);
     }
 
     if (settings.sharedMaskGerudo) {

@@ -935,6 +935,10 @@ static void FileSelect_CustomFileInfoPrepareOotInventory(FileSelectState* this, 
         x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_FIERCE_DEITY | ICONF_MM, !!(OotTradeChild_GetSaveFlags() & (1u << XITEM_OOT_CHILD_MASK_FIERCE_DEITY)));
     if (Config_Flag(CFG_CUSTOM_DEKU_MASK_OOT))
         x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_DEKU | ICONF_MM, !!(OotTradeChild_GetSaveFlags() & (1u << XITEM_OOT_CHILD_MASK_DEKU)));
+    if (Config_Flag(CFG_CUSTOM_GORON_MM_TRANSFORM_MASK_OOT))
+        x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_GORON | ICONF_MM, !!(OotTradeChild_GetSaveFlags() & (1u << XITEM_OOT_CHILD_MASK_GORON_MM_TRANSFORM)));
+    if (Config_Flag(CFG_CUSTOM_ZORA_MM_TRANSFORM_MASK_OOT))
+        x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_ZORA | ICONF_MM, !!(OotTradeChild_GetSaveFlags() & (1u << XITEM_OOT_CHILD_MASK_ZORA_MM_TRANSFORM)));
 
     /* Row 5 - Adult Trade */
     x = startX;

@@ -206,6 +206,8 @@ int SpecialConds_Eval(int special)
     u8 hasMaskGiant;
     u8 hasMaskFierceDeity;
     u8 hasMaskDeku;
+    u8 hasMaskGoronMmTransform;
+    u8 hasMaskZoraMmTransform;
     u8 hasMaskGerudo;
     u8 hasMaskSkull;
     u8 hasMaskSpooky;
@@ -223,6 +225,8 @@ int SpecialConds_Eval(int special)
     hasMaskGiant = 0;
     hasMaskFierceDeity = 0;
     hasMaskDeku = 0;
+    hasMaskGoronMmTransform = 0;
+    hasMaskZoraMmTransform = 0;
     hasMaskGerudo = 0;
     hasMaskSkull = 0;
     hasMaskSpooky = 0;
@@ -363,6 +367,10 @@ int SpecialConds_Eval(int special)
         {
             if (gMmSave.info.inventory.items[ITS_MM_MASK_ZORA] == ITEM_MM_MASK_ZORA) hasMaskZora = 1;
         }
+        else if (Config_Flag(CFG_CUSTOM_SHARED_MASK_ZORA_MM_TRANSFORM))
+        {
+            if (gMmSave.info.inventory.items[ITS_MM_MASK_ZORA] == ITEM_MM_MASK_ZORA) hasMaskZoraMmTransform = 1;
+        }
         else
         {
             if (gMmSave.info.inventory.items[ITS_MM_MASK_ZORA] == ITEM_MM_MASK_ZORA) count++;
@@ -371,6 +379,10 @@ int SpecialConds_Eval(int special)
         if (Config_Flag(CFG_SHARED_MASK_GORON))
         {
             if (gMmSave.info.inventory.items[ITS_MM_MASK_GORON] == ITEM_MM_MASK_GORON) hasMaskGoron = 1;
+        }
+        else if (Config_Flag(CFG_CUSTOM_SHARED_MASK_GORON_MM_TRANSFORM))
+        {
+            if (gMmSave.info.inventory.items[ITS_MM_MASK_GORON] == ITEM_MM_MASK_GORON) hasMaskGoronMmTransform = 1;
         }
         else
         {
@@ -496,6 +508,24 @@ int SpecialConds_Eval(int special)
         {
             if (OotTradeChild_Has(XITEM_OOT_CHILD_MASK_DEKU)) count++;
         }
+
+        if (Config_Flag(CFG_CUSTOM_SHARED_MASK_GORON_MM_TRANSFORM))
+        {
+            if (OotTradeChild_Has(XITEM_OOT_CHILD_MASK_GORON_MM_TRANSFORM)) hasMaskGoronMmTransform = 1;
+        }
+        else
+        {
+            if (OotTradeChild_Has(XITEM_OOT_CHILD_MASK_GORON_MM_TRANSFORM)) count++;
+        }
+
+        if (Config_Flag(CFG_CUSTOM_SHARED_MASK_ZORA_MM_TRANSFORM))
+        {
+            if (OotTradeChild_Has(XITEM_OOT_CHILD_MASK_ZORA_MM_TRANSFORM)) hasMaskZoraMmTransform = 1;
+        }
+        else
+        {
+            if (OotTradeChild_Has(XITEM_OOT_CHILD_MASK_ZORA_MM_TRANSFORM)) count++;
+        }
         if (Config_Flag(CFG_SHARED_MASK_GERUDO))
         {
             if (gOotExtraTrade.child & (1 << XITEM_OOT_CHILD_GERUDO_MASK)) hasMaskGerudo = 1;
@@ -550,6 +580,8 @@ int SpecialConds_Eval(int special)
     count += hasMaskGiant;
     count += hasMaskFierceDeity;
     count += hasMaskDeku;
+    count += hasMaskGoronMmTransform;
+    count += hasMaskZoraMmTransform;
     count += hasMaskGerudo;
     count += hasMaskSkull;
     count += hasMaskSpooky;

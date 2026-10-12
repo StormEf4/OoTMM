@@ -36,6 +36,8 @@ const u8 kOotTradeChild[] = {
     ITEM_OOT_MASK_GIANT,
     ITEM_OOT_MASK_FIERCE_DEITY,
     ITEM_OOT_MASK_DEKU,
+    ITEM_OOT_MASK_GORON_MM_TRANSFORM,
+    ITEM_OOT_MASK_ZORA_MM_TRANSFORM,
 };
 
 const u8 kOotOcarina[] = {
