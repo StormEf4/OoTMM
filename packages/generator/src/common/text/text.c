@@ -403,6 +403,15 @@ static int isItemAmbiguous(s16 gi)
     case GI_OOT_MASK_KAMARO:
     case GI_MM_MASK_KAMARO:
         return (Config_Flag(CFG_OOT_MASK_KAMARO) && !Config_Flag(CFG_SHARED_MASK_KAMARO));
+    case GI_OOT_MASK_GIANT:
+    case GI_MM_MASK_GIANT:
+        return (Config_Flag(CFG_CUSTOM_GIANT_MASK_OOT) && !Config_Flag(CFG_CUSTOM_SHARED_MASK_GIANT));
+    case GI_OOT_MASK_FIERCE_DEITY:
+    case GI_MM_MASK_FIERCE_DEITY:
+        return (Config_Flag(CFG_CUSTOM_FIERCE_DEITY_MASK_OOT) && !Config_Flag(CFG_CUSTOM_SHARED_MASK_FIERCE_DEITY));
+    case GI_OOT_MASK_DEKU:
+    case GI_MM_MASK_DEKU:
+        return (Config_Flag(CFG_CUSTOM_DEKU_MASK_OOT) && !Config_Flag(CFG_CUSTOM_SHARED_MASK_DEKU));
     case GI_OOT_MASK_GERUDO:
     case GI_MM_MASK_GERUDO:
         return (Config_Flag(CFG_MM_MASK_GERUDO) && !Config_Flag(CFG_SHARED_MASK_GERUDO));

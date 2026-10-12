@@ -14,6 +14,10 @@
 void DoubleTimeSelector_Update(PlayState* play);
 #endif
 
+#if defined(GAME_OOT)
+# include <combo/oot/transform_mask.h>
+#endif
+
 /* Original func */
 void _Interface_Update(PlayState* play);
 
@@ -62,7 +66,14 @@ static void Interface_UpdateRupees(void)
 void Interface_Update(PlayState* play)
 {
     Interface_UpdateRupees();
+#if defined(GAME_OOT)
+    /* Goron and Zora forms count as wearing the Goron and Zora Tunics for the hot room and underwater timers */
+    TransformOot_BeforeInterfaceUpdate();
+#endif
     _Interface_Update(play);
+#if defined(GAME_OOT)
+    TransformOot_AfterInterfaceUpdate();
+#endif
 #if defined(GAME_MM)
     DoubleTimeSelector_Update(play);
 #endif

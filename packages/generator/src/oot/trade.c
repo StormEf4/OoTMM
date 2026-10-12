@@ -34,11 +34,11 @@ void comboRemoveTradeItemChild(u16 xitemId)
 {
     u32 mask;
 
-    mask = 1 << xitemId;
-    if (gOotExtraTrade.child & mask)
+    mask = 1u << xitemId;
+    if (OotTradeChild_GetFlags() & mask)
     {
-        gOotExtraTrade.child &= ~mask;
-        if (gOotExtraTrade.child)
+        OotTradeChild_SetFlags(OotTradeChild_GetFlags() & ~mask);
+        if (OotTradeChild_GetFlags())
             comboToggleSlot(ITS_OOT_TRADE_CHILD);
         else
             gSave.info.inventory.items[ITS_OOT_TRADE_CHILD] = ITEM_NONE;

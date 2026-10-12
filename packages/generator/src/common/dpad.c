@@ -10,6 +10,16 @@
 
 #include "combo/age.h"
 
+#if defined(GAME_MM)
+# include <combo/mm/giant_mask.h>
+#endif
+
+#if defined(GAME_OOT)
+# include <combo/oot/giant_mask.h>
+# include <combo/oot/fierce_deity.h>
+# include <combo/oot/transform_mask.h>
+#endif
+
 #define DPAD_DOWN   0
 #define DPAD_UP     1
 #define DPAD_LEFT   2
@@ -80,14 +90,31 @@ static int canUseDpadItem(PlayState* play, s16 itemId, int flags)
     if (!(flags & DPF_ITEMS))
         return 0;
 
+#if defined(GAME_OOT)
+    /* Giant mask can't use any item, except for taking the mask off */
+    if (GiantMaskOot_IsGiant())
+        return itemId == ITEM_OOT_MASK_GIANT && !GiantMaskOot_IsTransforming();
+
+    /* Same for Fierce Deity, which can also switch to another form */
+    if (FierceDeityOot_IsActive())
+        return (itemId == ITEM_OOT_MASK_FIERCE_DEITY || TransformOot_IsFormMaskItem(itemId)) && !FierceDeityOot_IsTransforming();
+
+    /* Deku, Goron and Zora forms: the items they can use in MM */
+    if (TransformOot_IsActive())
+        return TransformOot_CanUseItem(itemId);
+#endif
+
 #if defined(GAME_MM)
 
     /* Respect MM age locks on dpad items/masks */
     if (!comboCheckItemAgeReqMm((u8)itemId))
         return 0;
 
-    /* Giant mask can't use any item */
-    if (gSave.equippedMask == MASK_GIANT)
+    /* Giant mask can't use any item, except for taking the mask off */
+    if (link->currentMask == MASK_GIANT)
+        return itemId == ITEM_MM_MASK_GIANT && link->actor.id == ACTOR_PLAYER;
+
+    if (itemId == ITEM_MM_MASK_GIANT && !GiantMask_CanPutOn(play))
         return 0;
 
     /* These states seem to handle minigames - and everything should be disabled during these */

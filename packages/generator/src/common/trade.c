@@ -33,6 +33,11 @@ const u8 kOotTradeChild[] = {
     ITEM_OOT_MASK_STONE,
     ITEM_OOT_MASK_KAMARO,
     ITEM_OOT_BOTTLE_EMPTY,
+    ITEM_OOT_MASK_GIANT,
+    ITEM_OOT_MASK_FIERCE_DEITY,
+    ITEM_OOT_MASK_DEKU,
+    ITEM_OOT_MASK_GORON_MM_TRANSFORM,
+    ITEM_OOT_MASK_ZORA_MM_TRANSFORM,
 };
 
 const u8 kOotOcarina[] = {
@@ -203,7 +208,7 @@ s32 comboGetSlotExtras(u32 slot, u8** outItemPtr, u32* outFlags, const u8** outT
         result = 0;
         break;
     case ITS_OOT_TRADE_CHILD:
-        *outFlags = gOotExtraTrade.child;
+        *outFlags = OotTradeChild_GetFlags();
         *outTable = kOotTradeChild;
         *outTableSize = ARRAY_COUNT(kOotTradeChild);
         result = 1;

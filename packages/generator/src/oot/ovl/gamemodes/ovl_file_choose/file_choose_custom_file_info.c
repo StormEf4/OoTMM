@@ -929,6 +929,16 @@ static void FileSelect_CustomFileInfoPrepareOotInventory(FileSelectState* this, 
         x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_STONE | ICONF_MM,     gOotExtraTradeSave.child & (1 << XITEM_OOT_CHILD_MASK_STONE));
     if (Config_Flag(CFG_OOT_MASK_KAMARO))
         x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_KAMARO | ICONF_MM,     gOotExtraTradeSave.child & (1 << XITEM_OOT_CHILD_MASK_KAMARO));
+    if (Config_Flag(CFG_CUSTOM_GIANT_MASK_OOT))
+        x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_GIANT | ICONF_MM,      gOotExtraTradeSave.child & (1 << XITEM_OOT_CHILD_MASK_GIANT));
+    if (Config_Flag(CFG_CUSTOM_FIERCE_DEITY_MASK_OOT))
+        x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_FIERCE_DEITY | ICONF_MM, !!(OotTradeChild_GetSaveFlags() & (1u << XITEM_OOT_CHILD_MASK_FIERCE_DEITY)));
+    if (Config_Flag(CFG_CUSTOM_DEKU_MASK_OOT))
+        x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_DEKU | ICONF_MM, !!(OotTradeChild_GetSaveFlags() & (1u << XITEM_OOT_CHILD_MASK_DEKU)));
+    if (Config_Flag(CFG_CUSTOM_GORON_MM_TRANSFORM_MASK_OOT))
+        x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_GORON | ICONF_MM, !!(OotTradeChild_GetSaveFlags() & (1u << XITEM_OOT_CHILD_MASK_GORON_MM_TRANSFORM)));
+    if (Config_Flag(CFG_CUSTOM_ZORA_MM_TRANSFORM_MASK_OOT))
+        x += drawItemIcon(list, end, x, y, ITEM_MM_MASK_ZORA | ICONF_MM, !!(OotTradeChild_GetSaveFlags() & (1u << XITEM_OOT_CHILD_MASK_ZORA_MM_TRANSFORM)));
 
     /* Row 5 - Adult Trade */
     x = startX;
