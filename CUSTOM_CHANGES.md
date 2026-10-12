@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-12: Fierce Deity has a sword even without one in the inventory (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "Fierce Deity's Mask" row, OoT column (no new control; part of that item).
+- What it does: like in MM, Fierce Deity can always attack with his sword (and fire beams), even if Link has no sword or has something else on B. While transformed, a sword (Master Sword for adult Link, Kokiri Sword for child Link) is put on B only during the player update, where the B button is read, and the real B item is put back right after, so the HUD, pause menu and save are unchanged.
+- Files: `packages/generator/src/oot/fierce_deity.c` (`FierceDeityOot_LendSword`, `FierceDeityOot_ReturnSword`), `docs/custom/fierce-deity.md`
+
 ## 2026-10-12: Sword works while giant or Fierce Deity in OoT
 
 - Where in the app: Items > Extended Items > Cross-Game Masks, OoT column of the "Giant's Mask" and "Fierce Deity's Mask" rows (no new control; fixes those items).

@@ -109,6 +109,10 @@ static s32 sState;
 static s32 sTimer;
 static s32 sFrozePlayer;
 static s32 sIsFdForm;
+static u8  sLentSword;
+static u8  sLentSwordSavedB;
+
+static void FierceDeityOot_ReturnSword(void);
 
 static ALIGNED(8) u8 sAgeProperties[AGE_PROPERTIES_SIZE];
 static void* sOriginalAgeProperties;
@@ -389,6 +393,8 @@ static void FierceDeityOot_ClearBeams(void)
 
 void FierceDeityOot_Reset(PlayState* play, Player* player)
 {
+    FierceDeityOot_ReturnSword();
+
     if (player)
     {
         FierceDeityOot_LeaveForm(NULL, player);
@@ -634,6 +640,53 @@ static void FierceDeityOot_UpdateBeams(PlayState* play, Player* player)
     }
 }
 
+static s32 FierceDeityOot_IsSwordItem(u8 itemId)
+{
+    switch (itemId)
+    {
+    case ITEM_OOT_SWORD_KOKIRI:
+    case ITEM_OOT_SWORD_MASTER:
+    case ITEM_OOT_SWORD_KNIFE_BIGGORON:
+    case ITEM_OOT_SWORD_KNIFE_BROKEN:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+/*
+ * Like in MM, Fierce Deity always has his own sword, even without one in the inventory.
+ * When B holds no sword, a sword is put on B for the duration of the player update only (that is
+ * where the B button is read), and the real B item is put back right after. So the HUD, the pause
+ * menu and the save never see it.
+ */
+static void FierceDeityOot_LendSword(void)
+{
+    u8* bItem;
+
+    if (sState != FD_STATE_FIERCE_DEITY)
+        return;
+
+    bItem = &gSave.info.equips.buttonItems[0];
+    if (FierceDeityOot_IsSwordItem(*bItem))
+        return;
+
+    sLentSwordSavedB = *bItem;
+    sLentSword = (gSave.age == AGE_ADULT) ? ITEM_OOT_SWORD_MASTER : ITEM_OOT_SWORD_KOKIRI;
+    *bItem = sLentSword;
+}
+
+static void FierceDeityOot_ReturnSword(void)
+{
+    if (!sLentSword)
+        return;
+
+    /* Only put the old item back if nothing else changed B during the update */
+    if (gSave.info.equips.buttonItems[0] == sLentSword)
+        gSave.info.equips.buttonItems[0] = sLentSwordSavedB;
+    sLentSword = 0;
+}
+
 void FierceDeityOot_BeforePlayerUpdate(Player* player, PlayState* play)
 {
     if (player != GET_PLAYER(play))
@@ -642,6 +695,7 @@ void FierceDeityOot_BeforePlayerUpdate(Player* player, PlayState* play)
     FierceDeityOot_UpdateState(player, play);
     if (sIsFdForm)
         FierceDeityOot_ApplyForm(player);
+    FierceDeityOot_LendSword();
 }
 
 void FierceDeityOot_AfterPlayerUpdate(Player* player, PlayState* play)
@@ -650,6 +704,8 @@ void FierceDeityOot_AfterPlayerUpdate(Player* player, PlayState* play)
 
     if (player != GET_PLAYER(play))
         return;
+
+    FierceDeityOot_ReturnSword();
 
     /* The player may have reset its scale or boot data during the update */
     if (sIsFdForm)

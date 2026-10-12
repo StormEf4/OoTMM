@@ -12,6 +12,7 @@ Reference for future changes. Settings: `fierceDeityMaskOot` and `sharedMaskFier
   - The sword hits like Biggoron's Sword (4, or 8 for jump attacks, same as MM) and reaches 5500 units.
   - A slash while Z-targeting fires a sword beam for 1 magic: 80 units per frame, about 20 frames, damage 3 as `DMG_SPIN_GIANT`.
   - Every other item is blocked; the sword on B still works (`Player_IsAllowedWhileTransformed` in OoT `Player.c`).
+  - He always has a sword, like in MM, even with no sword in the inventory or something else on B. `FierceDeityOot_LendSword` puts the Master Sword (Kokiri Sword for child Link) on B only while `Player_Update` runs, where OoT reads the B button, and `FierceDeityOot_ReturnSword` puts the real B item back right after. The HUD, pause menu and save never see the lent sword.
 - The mask comes off when the item is used again, when something else removes the mask, or when Link leaves the area.
 
 ## How the model is drawn (C only)
