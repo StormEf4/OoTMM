@@ -1,6 +1,7 @@
 #include <combo.h>
 #include <combo/inventory.h>
 #include <combo/sfx.h>
+#include <combo/magic.h>
 
 /*
  * Magic Hookshot: a separate item that lets the hookshot/longshot latch onto
@@ -42,10 +43,26 @@ void HookshotMagic_Toggle(void)
     }
 }
 
+/* Magic spent each time the magic mode latches onto a surface the normal hookshot can't */
+#define HOOKSHOT_MAGIC_COST 2
+
+static int HookshotMagic_Consume(void)
+{
+#if defined(GAME_OOT)
+    /* Handles the Chateau Romani (free magic) */
+    return Magic_RequestChangeCustom(gPlay, HOOKSHOT_MAGIC_COST, MAGIC_CONSUME_NOW);
+#else
+    return Magic_RequestChange(gPlay, HOOKSHOT_MAGIC_COST, MAGIC_CONSUME_NOW);
+#endif
+}
+
 /* Called by Arms_Hook in place of SurfaceType_IsHookshotSurface */
 s32 ArmsHook_IsHookshotSurface(CollisionContext* colCtx, CollisionPoly* poly, s32 bgId)
 {
-    if (HookshotMagic_IsActive())
+    if (SurfaceType_IsHookshotSurface(colCtx, poly, bgId))
         return 1;
-    return SurfaceType_IsHookshotSurface(colCtx, poly, bgId);
+    /* Without enough magic the hook bounces off like a normal hookshot */
+    if (HookshotMagic_IsActive() && HookshotMagic_Consume())
+        return 1;
+    return 0;
 }

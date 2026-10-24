@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-24: Magic Hookshot costs 2 magic
+
+- Where in the app: Custom > Ocarina of Time > "Magic Hookshot (OoT)" and Custom > Majora's Mask > "Magic Hookshot (MM)" (no new control; changes that item)
+- What it does: in magic mode, each latch onto a surface the normal hookshot can't grab now uses 2 magic. Latching onto normal hookshot targets is still free. With less than 2 magic (or no magic meter) the hook bounces off like a normal hookshot. In OoT the Chateau Romani makes it free, the same as in MM
+- Files: `packages/generator/src/common/hookshot_magic.c`, `packages/core/src/settings/custom.ts` (description)
+
 ## 2026-10-24: Magic Hookshot (hookshot anywhere as its own item)
 
 - Where in the app: Custom > Ocarina of Time > "Magic Hookshot (OoT)" and Custom > Majora's Mask > "Magic Hookshot (MM)" (Off / On / Logical)
