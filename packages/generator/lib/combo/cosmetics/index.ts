@@ -10,6 +10,7 @@ import { png } from '../util/png';
 import { toU32Buffer } from '../util';
 import { enableModelOotLinkAdult, enableModelOotLinkChild } from './model';
 import { randomizeMusic } from './music';
+import { applyFairyStyle } from './fairy';
 import { LogWriter } from '../util/log-writer';
 import { bufReadU32BE } from '../util/buffer';
 
@@ -438,6 +439,9 @@ class CosmeticsPass {
     if (c.gerudoTunic) {
       this.patchSymbol('GERUDO_TUNIC', new Uint8Array([0x01]));
     }
+
+    /* Fairy Companion (fork) */
+    applyFairyStyle(this.monitor, this.builder, c.fairyStyle, (name, data) => this.patchSymbol(name, data));
 
     const log = this.logWriter.emit();
     if (log !== '') {

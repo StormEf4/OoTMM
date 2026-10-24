@@ -171,6 +171,8 @@ static int EnElf_IsShuffled(Actor_EnElf* this, PlayState* play)
     return o.gi != GI_NONE;
 }
 
+void FairyCompanion_Init(Actor_EnElf* this, PlayState* play);
+
 void EnElf_InitWrapper(Actor_EnElf* this, PlayState* play)
 {
     int type;
@@ -188,6 +190,9 @@ void EnElf_InitWrapper(Actor_EnElf* this, PlayState* play)
 
     init = actorAddr(ACTOR_EN_ELF, EN_ELF_INIT_VROM);
     init(&this->base, play);
+
+    /* Fairy Companion cosmetic (fork) */
+    FairyCompanion_Init(this, play);
 
     if (this->fairyFlags & 0x200)
     {
