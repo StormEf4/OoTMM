@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-24: Infinite Magic (new item, progressive or separate)
+
+- Where in the app: Custom > General > "Infinite Magic" (Off / Progressive / Separate)
+- What it does: adds an "Infinite Magic" item to the pool for each game in the seed. Once you have it, magic never runs out: the meter turns blue and stays full, like after drinking Chateau Romani, so spells, magic arrows, the Lens of Truth, the Giant's and Fierce Deity's Masks and the Magic Hookshot all cost nothing. It only does something once you have a magic meter. "Progressive" makes it the third Magic Upgrade (Magic Meter, then Larger Magic Meter, then Infinite Magic), so the pool gets one more Magic Upgrade per game. "Separate" makes it its own item that can be found at any time. With Shared Magic on, there is one Infinite Magic (or one extra shared Magic Upgrade) that works in both games. Logic treats it as a way to refill magic
+- How it works: every frame, if you own it, the game turns on the Chateau Romani effect (`chateauActive` in OoT, the "drank Chateau Romani" week event in MM), which every magic cost already checks, and refills the meter when it is not full (for example after an Anti-Magic Trap). In progressive mode the Magic Upgrade after the Larger Magic Upgrade becomes Infinite Magic
+- Files: `packages/core/src/settings/custom.ts` (setting), `data/defs/gi.yml` (items), `data/macros/macros_common.yml`, `data/macros/macros_oot.yml`, `data/macros/macros_mm.yml` (logic), `packages/logic/src/items/defs.ts`, `packages/logic/src/items/groups.ts`, `packages/logic/src/world/transform.ts` (item pool), `packages/generator/lib/combo/names.ts`, `packages/generator/lib/combo/randomizer/checks.ts` (shared item), `packages/generator/include/combo.h`, `packages/generator/include/combo/save_flags.h`, `packages/generator/src/common/magic_infinite.c` (new), `packages/generator/src/common/item/progressive.c`, `packages/generator/src/common/item/item_add.c`, `packages/generator/src/common/text/text.c`, `packages/generator/src/oot/play/play.c`, `packages/generator/src/mm/play/play.c`, `packages/logic/tests/seeds/infinite-magic.test.ts` (seed test)
 ## 2026-10-24: Magic Hookshot costs 2 magic
 
 - Where in the app: Custom > Ocarina of Time > "Magic Hookshot (OoT)" and Custom > Majora's Mask > "Magic Hookshot (MM)" (no new control; changes that item)

@@ -229,6 +229,8 @@ static int isItemAmbiguous(s16 gi)
     case GI_MM_MAGIC_UPGRADE2:
     case GI_MM_MAGIC_JAR_SMALL:
     case GI_MM_MAGIC_JAR_LARGE:
+    case GI_OOT_MAGIC_INFINITE:
+    case GI_MM_MAGIC_INFINITE:
         return !Config_Flag(CFG_SHARED_MAGIC);
     case GI_OOT_ARROW_FIRE:
     case GI_MM_ARROW_FIRE:

@@ -159,6 +159,8 @@ int comboStrayFairyIndex(void);
 int comboOotDungeonScene(PlayState* play, int isBossKey);
 int comboMmDungeonIndex(void);
 int comboIsChateauActive(void);
+int comboHasInfiniteMagic(void);
+void comboInfiniteMagicUpdate(void);
 int comboIsLinkAdult(void);
 
 void comboSpawnItemGiver(PlayState* play, u16 npcId);

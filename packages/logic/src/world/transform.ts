@@ -797,6 +797,12 @@ class LogicPassWorldTransform {
       this.replaceItem(Items.OOT_MAGIC_UPGRADE, Items.SHARED_MAGIC_UPGRADE);
       this.replaceItem(Items.MM_MAGIC_UPGRADE,  Items.SHARED_MAGIC_UPGRADE);
       this.removeItem(Items.SHARED_MAGIC_UPGRADE, 2);
+      if (settings.infiniteMagic === 'progressive') {
+        this.removeItem(Items.SHARED_MAGIC_UPGRADE, 1);
+      }
+      this.replaceItem(Items.OOT_MAGIC_INFINITE, Items.SHARED_MAGIC_INFINITE);
+      this.replaceItem(Items.MM_MAGIC_INFINITE, Items.SHARED_MAGIC_INFINITE);
+      this.removeItem(Items.SHARED_MAGIC_INFINITE, 1);
       this.replaceItem(Items.OOT_MAGIC_JAR_SMALL, Items.SHARED_MAGIC_JAR_SMALL);
       this.replaceItem(Items.OOT_MAGIC_JAR_LARGE, Items.SHARED_MAGIC_JAR_LARGE);
       this.replaceItem(Items.MM_MAGIC_JAR_SMALL, Items.SHARED_MAGIC_JAR_SMALL);
@@ -1792,6 +1798,19 @@ class LogicPassWorldTransform {
     }
     if (settings.magicHookshotMm !== 'off') {
       this.addItem(Items.MM_HOOKSHOT_MAGIC);
+    }
+
+    /* Add Infinite Magic (custom fork item): a third progressive Magic Upgrade, or its own item */
+    if (settings.infiniteMagic !== 'off') {
+      const hasOot = settings.games !== 'mm';
+      const hasMm = settings.games !== 'oot';
+      if (settings.infiniteMagic === 'progressive') {
+        if (hasOot) this.addItem(Items.OOT_MAGIC_UPGRADE);
+        if (hasMm) this.addItem(Items.MM_MAGIC_UPGRADE);
+      } else {
+        if (hasOot) this.addItem(Items.OOT_MAGIC_INFINITE);
+        if (hasMm) this.addItem(Items.MM_MAGIC_INFINITE);
+      }
     }
 
     /* Add ocarina buttons */

@@ -714,6 +714,7 @@ void Play_MainWrapper(PlayState* play)
     {
         DrawGiSystem_Update(play);
         Play_UpdateTraps(play);
+        comboInfiniteMagicUpdate();
         Triggers_Update(play);
     }
 
