@@ -9,6 +9,11 @@ PATCH_END
 
 PATCH_GROUP_END
 
+/* Magic Hookshot: replace the hookshot surface check so the magic mode can hook anywhere */
+PATCH_START 0x808c1838
+  jal ArmsHook_IsHookshotSurface
+PATCH_END
+
 ArmsHook_GetPlayerDisplayList_Hook:
   HOOK_SAVE
   jal   ArmsHook_GetPlayerDisplayList

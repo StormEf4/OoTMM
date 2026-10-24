@@ -1168,6 +1168,8 @@ export const REQUIRED = new Set([
   Items.OOT_SHOVEL,
   Items.MM_SHOVEL,
   Items.SHARED_SHOVEL,
+  Items.OOT_HOOKSHOT_MAGIC,
+  Items.MM_HOOKSHOT_MAGIC,
   ...OOT_RUSTY_KEYS,
   ...MM_RUSTY_KEYS,
   ...SONG_NOTES,

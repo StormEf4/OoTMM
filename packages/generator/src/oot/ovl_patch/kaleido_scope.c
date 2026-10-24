@@ -56,7 +56,7 @@ static int checkItemToggle(PlayState* play)
     u32 flags;
     const u8* table;
     u32 tableSize;
-    if (comboGetSlotExtras(itemCursor, &itemPtr, &flags, &table, &tableSize) >= 0 && play->pauseCtx.cursorItem[0] != 999 && popcount(flags) > 1)
+    if (comboGetSlotExtras(itemCursor, &itemPtr, &flags, &table, &tableSize) >= 0 && play->pauseCtx.cursorItem[0] != 999 && comboSlotCanToggle(itemCursor, flags))
     {
         ret = 1;
         if (press)
@@ -185,6 +185,13 @@ void KaleidoSetCursorColor(PlayState* play)
             {
                 r = 0x00;
                 g = 0xff;
+                b = 0xff;
+            }
+            /* Magic Hookshot: show a purple cursor while the hookshot is in magic mode */
+            if (p->cursorPoint[PAUSE_ITEM] == ITS_OOT_HOOKSHOT && p->cursorItem[PAUSE_ITEM] != 999 && HookshotMagic_IsActive())
+            {
+                r = 0xc8;
+                g = 0x50;
                 b = 0xff;
             }
             break;

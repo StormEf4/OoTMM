@@ -594,6 +594,9 @@ static int isItemAmbiguous(s16 gi)
     case GI_OOT_SHOVEL:
     case GI_MM_SHOVEL:
         return !Config_Flag(CFG_SHARED_SHOVEL);
+    case GI_OOT_HOOKSHOT_MAGIC:
+    case GI_MM_HOOKSHOT_MAGIC:
+        return !Config_Flag(CFG_CUSTOM_MAGIC_HOOKSHOT_OOT_OFF) && !Config_Flag(CFG_CUSTOM_MAGIC_HOOKSHOT_MM_OFF);
     case GI_OOT_SKELETON_KEY:
     case GI_MM_SKELETON_KEY:
         return !Config_Flag(CFG_SHARED_SKELETON_KEY);

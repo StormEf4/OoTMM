@@ -9,6 +9,11 @@ PATCH_END
 
 PATCH_GROUP_END
 
+/* Magic Hookshot: replace the hookshot surface check so the magic mode can hook anywhere */
+PATCH_START 0x80910370
+  jal ArmsHook_IsHookshotSurface
+PATCH_END
+
 /* Don't require the adult object */
 PATCH_START 0x809106e8
 .short 0x0001

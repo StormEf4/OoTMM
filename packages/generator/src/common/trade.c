@@ -269,14 +269,53 @@ s32 comboGetSlotExtras(u32 slot, u8** outItemPtr, u32* outFlags, const u8** outT
     return result;
 }
 
+#if defined(GAME_MM)
+# define ITS_HOOKSHOT ITS_MM_HOOKSHOT
+#else
+# define ITS_HOOKSHOT ITS_OOT_HOOKSHOT
+#endif
+
+static s32 tableIndexOf(const u8* table, u32 tableSize, u8 item)
+{
+    for (u32 i = 0; i < tableSize; ++i)
+    {
+        if (table[i] == item)
+            return i;
+    }
+    return -1;
+}
+
+/* Whether the pause menu should let the player cycle this slot */
+int comboSlotCanToggle(u32 slot, u32 flags)
+{
+    if (popcount(flags) > 1)
+        return 1;
+    if (slot == ITS_HOOKSHOT && HookshotMagic_IsOwned())
+        return 1;
+    return 0;
+}
+
 void comboToggleSlot(u32 slot)
 {
     u32 flags;
     const u8* table;
     u32 tableSize;
     u8* itemPtr;
+    u8 oldItem;
     comboGetSlotExtras(slot, &itemPtr, &flags, &table, &tableSize);
+    oldItem = *itemPtr;
     comboToggleTrade(itemPtr, flags, table, tableSize);
+
+    /*
+     * Magic Hookshot: the slot cycles Hookshot, Longshot, then the same items
+     * in magic mode. Flip the mode every time the item cycle wraps around.
+     */
+    if (slot == ITS_HOOKSHOT && HookshotMagic_IsOwned())
+    {
+        if (tableIndexOf(table, tableSize, *itemPtr) <= tableIndexOf(table, tableSize, oldItem))
+            HookshotMagic_Toggle();
+    }
+
 #if defined(GAME_MM)
     reloadSlotMm(gPlay, slot);
 #else

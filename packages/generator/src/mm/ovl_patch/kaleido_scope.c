@@ -128,7 +128,7 @@ void KaleidoScope_AfterSetCutsorColor(PlayState* play)
 
     if (comboGetSlotExtras(cursorSlot, &itemPtr, &flags, &table, &tableSize) >= 0 &&
 play->pauseCtx.cursorItem[play->pauseCtx.pageIndex] != 999 &&
-popcount(flags) > 1)
+comboSlotCanToggle(cursorSlot, flags))
     {
         if (play->pauseCtx.pageIndex == PAUSE_MASK)
         {
@@ -157,6 +157,12 @@ popcount(flags) > 1)
 
             effect = 1;
         }
+    }
+
+    /* Magic Hookshot: show a yellow cursor while the hookshot is in magic mode */
+    if (play->pauseCtx.pageIndex == PAUSE_ITEM && cursorSlot == ITS_MM_HOOKSHOT && play->pauseCtx.cursorItem[PAUSE_ITEM] != 999 && HookshotMagic_IsActive())
+    {
+        play->pauseCtx.cursorColorIndex = 2;
     }
 
     if (cursorSlot >= ITS_MM_BOTTLE && cursorSlot <= ITS_MM_BOTTLE6 && gSave.info.inventory.items[cursorSlot] == ITEM_MM_SPRING_WATER_HOT)

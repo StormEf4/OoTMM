@@ -1567,7 +1567,7 @@ class LogicPassWorldTransform {
       this.removeLocations(['OOT Hyrule Castle Tree Guarded']);
     }
 
-    if (this.state.settings.logic === 'allLocations' && !this.state.settings.tricks.includes('MM_GORON_BOMB_JUMP') && this.state.settings.hookshotAnywhereMm !== 'logical') {
+    if (this.state.settings.logic === 'allLocations' && !this.state.settings.tricks.includes('MM_GORON_BOMB_JUMP') && this.state.settings.hookshotAnywhereMm !== 'logical' && this.state.settings.magicHookshotMm !== 'logical') {
       /* Can't reach Gorman track trees */
       const locs = CHECKS.filter(x => x.type === 'tree' && x.scene === 'MM_GORMAN_TRACK').map(x => x.location);
       this.removeLocations(locs);
@@ -1784,6 +1784,14 @@ class LogicPassWorldTransform {
     }
     if (settings.shovelMm) {
       this.addItem(Items.MM_SHOVEL);
+    }
+
+    /* Add the Magic Hookshot(s) (custom fork item) */
+    if (settings.magicHookshotOot !== 'off') {
+      this.addItem(Items.OOT_HOOKSHOT_MAGIC);
+    }
+    if (settings.magicHookshotMm !== 'off') {
+      this.addItem(Items.MM_HOOKSHOT_MAGIC);
     }
 
     /* Add ocarina buttons */
