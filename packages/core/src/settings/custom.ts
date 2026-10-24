@@ -153,7 +153,7 @@ export const CUSTOM_SETTINGS = [
     name: 'Magic Hookshot (OoT)',
     category: 'custom.oot',
     type: 'enum',
-    description: 'Adds a Magic Hookshot to the item pool. It works like your Hookshot or Longshot but can latch onto any surface. Once found, press L or C-Up on the Hookshot in the pause menu to switch between the normal and magic modes (the cursor changes colour in magic mode). It needs a Hookshot to use. "Logical" lets the logic expect hookshotting anywhere once you have it.',
+    description: 'Adds a Magic Hookshot to the item pool. It works like your Hookshot or Longshot but can latch onto any surface, for 2 magic each time it latches onto a surface the normal hookshot cannot (latching onto normal hookshot targets stays free). Once found, press L or C-Up on the Hookshot in the pause menu to switch between the normal and magic modes (the cursor changes colour in magic mode). It needs a Hookshot to use. "Logical" lets the logic expect hookshotting anywhere once you have it.',
     values: [
       { value: 'off', name: 'Off' },
       { value: 'on', name: 'On' },
@@ -167,7 +167,7 @@ export const CUSTOM_SETTINGS = [
     name: 'Magic Hookshot (MM)',
     category: 'custom.mm',
     type: 'enum',
-    description: 'Adds a Magic Hookshot to the item pool. It works like your Hookshot or Longshot but can latch onto any surface. Once found, press L or C-Up on the Hookshot in the pause menu to switch between the normal and magic modes (the cursor changes colour in magic mode). It needs a Hookshot to use. "Logical" lets the logic expect hookshotting anywhere once you have it.',
+    description: 'Adds a Magic Hookshot to the item pool. It works like your Hookshot or Longshot but can latch onto any surface, for 2 magic each time it latches onto a surface the normal hookshot cannot (latching onto normal hookshot targets stays free). Once found, press L or C-Up on the Hookshot in the pause menu to switch between the normal and magic modes (the cursor changes colour in magic mode). It needs a Hookshot to use. "Logical" lets the logic expect hookshotting anywhere once you have it.',
     values: [
       { value: 'off', name: 'Off' },
       { value: 'on', name: 'On' },
