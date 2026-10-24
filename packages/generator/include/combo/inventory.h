@@ -8,6 +8,12 @@ u8 comboGetNextTrade(u8 currentItem, u32 flags, const u8* table, u32 tableSize);
 void comboToggleSlot(u32 slot);
 void comboToggleTrade(u8* slot, u32 flags, const u8* table, u32 tableSize);
 s32 comboIsTradeBottleOot(u8 itemId);
+int comboSlotCanToggle(u32 slot, u32 flags);
+
+/* Magic Hookshot (fork custom item) */
+int HookshotMagic_IsOwned(void);
+int HookshotMagic_IsActive(void);
+void HookshotMagic_Toggle(void);
 
 int comboHasFreeBottleOot(void);
 int comboHasFreeBottleMm(void);

@@ -778,6 +778,7 @@ Collider_SetTrisVertices = 0x80050bd4;
 
 SurfaceType_GetWallFlags = 0x8003444c;
 SurfaceType_IsIgnoredByProjectiles = 0x80034700;
+SurfaceType_IsHookshotSurface = 0x8003469c;
 Actor_PlaySfx_Flagged2 = 0x800230a0;
 DynaPolyActor_TransformCarriedActor = 0x80035180;
 Actor_MoveXYZ = 0x800212b8;

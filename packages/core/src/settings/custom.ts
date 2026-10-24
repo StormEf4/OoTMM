@@ -148,5 +148,33 @@ export const CUSTOM_SETTINGS = [
     default: false,
     cond: (s: any) => hasOoTMM(s) && s.zoraMmTransformMaskOot && !s.sharedMaskZora,
   },
+  {
+    key: 'magicHookshotOot',
+    name: 'Magic Hookshot (OoT)',
+    category: 'custom.oot',
+    type: 'enum',
+    description: 'Adds a Magic Hookshot to the item pool. It works like your Hookshot or Longshot but can latch onto any surface. Once found, press L or C-Up on the Hookshot in the pause menu to switch between the normal and magic modes (the cursor changes colour in magic mode). It needs a Hookshot to use. "Logical" lets the logic expect hookshotting anywhere once you have it.',
+    values: [
+      { value: 'off', name: 'Off' },
+      { value: 'on', name: 'On' },
+      { value: 'logical', name: 'Logical' },
+    ],
+    default: 'off',
+    cond: hasOoT,
+  },
+  {
+    key: 'magicHookshotMm',
+    name: 'Magic Hookshot (MM)',
+    category: 'custom.mm',
+    type: 'enum',
+    description: 'Adds a Magic Hookshot to the item pool. It works like your Hookshot or Longshot but can latch onto any surface. Once found, press L or C-Up on the Hookshot in the pause menu to switch between the normal and magic modes (the cursor changes colour in magic mode). It needs a Hookshot to use. "Logical" lets the logic expect hookshotting anywhere once you have it.',
+    values: [
+      { value: 'off', name: 'Off' },
+      { value: 'on', name: 'On' },
+      { value: 'logical', name: 'Logical' },
+    ],
+    default: 'off',
+    cond: hasMM,
+  },
   // @custom-settings-end
 ] as const;

@@ -44,7 +44,7 @@ const ALL_LOCATIONS_AGE_RULES: readonly AllLocationsAgeRule[] = [
         reliefChildSettings: [
             'mmAgeReqChildMagicBean',
         ],
-        when: settings => settings.hookshotAnywhereMm !== 'logical',
+        when: settings => settings.hookshotAnywhereMm !== 'logical' && settings.magicHookshotMm !== 'logical',
         requirement: all(
             req('mmAgeReqChildMagicBean'),
             req('mmAgeReqChildHookshot'),

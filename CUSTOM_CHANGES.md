@@ -4,6 +4,13 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-24: Magic Hookshot (hookshot anywhere as its own item)
+
+- Where in the app: Custom > Ocarina of Time > "Magic Hookshot (OoT)" and Custom > Majora's Mask > "Magic Hookshot (MM)" (Off / On / Logical)
+- What it does: adds a new "Magic Hookshot" item to the pool. It is the same as your Hookshot or Longshot, but it can latch onto any surface, while the normal hookshots keep working as usual. Once you have it, highlight the Hookshot in the pause menu and press L or C-Up: the slot now cycles Hookshot, Longshot, Magic Hookshot, Magic Longshot. The pause cursor turns purple (OoT) or yellow (MM) on the Hookshot while magic mode is on, and a chime plays when you switch it on. It starts in magic mode when you find it. You still need a Hookshot to use it. "Logical" lets the logic expect hookshot-anywhere tricks once you have both. In the world it looks like the other game's hookshot so you can tell it apart
+- How it works: the hookshot's surface check (`SurfaceType_IsHookshotSurface`) is swapped for `ArmsHook_IsHookshotSurface`, which says yes to every surface while magic mode is on. This is the same spot upstream's global "Hookshot Anywhere" setting patches, so both can be used together. Patch addresses were checked by compiling the OoT (NTSC 1.0) and MM (US) decomps
+- Files: `packages/core/src/settings/custom.ts` (settings), `data/defs/gi.yml` (items), `data/macros/macros_oot.yml`, `data/macros/macros_mm.yml` (logic), `packages/logic/src/items/defs.ts`, `packages/logic/src/items/groups.ts`, `packages/logic/src/world/transform.ts` (item pool), `packages/generator/lib/combo/names.ts`, `packages/gui/src/app/components/mmAgeRequirements.tsx`, `packages/generator/include/combo/save_flags.h`, `packages/generator/include/combo/inventory.h`, `packages/generator/include/combo/common/api.h`, `packages/generator/src/common/hookshot_magic.c` (new), `packages/generator/src/common/trade.c` (pause menu cycling), `packages/generator/src/common/text/text.c`, `packages/generator/src/oot/ovl_patch/kaleido_scope.c`, `packages/generator/src/mm/ovl_patch/kaleido_scope.c` (cursor colour), `packages/generator/src/oot/actors/Misc/Arms_Hook.S`, `packages/generator/src/mm/actors/Misc/Arms_Hook.S` (hook patch), `packages/generator/src/link_oot.in`, `packages/generator/src/link_mm.in`, `packages/logic/tests/seeds/magic-hookshot.test.ts` (seed test)
+
 ## 2026-10-12: Fix: Fierce Deity's sword beam drained all magic (OoT)
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "Fierce Deity's Mask" row, OoT column (no new control; fixes that item).
