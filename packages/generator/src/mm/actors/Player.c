@@ -15,6 +15,7 @@
 #include "../actors.h"
 #include <combo/mm/boomerang.h>
 #include <combo/mm/adultmask.h>
+#include <combo/mm/giant_mask.h>
 
 void ArrowCycle_Handle(Player* link, PlayState* play);
 
@@ -195,7 +196,9 @@ void Player_UpdateWrapper(Player* this, PlayState* play)
     Player_ClearCustomMaskSpoofBeforeUpdate(this);
     Player_RefreshMaskObjectForAge(this);
     Player_UpdateHumanStrengthRestrictions();
+    GiantMask_BeforePlayerUpdate(this, play);
     Player_Update(this, play);
+    GiantMask_AfterPlayerUpdate(this, play);
     PlayerVoice_UpdateHumanAgeRouting(this);
     Player_UpdateCustomMaskBehavior(this);
     Player_HandleBronzeScale(this, play);
@@ -961,6 +964,8 @@ void Player_AfterInit(PlayState* play)
     Map_SetAreaEntrypoint(play);
 
     Player* player = GET_PLAYER(play);
+
+    GiantMask_Reset(play);
 
     if (gSaveContext.nayrusLoveTimer != 0)
     {
@@ -1983,6 +1988,9 @@ PATCH_FUNC(0x8082e0cc, Player_GetFloorSfxByAge);
 
 s32 Player_ShouldCheckItemUsabilityWhileSwimming(Player* player, u8 itemAction)
 {
+    if (!GiantMask_ShouldCheckItemUsabilityWhileSwimming(player, itemAction))
+        return 0;
+
     switch (itemAction)
     {
     case 0x50: /* PLAYER_IA_MASK_ZORA */
@@ -2468,6 +2476,12 @@ void Player_UseItem(PlayState* play, Player* this, s16 itemId)
 
     useDefault = 1;
 
+    if (itemId == ITEM_MM_MASK_GIANT && GiantMask_ShouldBlockUse(play, this))
+    {
+        PlaySound(NA_SE_SY_ERROR);
+        return;
+    }
+
     if (Player_ShouldNativeMaskClearCustomMask(itemId))
     {
         gCustomSave.customMask = PLAYER_CUSTOM_MASK_NONE;
@@ -2646,6 +2660,8 @@ void Player_SetMeleeWeaponInfo(Player* this, PlayerMeleeWeaponAnimation meleeWea
         dmgInfo = &D_8085D09C[(this->transformation == MM_PLAYER_FORM_GORON) ? PLAYER_MELEEWEAPON_NONE : Player_GetMeleeWeaponHeld(this)];
         dmgFlags = dmgInfo->dmgFlags;
     }
+
+    dmgFlags = GiantMask_GetWeaponDamageFlags(this, dmgFlags);
 
     damage =
         ((meleeWeaponAnim >= PLAYER_MWA_FLIPSLASH_START) && (meleeWeaponAnim <= PLAYER_MWA_ZORA_JUMPKICK_FINISH))

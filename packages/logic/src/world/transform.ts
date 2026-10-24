@@ -244,6 +244,12 @@ const ITEM_POOL_PLENTIFUL = new Set([
   Items.SHARED_MASK_STONE,
   Items.OOT_MASK_KAMARO,
   Items.SHARED_MASK_KAMARO,
+  Items.OOT_MASK_GIANT,
+  Items.SHARED_MASK_GIANT,
+  Items.OOT_MASK_FIERCE_DEITY,
+  Items.OOT_MASK_DEKU,
+  Items.OOT_MASK_GORON_MM_TRANSFORM,
+  Items.OOT_MASK_ZORA_MM_TRANSFORM,
   Items.MM_MASK_SCENTS,
   Items.MM_MASK_KAFEI,
   Items.MM_MAGIC_UPGRADE,
@@ -953,6 +959,40 @@ class LogicPassWorldTransform {
       this.replaceItem(Items.MM_MASK_KAMARO, Items.SHARED_MASK_KAMARO);
     } else if (settings.kamaroMaskOot) {
       this.addItem(Items.OOT_MASK_KAMARO);
+    }
+
+    /* Fork: Giant's Mask in OoT (custom.ts) */
+    if (settings.sharedMaskGiant) {
+      this.replaceItem(Items.MM_MASK_GIANT, Items.SHARED_MASK_GIANT);
+    } else if (settings.giantMaskOot) {
+      this.addItem(Items.OOT_MASK_GIANT);
+    }
+
+    /* Fork: Fierce Deity's Mask in OoT (custom.ts) */
+    if (settings.sharedMaskFierceDeity) {
+      this.replaceItem(Items.MM_MASK_FIERCE_DEITY, Items.SHARED_MASK_FIERCE_DEITY);
+    } else if (settings.fierceDeityMaskOot) {
+      this.addItem(Items.OOT_MASK_FIERCE_DEITY);
+    }
+
+    /* Fork: Deku Mask in OoT (custom.ts) */
+    if (settings.sharedMaskDeku) {
+      this.replaceItem(Items.MM_MASK_DEKU, Items.SHARED_MASK_DEKU);
+    } else if (settings.dekuMaskOot) {
+      this.addItem(Items.OOT_MASK_DEKU);
+    }
+
+    /* Fork: MM Goron and Zora Masks in OoT (custom.ts). OoT's own Goron and Zora Masks are unchanged. */
+    if (settings.sharedMaskGoronMmTransform && !settings.sharedMaskGoron) {
+      this.replaceItem(Items.MM_MASK_GORON, Items.SHARED_MASK_GORON_MM_TRANSFORM);
+    } else if (settings.goronMmTransformMaskOot) {
+      this.addItem(Items.OOT_MASK_GORON_MM_TRANSFORM);
+    }
+
+    if (settings.sharedMaskZoraMmTransform && !settings.sharedMaskZora) {
+      this.replaceItem(Items.MM_MASK_ZORA, Items.SHARED_MASK_ZORA_MM_TRANSFORM);
+    } else if (settings.zoraMmTransformMaskOot) {
+      this.addItem(Items.OOT_MASK_ZORA_MM_TRANSFORM);
     }
 
     if (settings.sharedMaskGerudo) {

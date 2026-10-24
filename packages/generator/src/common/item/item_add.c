@@ -897,16 +897,16 @@ static int addItemHookshotMm(PlayState* play, u8 itemId, s16 gi, u16 param)
 
 static int addItemTradeOotChild(PlayState* play, u8 itemId, s16 gi, u16 param)
 {
-    u16 mask;
+    u32 mask;
 
     itemId = kOotTradeChild[param];
-    mask = 1 << (u16)param;
-    if (gOotExtraTradeSave.child & mask)
+    mask = 1u << param;
+    if (OotTradeChild_GetSaveFlags() & mask)
         return 0;
     if (gOotSave.info.inventory.items[ITS_OOT_TRADE_CHILD] == ITEM_NONE)
         gOotSave.info.inventory.items[ITS_OOT_TRADE_CHILD] = itemId;
-    gOotExtraTrade.child |= mask;
-    gOotExtraTradeSave.child |= mask;
+    OotTradeChild_SetFlags(OotTradeChild_GetFlags() | mask);
+    OotTradeChild_SetSaveFlags(OotTradeChild_GetSaveFlags() | mask);
     return 0;
 }
 
@@ -2566,6 +2566,11 @@ static const SharedItem kSimpleSharedItems[] = {
     { CFG_SHARED_MASK_BLAST, GI_OOT_MASK_BLAST, GI_MM_MASK_BLAST },
     { CFG_SHARED_MASK_STONE, GI_OOT_MASK_STONE, GI_MM_MASK_STONE },
     { CFG_SHARED_MASK_KAMARO, GI_OOT_MASK_KAMARO, GI_MM_MASK_KAMARO },
+    { CFG_CUSTOM_SHARED_MASK_GIANT, GI_OOT_MASK_GIANT, GI_MM_MASK_GIANT },
+    { CFG_CUSTOM_SHARED_MASK_FIERCE_DEITY, GI_OOT_MASK_FIERCE_DEITY, GI_MM_MASK_FIERCE_DEITY },
+    { CFG_CUSTOM_SHARED_MASK_DEKU, GI_OOT_MASK_DEKU, GI_MM_MASK_DEKU },
+    { CFG_CUSTOM_SHARED_MASK_GORON_MM_TRANSFORM, GI_OOT_MASK_GORON_MM_TRANSFORM, GI_MM_MASK_GORON },
+    { CFG_CUSTOM_SHARED_MASK_ZORA_MM_TRANSFORM, GI_OOT_MASK_ZORA_MM_TRANSFORM, GI_MM_MASK_ZORA },
     { CFG_SHARED_MASK_GERUDO, GI_OOT_MASK_GERUDO, GI_MM_MASK_GERUDO },
     { CFG_SHARED_MASK_SKULL, GI_OOT_MASK_SKULL, GI_MM_MASK_SKULL },
     { CFG_SHARED_MASK_SPOOKY, GI_OOT_MASK_SPOOKY, GI_MM_MASK_SPOOKY },

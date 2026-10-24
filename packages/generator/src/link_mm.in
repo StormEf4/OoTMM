@@ -856,3 +856,6 @@ EffectSsDtBubble_SpawnCustomColor = 0x800b210c;
 Actor_SetColorFilter = 0x800bcb70;
 Actor_DrawDamageEffects = 0x800be680;
 Matrix_MultVecX = 0x80181b78;
+CutsceneManager_ClearNextCutscenes = 0x800F1678;
+Math_AsymStepToF = 0x800FF2F8;
+BgCheck_EntityCheckCeiling = 0x800C4F84;

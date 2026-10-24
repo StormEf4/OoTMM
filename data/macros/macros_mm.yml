@@ -381,10 +381,10 @@
 
 # Masks
 "has_mask_adult": "has(MM_MASK_ADULT)"
-"has_mask_deku": "age_mask_deku && has(MASK_DEKU)"
-"has_mask_goron": "age_mask_goron && (has(MASK_GORON) || has(SHARED_MASK_GORON))"
-"has_mask_zora": "age_mask_zora && (has(MASK_ZORA) || has(SHARED_MASK_ZORA))"
-"has_mask_fierce_deity": "age_mask_fierce_deity && has(MASK_FIERCE_DEITY)"
+"has_mask_deku": "age_mask_deku && (has(MASK_DEKU) || has(SHARED_MASK_DEKU))"
+"has_mask_goron": "age_mask_goron && (has(MASK_GORON) || has(SHARED_MASK_GORON) || has(SHARED_MASK_GORON_MM_TRANSFORM))"
+"has_mask_zora": "age_mask_zora && (has(MASK_ZORA) || has(SHARED_MASK_ZORA) || has(SHARED_MASK_ZORA_MM_TRANSFORM))"
+"has_mask_fierce_deity": "age_mask_fierce_deity && (has(MASK_FIERCE_DEITY) || has(SHARED_MASK_FIERCE_DEITY))"
 
 "has_mask_postman": "age_mask_postman && has(MASK_POSTMAN)"
 "has_mask_all_night": "age_mask_all_night && has(MASK_ALL_NIGHT)"
@@ -405,7 +405,7 @@
 "has_mask_gibdo": "age_mask_gibdo && has(MASK_GIBDO)"
 "has_mask_garo": "age_mask_garo && has(MASK_GARO)"
 "has_mask_captain": "age_mask_captain && has(MASK_CAPTAIN)"
-"has_mask_giant": "age_mask_giant && has(MASK_GIANT)"
+"has_mask_giant": "age_mask_giant && (has(MASK_GIANT) || has(SHARED_MASK_GIANT))"
 "has_mask_gerudo": "age_mask_gerudo && cond(setting(sharedMaskGerudo), has(SHARED_MASK_GERUDO), has(MASK_GERUDO))"
 "has_mask_skull": "age_mask_skull && cond(setting(sharedMaskSkull), has(SHARED_MASK_SKULL), has(MASK_SKULL))"
 "has_mask_spooky": "age_mask_spooky && cond(setting(sharedMaskSpooky), has(SHARED_MASK_SPOOKY), has(MASK_SPOOKY))"

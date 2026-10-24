@@ -74,6 +74,9 @@ typedef struct ALIGNED(16)
     u8              rustyKeysOot[(DOORID_OOT_MAX + 7) / 8];
     u8              rustyKeysMm[(DOORID_MM_MAX + 7) / 8];
     u8              saveFlags[(SAVE_FLAG_MAX + 7) / 8];
+    /* Fork: OoT child trade items past the 16 bits of gOotExtraTrade.child (xitem 0x10 and up) */
+    u16             ootTradeChildExt;
+    u16             ootTradeChildExtSave;
 #if defined(DEBUG)
     u8              cheats[4];
 #endif
@@ -161,5 +164,35 @@ ASSERT_SIZE(MmExtraAmmo,    sizeof(u32));
 #define gMmExtraFlags3              SAVE_EXTRA_RECORD(MmExtraFlags3,    10)
 #define gOotExtraAmmo               SAVE_EXTRA_RECORD(OotExtraAmmo,     11)
 #define gMmExtraAmmo                SAVE_EXTRA_RECORD(MmExtraAmmo,      12)
+
+#if !defined(__ASSEMBLER__)
+/* Fork: the OoT child trade slot holds more than 16 items. Bits 0-15 live in gOotExtraTrade.child, bits 16-31 in gSharedCustomSave. */
+static inline u32 OotTradeChild_GetFlags(void)
+{
+    return (u32)gOotExtraTrade.child | ((u32)gSharedCustomSave.ootTradeChildExt << 16);
+}
+
+static inline u32 OotTradeChild_GetSaveFlags(void)
+{
+    return (u32)gOotExtraTradeSave.child | ((u32)gSharedCustomSave.ootTradeChildExtSave << 16);
+}
+
+static inline void OotTradeChild_SetFlags(u32 flags)
+{
+    gOotExtraTrade.child = (u16)flags;
+    gSharedCustomSave.ootTradeChildExt = (u16)(flags >> 16);
+}
+
+static inline void OotTradeChild_SetSaveFlags(u32 flags)
+{
+    gOotExtraTradeSave.child = (u16)flags;
+    gSharedCustomSave.ootTradeChildExtSave = (u16)(flags >> 16);
+}
+
+static inline int OotTradeChild_Has(int xitem)
+{
+    return !!(OotTradeChild_GetFlags() & (1u << xitem));
+}
+#endif
 
 #endif

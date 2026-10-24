@@ -16,6 +16,11 @@
 # define MASK_BLAST     0x09
 # define MASK_STONE     0x0a
 # define MASK_KAMARO    0x0b
+# define MASK_GIANT     0x0c
+# define MASK_FIERCE_DEITY 0x0d
+# define MASK_DEKU      0x0e
+# define MASK_GORON_MM_TRANSFORM 0x0f
+# define MASK_ZORA_MM_TRANSFORM  0x10
 #endif
 
 #if defined(GAME_MM)
