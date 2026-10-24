@@ -45,6 +45,7 @@
 "can_play_tp_spirit": "has_song_tp_spirit && has_ocarina && ocarina_button_a && ocarina_button_right && ocarina_button_down"
 
 # Misc
+"has_infinite_magic": "has(MAGIC_INFINITE) || has(SHARED_MAGIC_INFINITE) || (setting(infiniteMagic, progressive) && (has(MAGIC_UPGRADE, 3) || has(SHARED_MAGIC_UPGRADE, 3)))"
 "has_magic_jar": "cond(setting(sharedMagic), renewable(SHARED_MAGIC_JAR_SMALL) || renewable(SHARED_MAGIC_JAR_LARGE), renewable(MAGIC_JAR_SMALL) || renewable(MAGIC_JAR_LARGE))"
 
 "can_use_din_raw": "has_magic && cond(setting(sharedSpellFire), has(SHARED_SPELL_FIRE), has(SPELL_FIRE))"

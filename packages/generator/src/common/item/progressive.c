@@ -279,6 +279,9 @@ static s16 progressiveWalletMm(void)
 
 static s16 progressiveMagicOot(void)
 {
+    /* Infinite Magic (fork custom item) is the third progressive Magic Upgrade */
+    if (Config_Flag(CFG_CUSTOM_INFINITE_MAGIC_PROGRESSIVE) && gOotSave.info.playerData.isDoubleMagicAcquired)
+        return GI_OOT_MAGIC_INFINITE;
     if (gOotSave.info.playerData.isMagicAcquired)
         return GI_OOT_MAGIC_UPGRADE2;
     return GI_OOT_MAGIC_UPGRADE;
@@ -286,6 +289,8 @@ static s16 progressiveMagicOot(void)
 
 static s16 progressiveMagicMm(void)
 {
+    if (Config_Flag(CFG_CUSTOM_INFINITE_MAGIC_PROGRESSIVE) && gMmSave.info.playerData.isDoubleMagicAcquired)
+        return GI_MM_MAGIC_INFINITE;
     switch (gMmSave.info.playerData.isMagicAcquired)
     {
     case 0:

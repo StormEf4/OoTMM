@@ -176,5 +176,18 @@ export const CUSTOM_SETTINGS = [
     default: 'off',
     cond: hasMM,
   },
+  {
+    key: 'infiniteMagic',
+    name: 'Infinite Magic',
+    category: 'custom.general',
+    type: 'enum',
+    description: 'Adds Infinite Magic to the item pool. Once you have it, using magic never empties your meter (it turns blue, like after drinking Chateau Romani), so spells, magic arrows, the Lens of Truth and the Magic Hookshot cost nothing. It only works once you have a magic meter. "Progressive" makes it a third Magic Upgrade after the Larger Magic Upgrade. "Separate" makes it its own item that can be found at any time. With Shared Magic it works in both games.',
+    values: [
+      { value: 'off', name: 'Off' },
+      { value: 'progressive', name: 'Progressive', description: 'Infinite Magic is the third Magic Upgrade: Magic Meter -> Larger Magic Meter -> Infinite Magic.' },
+      { value: 'separate', name: 'Separate', description: 'Infinite Magic is its own item, independent of the Magic Upgrades.' },
+    ],
+    default: 'off',
+  },
   // @custom-settings-end
 ] as const;
