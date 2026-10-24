@@ -22,9 +22,16 @@ type CosmeticsDataFile = CosmeticsDataCommon & {
   readonly ext: string;
 }
 
+type CosmeticsDataEnum = CosmeticsDataCommon & {
+  readonly type: 'enum';
+  readonly values: readonly { readonly value: string, readonly name: string }[];
+  readonly default: string;
+}
+
 type InputToShape<T> = T extends CosmeticsDataColor ? { [K in T['key']]: ColorArg }
   : T extends CosmeticsDataBoolean ? { [K in T['key']]: boolean }
   : T extends CosmeticsDataFile ? { [K in T['key']]: BufferPath | null }
+  : T extends CosmeticsDataEnum ? { [K in T['key']]: T['values'][number]['value'] }
   : never;
 
 type CosmeticsDataEntry = typeof COSMETICS[number];

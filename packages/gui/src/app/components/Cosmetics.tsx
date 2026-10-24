@@ -26,6 +26,9 @@ function CosmeticTooltips({ cosmetic }: { cosmetic: string }) {
     case 'color':
       defaultValue = 'Default';
       break;
+    case 'enum':
+      defaultValue = data.values.find(x => x.value === data.default)?.name ?? data.default;
+      break;
   }
 
   return <>
@@ -67,6 +70,17 @@ function Cosmetic({ cosmetic }: { cosmetic: keyof Cosmetics }) {
           accept={`.${data.ext}`}
           file={cosmetics[cosmetic] as File | null}
           onInput={(f) => setCosmetic(cosmetic, f)}
+        />
+      );
+    case 'enum':
+      return (
+        <SelectField
+          key={cosmetic}
+          value={cosmetics[cosmetic] as string}
+          label={data.name}
+          options={data.values.map(x => ({ label: x.name, value: x.value }))}
+          tooltip={(data as any).description && <CosmeticTooltips cosmetic={cosmetic} />}
+          onSelect={v => setCosmetic(cosmetic, v)}
         />
       );
     case 'boolean':

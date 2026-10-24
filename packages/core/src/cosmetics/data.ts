@@ -1,5 +1,7 @@
 import type { Game } from '@ootmm/data';
 
+import { CUSTOM_COSMETICS } from './custom';
+
 function hasGame(x: any, g: Game) {
   return x.games === g || x.games === 'ootmm';
 }
@@ -108,4 +110,4 @@ export const COSMETICS = [{
   name: 'Custom Music ZIP',
   type: 'file',
   ext: 'zip',
-},] as const;
+}, ...CUSTOM_COSMETICS] as const;
