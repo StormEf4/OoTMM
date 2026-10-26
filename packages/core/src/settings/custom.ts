@@ -189,5 +189,23 @@ export const CUSTOM_SETTINGS = [
     ],
     default: 'off',
   },
+  {
+    key: 'potGod',
+    name: 'Pot God',
+    category: 'custom.oot',
+    type: 'boolean',
+    description: 'Adds the Pot God, a mini boss hiding in the Market Pot House. As child, break every pot in the room: the guard screams "OH GOD!" and turns into the Pot God, half pot and half Dead Hand. Defeat it (sword or Deku Sticks) and 20 pots appear all over Hyrule Field, each holding a randomized check. The 20 pots are added to the pool whatever the pot shuffle setting is.',
+    default: false,
+    cond: hasOoT,
+  },
+  {
+    key: 'potGodSariaWarp',
+    name: "Reverse Saria's Song (Pot Room Warp)",
+    category: 'custom.oot',
+    type: 'boolean',
+    description: "Playing Saria's Song backwards (C-Left, C-Right, C-Down, C-Left, C-Right, C-Down) once you know Saria's Song warps you to the Market Pot House from anywhere in Ocarina of Time where warp songs work. It asks before warping. These are the same notes as the Song of Healing, so with the Song of Healing in OoT the notes play this warp (and still fix signs). Logic can use the warp.",
+    default: false,
+    cond: hasOoT,
+  },
   // @custom-settings-end
 ] as const;

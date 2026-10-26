@@ -141,6 +141,8 @@
   region: ENTRANCE
   exits:
     "Market Pot House": "true"
+  events:
+    POT_GOD_DEFEATED: "setting(potGod) && can_use_sword_or_sticks"
   locations:
     "Market Pot House GS": "gs"
     "Market Pot House Child Pot Ground 1": "true"

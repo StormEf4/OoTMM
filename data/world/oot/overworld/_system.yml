@@ -31,7 +31,15 @@
     "SONG_TP_SPIRIT": "can_play_tp_spirit"
     "SONG_TP_LIGHT": "can_play_tp_light"
     "MM SOARING": "can_play_soaring && setting(games, ootmm)"
+    "POT_GOD_WARP": "setting(potGodSariaWarp) && can_play_saria"
     "EGGS": "true"
+
+# Fork: Saria's Song played backwards warps to the Market Pot House
+"POT_GOD_WARP":
+  region: NONE
+  age_change: false
+  exits:
+    "Market Pot House": "true"
 
 "SONG_TP_FOREST":
   region: NONE

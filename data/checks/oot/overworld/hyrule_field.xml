@@ -369,6 +369,27 @@
       <match setup="2" actor="0x25"/>
       <xflag type="boulder-silver" location="Hyrule Field Silver Boulder" item="NOTHING"/>
     </actor>
+    <!-- Fork: Pot God pots, spawned by the game after the Pot God is defeated (actor ids past the real ones) -->
+    <xflag type="pot" location="Hyrule Field Pot God Pot 01" setup="0" room="0x0" actor="0xc0" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 02" setup="0" room="0x0" actor="0xc1" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 03" setup="0" room="0x0" actor="0xc2" item="RUPEE_PURPLE"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 04" setup="0" room="0x0" actor="0xc3" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 05" setup="0" room="0x0" actor="0xc4" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 06" setup="0" room="0x0" actor="0xc5" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 07" setup="0" room="0x0" actor="0xc6" item="RUPEE_PURPLE"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 08" setup="0" room="0x0" actor="0xc7" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 09" setup="0" room="0x0" actor="0xc8" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 10" setup="0" room="0x0" actor="0xc9" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 11" setup="0" room="0x0" actor="0xca" item="RUPEE_PURPLE"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 12" setup="0" room="0x0" actor="0xcb" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 13" setup="0" room="0x0" actor="0xcc" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 14" setup="0" room="0x0" actor="0xcd" item="RUPEE_PURPLE"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 15" setup="0" room="0x0" actor="0xce" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 16" setup="0" room="0x0" actor="0xcf" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 17" setup="0" room="0x0" actor="0xd0" item="RUPEE_PURPLE"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 18" setup="0" room="0x0" actor="0xd1" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 19" setup="0" room="0x0" actor="0xd2" item="RUPEE_RED"/>
+    <xflag type="pot" location="Hyrule Field Pot God Pot 20" setup="0" room="0x0" actor="0xd3" item="RUPEE_PURPLE"/>
   </scene>
   <scene id="GROTTOS" room="0x1">
     <scrub location="Hyrule Field Grotto Scrub HP" flag="0x07" item="HEART_PIECE"/>
