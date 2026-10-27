@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-26: Pot God mini boss and reverse Saria's Song warp (OoT)
+
+- Where in the app: Custom > Ocarina of Time > "Pot God" and Custom > Ocarina of Time > "Reverse Saria's Song (Pot Room Warp)"
+- What it does: Pot God adds a mini boss to the child Market Pot House. Break every pot in the room and the guard screams "OH GOD!", collapses and turns into the Pot God (Dead Hand's body with a giant pot for a head, pot shards circling it) in a short cutscene. The fight is a simpler Dead Hand: it walks at Link, bites, and throws pots. Beating it puts 20 pots all over Hyrule Field, each holding a randomized check ("Hyrule Field Pot God Pot 01" to "20"), whatever the pot shuffle setting is. Reverse Saria's Song lets you play Saria's Song backwards (C-Left, C-Right, C-Down, C-Left, C-Right, C-Down) in free play once you know Saria's Song, to warp to the Market Pot House from anywhere warp songs work, after a Yes/No prompt; logic can use it. These are the Song of Healing's notes: in free play they give the warp prompt (and still fix signs), and spots that ask for the Song of Healing still get it. There's no recorded "OH GOD!" voice (it's a text box with vanilla screams), and no kneeling animation (the guard collapses like the dying Market guard). Not tested in game yet; see `docs/custom/pot-god.md`
+- Files: `packages/core/src/settings/custom.ts` (settings), `data/checks/oot/overworld/hyrule_field.xml` (20 pot checks), `data/world/oot/overworld/hyrule_field.yml`, `data/world/oot/overworld/market.yml`, `data/world/oot/overworld/_system.yml` (logic), `packages/logic/src/world/transform.ts` (pool), `packages/generator/include/combo.h`, `packages/generator/include/combo/actor_id.h`, `packages/generator/include/combo/save_flags.h`, `packages/generator/src/oot/ovl/actors/Custom_Pot_God/Custom_Pot_God.c` and `.h` (new, the boss), `packages/generator/src/oot/play/pot_god.c` (new, spawning), `packages/generator/src/oot/play/play.c`, `packages/generator/src/oot/ocarina.c` (song), `packages/logic/tests/seeds/pot-god.test.ts` (seed test), `docs/custom/pot-god.md`
+
 ## 2026-10-24: Fairy Companion cosmetic: Talking Furbies and RGB Glow
 
 - Where in the app: Cosmetics > "Fairy Companion" (Default / Talking Furbies / RGB Glow / Talking Furbies + RGB Glow)

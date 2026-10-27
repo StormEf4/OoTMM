@@ -13,6 +13,9 @@ import { mustStartWithMasterSword } from '../helpers';
 import { exprTrue } from '../expr';
 import { isLocationOtherFairy, isLocationRenewable, locationData, locationsZelda, makeLocation, isLocationInDungeon, getPreActivatedOwlsLocations } from '../locations';
 
+/* Fork: the pots that appear in Hyrule Field once the Pot God is defeated */
+const isPotGodPot = (loc: string) => loc.startsWith('OOT Hyrule Field Pot God Pot ');
+
 const SONG_NOTES = new Map<Item, [Item, number]>([
   [Items.OOT_SONG_EPONA, [Items.OOT_SONG_NOTE_EPONA, 6]],
   [Items.OOT_SONG_SARIA, [Items.OOT_SONG_NOTE_SARIA, 6]],
@@ -1417,7 +1420,7 @@ class LogicPassWorldTransform {
     }
   }
 
-  private filterLocations(value: 'none' | 'all' | 'overworld' | 'dungeons', type: CheckType, game: 'oot' | 'mm') {
+  private filterLocations(value: 'none' | 'all' | 'overworld' | 'dungeons', type: CheckType, game: 'oot' | 'mm', keep?: (loc: string) => boolean) {
     if (value === 'all') {
       return;
     }
@@ -1429,6 +1432,9 @@ class LogicPassWorldTransform {
       locationsToRemove = CHECKS.filter(x => x.game === game && x.type === type && !isLocationInDungeon(x.scene)).map(x => x.location);
     } else {
       locationsToRemove = CHECKS.filter(x => x.game === game && x.type === type).map(x => x.location);
+    }
+    if (keep) {
+      locationsToRemove = locationsToRemove.filter(x => !keep(x));
     }
     this.removeLocations(locationsToRemove);
   }
@@ -1492,8 +1498,12 @@ class LogicPassWorldTransform {
   private filterChecksPots() {
     const { settings } = this.state;
 
-    this.filterLocations(this.state.settings.shufflePotsOot, 'pot', 'oot');
+    /* Fork: the Pot God pots are in the pool whenever the Pot God is on, whatever the pot shuffle */
+    this.filterLocations(this.state.settings.shufflePotsOot, 'pot', 'oot', isPotGodPot);
     this.filterLocations(this.state.settings.shufflePotsMm, 'pot', 'mm');
+    if (!settings.potGod) {
+      this.removeLocations(CHECKS.filter(x => isPotGodPot(x.location)).map(x => x.location));
+    }
 
     if (settings.goal === 'triforce' || settings.goal === 'triforce3') {
       const potsGanonTower = CHECKS.filter(x => x.type === 'pot' && x.scene === 'OOT_GANON_TOWER').map(x => x.location);

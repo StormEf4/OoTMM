@@ -500,6 +500,9 @@ static void Play_AfterInit(PlayState* play)
     /* Signs */
     ComboPlay_SpawnExtraSigns(play);
 
+    /* Fork: Pot God */
+    PotGod_SpawnForScene(play);
+
     /* Adult kakariko gate */
     if (Config_Flag(CFG_OOT_ADULT_KAKARIKO_GATE) && play->sceneId == SCE_OOT_KAKARIKO_VILLAGE && gSave.age == AGE_ADULT)
     {

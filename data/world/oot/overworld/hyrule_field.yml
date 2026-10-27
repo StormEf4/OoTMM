@@ -22,6 +22,7 @@
     "Hyrule Field Grotto Near Kak": "hidden_grotto_bomb"
     "Hyrule Field Fairy Grotto": "has_shovel && has_explosives_or_hammer"
     "Hyrule Field Red Boulders": "is_adult && can_hammer_or_keg"
+    "Hyrule Field Pot God Pots": "event(POT_GOD_DEFEATED)"
   events:
     BIG_POE: "can_ride_epona && can_use_bow && has_bottle && soul_poe"
     #There are rocks near Gerudo Valley you can farm for drops
@@ -154,6 +155,32 @@
     "Hyrule Field Boulder Near Market": "has_explosives_or_hammer"
     "Hyrule Field Boulder Island": "has_explosives_or_hammer"
     "Hyrule Field Silver Boulder": "can_lift_silver"
+
+# Fork: pots that appear all over the field once the Pot God is defeated
+"Hyrule Field Pot God Pots":
+  region: HYRULE_FIELD
+  age_change: false
+  locations:
+    "Hyrule Field Pot God Pot 01": "true"
+    "Hyrule Field Pot God Pot 02": "true"
+    "Hyrule Field Pot God Pot 03": "true"
+    "Hyrule Field Pot God Pot 04": "true"
+    "Hyrule Field Pot God Pot 05": "true"
+    "Hyrule Field Pot God Pot 06": "true"
+    "Hyrule Field Pot God Pot 07": "true"
+    "Hyrule Field Pot God Pot 08": "true"
+    "Hyrule Field Pot God Pot 09": "true"
+    "Hyrule Field Pot God Pot 10": "true"
+    "Hyrule Field Pot God Pot 11": "true"
+    "Hyrule Field Pot God Pot 12": "true"
+    "Hyrule Field Pot God Pot 13": "true"
+    "Hyrule Field Pot God Pot 14": "true"
+    "Hyrule Field Pot God Pot 15": "true"
+    "Hyrule Field Pot God Pot 16": "true"
+    "Hyrule Field Pot God Pot 17": "true"
+    "Hyrule Field Pot God Pot 18": "true"
+    "Hyrule Field Pot God Pot 19": "true"
+    "Hyrule Field Pot God Pot 20": "true"
 
 "Hyrule Field Grass":
   region: HYRULE_FIELD

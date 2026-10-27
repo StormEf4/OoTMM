@@ -154,6 +154,11 @@ void                comboExObjectsReset(void);
 /* Custom_Warp */
 void comboSpawnCustomWarps(PlayState*);
 
+/* Fork: Pot God (src/oot/play/pot_god.c) */
+#if defined(GAME_OOT)
+void PotGod_SpawnForScene(PlayState* play);
+#endif
+
 /* Util */
 int comboStrayFairyIndex(void);
 int comboOotDungeonScene(PlayState* play, int isBossKey);
