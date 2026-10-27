@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-27: Pot God redesign and crash fix
+
+- Where in the app: Custom > Ocarina of Time > "Pot God" (no new control; changes that mini boss)
+- What it does: the game crashed right when the Pot God appeared (after the guard sinks). The Pot God has a new look that no longer uses Dead Hand's body: a giant pot bursts out of the floor where the guard was dragged down, bleeding from its rim, and four of Dead Hand's pale grasping arms tear out of its mouth one by one and writhe, with pot shards circling it. In the fight it hops at Link, slams him with its two front arms up close, and flings pots from range; the pot and the two front hands take hits. The crash came from drawing Dead Hand's full body, which the new look doesn't do (the exact cause couldn't be pinned down without a ROM). Not tested in game yet
+- Files: `packages/generator/src/oot/ovl/actors/Custom_Pot_God/Custom_Pot_God.c` and `.h`, `packages/core/src/settings/custom.ts` (description), `docs/custom/pot-god.md`
+
 ## 2026-10-26: Pot God mini boss and reverse Saria's Song warp (OoT)
 
 - Where in the app: Custom > Ocarina of Time > "Pot God" and Custom > Ocarina of Time > "Reverse Saria's Song (Pot Room Warp)"

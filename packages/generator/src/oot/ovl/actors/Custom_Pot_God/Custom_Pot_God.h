@@ -9,6 +9,8 @@
  */
 
 #define POT_GOD_FLYING_POTS 3
+#define POT_GOD_ARMS        4
+#define POT_GOD_SLAM_ARMS   2
 
 struct PotGod;
 
@@ -28,9 +30,9 @@ PotGodFlyingPot;
 typedef struct PotGod
 {
     Actor                   actor;
-    SkelAnime               skelAnime;          /* Dead Hand body */
-    Vec3s                   jointTable[16];
-    Vec3s                   morphTable[16];
+    SkelAnime               armSkelAnime;       /* One Dead Hand arm, drawn once per arm */
+    Vec3s                   armJointTable[4];
+    Vec3s                   armMorphTable[4];
     SkelAnime               guardSkelAnime;     /* The guard, during the cutscene */
     Vec3s                   guardJointTable[17];
     Vec3s                   guardMorphTable[17];
@@ -41,6 +43,8 @@ typedef struct PotGod
     s16                     summonTimer;
     s16                     shardAngle;
     s16                     guardYaw;
+    s16                     slamTilt;           /* Extra forward tilt of the two front arms */
+    s16                     wobble;             /* Body shake when hurt */
     u16                     prevBgm;
     u8                      potsSeen;
     u8                      calmFrames;
@@ -48,18 +52,22 @@ typedef struct PotGod
     u8                      drawBody;
     u8                      drawGuard;
     u8                      isHurt;
+    u8                      drawArm;            /* Arm being drawn, for the limb callbacks */
+    u8                      slamActive;
     s8                      tsuboSlot;
     s8                      guardSlot;
-    f32                     guardScale;
     f32                     guardSink;
+    f32                     bodyRise;           /* 0 when fully out of the floor */
+    f32                     hopHeight;
+    f32                     armGrow[POT_GOD_ARMS];
     Vec3f                   guardPos;
-    Vec3f                   headPos;
+    Vec3f                   handPos[POT_GOD_ARMS];
     Vec3f                   subCamAt;
     Vec3f                   subCamEye;
     PotGodFlyingPot         pots[POT_GOD_FLYING_POTS];
     ColliderCylinder        collider;
-    ColliderJntSph          colliderBite;
-    ColliderJntSphElement   colliderBiteElements[1];
+    ColliderJntSph          colliderHands;
+    ColliderJntSphElement   colliderHandsElements[POT_GOD_SLAM_ARMS];
     ColliderJntSph          colliderPots;
     ColliderJntSphElement   colliderPotsElements[POT_GOD_FLYING_POTS];
 }
