@@ -3,12 +3,14 @@
  *
  * Spawned (invisible) in the child Market Pot House by PotGod_SpawnForScene.
  * It watches the pots in the room; once every pot is broken, the guard
- * screams, collapses and turns into the Pot God: Dead Hand's body with a giant
- * pot for a head and pot shards circling it. The fight is a simpler Dead Hand:
- * it walks at Link, bites when close and throws pots. Defeating it sets
- * SAVE_FLAG_POT_GOD_DEFEATED, which makes 20 pots holding checks appear in
- * Hyrule Field. Everything is drawn from vanilla objects (object_dh,
- * object_tsubo and the guard's object_sd), so no new asset is needed.
+ * screams, collapses and sinks into the floor, and the Pot God bursts out
+ * where he went down: a giant pot, bleeding from its rim, with four of Dead
+ * Hand's grasping arms writhing out of its mouth and pot shards circling it.
+ * It hops at Link, slams him with its two front arms and throws pots.
+ * Defeating it sets SAVE_FLAG_POT_GOD_DEFEATED, which makes 20 pots holding
+ * checks appear in Hyrule Field. Everything is drawn from vanilla objects
+ * (Dead Hand's hand from object_dh, object_tsubo and the guard's object_sd),
+ * so no new asset is needed.
  */
 
 #include "Custom_Pot_God.h"
@@ -25,26 +27,34 @@
 
 #define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
 
-#define POT_GOD_SCALE           0.009f
 #define POT_GOD_HEALTH          16
 #define POT_GOD_MIN_POTS        8
-#define POT_GOD_HEAD_LIMB       13
 #define POT_GOD_SHARDS          6
 #define POT_GOD_POT_GRAVITY     0.6f
 #define POT_GOD_POT_FLIGHT      24
+
+/* The body: a pot about 100 units tall (a room pot is 26 at scale 0.15) */
+#define POT_GOD_BODY_SCALE      0.6f
+#define POT_GOD_BODY_HEIGHT     100.0f
+#define POT_GOD_BODY_RADIUS     36.0f
+#define POT_GOD_RIM_RADIUS      14.0f
+
+/* Dead Hand's hand (the one that grabs from the floor), a bit bigger */
+#define POT_GOD_ARM_SCALE       0.014f
+#define POT_GOD_ARM_TILT        0x1400
+
+/* Hops */
+#define POT_GOD_HOP_LENGTH      36
+#define POT_GOD_HOP_AIR         20
+#define POT_GOD_HOP_SPEED       3.0f
 
 /* OoT voice sfx (not in sfx_id.h's OoT section) */
 #define SFX_TALON_SURPRISE      0x6851
 #define SFX_TALON_CRY           0x6852
 #define SFX_INGO_CRY            0x6854
 
-/* Dead Hand animations (object_dh) */
-#define ANIM_DH_WALK            object_dh_Anim_003A8C
-#define ANIM_DH_REACH           object_dh_Anim_004658
-#define ANIM_DH_BITE            object_dh_Anim_001A3C
-#define ANIM_DH_DAMAGE          object_dh_Anim_003D6C
-#define ANIM_DH_DEATH           object_dh_Anim_0032BC
-#define ANIM_DH_SUMMON          object_dh_Anim_005880
+#define ANIM_DH_HAND            object_dh_Anim_0015B0
+#define SKEL_DH_HAND            object_dh_Skel_000BD8
 
 extern void* gExObjectsAddr[];
 
@@ -56,12 +66,16 @@ void PotGod_Draw(Actor* thisx, PlayState* play);
 static void PotGod_Watch(PotGod* this, PlayState* play);
 static void PotGod_WaitCalm(PotGod* this, PlayState* play);
 static void PotGod_Cutscene(PotGod* this, PlayState* play);
-static void PotGod_SetupWalk(PotGod* this);
-static void PotGod_Walk(PotGod* this, PlayState* play);
-static void PotGod_Attack(PotGod* this, PlayState* play);
+static void PotGod_SetupHop(PotGod* this);
+static void PotGod_Hop(PotGod* this, PlayState* play);
+static void PotGod_Slam(PotGod* this, PlayState* play);
 static void PotGod_Summon(PotGod* this, PlayState* play);
 static void PotGod_Damage(PotGod* this, PlayState* play);
 static void PotGod_Death(PotGod* this, PlayState* play);
+
+/* Each arm: where it comes out of the mouth (relative to the body's yaw) and how it writhes */
+static const s16 kArmYaw[POT_GOD_ARMS] = { 0x1C00, -0x1C00, 0x6000, -0x6000 };
+static const s16 kArmPhase[POT_GOD_ARMS] = { 0x0000, 0x5000, 0x9000, 0xD000 };
 
 static ColliderCylinderInit sCylinderInit = {
     {
@@ -80,34 +94,39 @@ static ColliderCylinderInit sCylinderInit = {
         ACELEM_ON,
         OCELEM_ON,
     },
-    { 30, 90, 0, { 0, 0, 0 } },
+    { 36, 100, 0, { 0, 0, 0 } },
 };
 
-static ColliderJntSphElementInit sBiteElementsInit[] = {
-    {
-        {
-            ELEM_MATERIAL_UNK0,
-            { 0x00000000, HIT_SPECIAL_EFFECT_NONE, 0x00 },
-            { 0xFFCFFFFF, HIT_BACKLASH_NONE, 0x00 },
-            ATELEM_NONE,
-            ACELEM_ON,
-            OCELEM_ON,
-        },
-        { POT_GOD_HEAD_LIMB, { { 0, 0, 0 }, 20 }, 100 },
-    },
+/* The two front hands: they hit Link while slamming, and can be hit */
+#define HAND_ELEMENT_INIT                                       \
+    {                                                           \
+        {                                                       \
+            ELEM_MATERIAL_UNK0,                                 \
+            { 0xFFCFFFFF, HIT_SPECIAL_EFFECT_NONE, 0x08 },      \
+            { 0xFFCFFFFF, HIT_BACKLASH_NONE, 0x00 },            \
+            ATELEM_NONE,                                        \
+            ACELEM_ON,                                          \
+            OCELEM_NONE,                                        \
+        },                                                      \
+        { 0, { { 0, 0, 0 }, 14 }, 100 },                        \
+    }
+
+static ColliderJntSphElementInit sHandsElementsInit[POT_GOD_SLAM_ARMS] = {
+    HAND_ELEMENT_INIT,
+    HAND_ELEMENT_INIT,
 };
 
-static ColliderJntSphInit sBiteInit = {
+static ColliderJntSphInit sHandsInit = {
     {
-        COL_MATERIAL_HIT6,
-        AT_NONE,
+        COL_MATERIAL_HIT0,
+        AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
-        OC1_ON | OC1_TYPE_PLAYER,
-        OC2_TYPE_1,
+        OC1_NONE,
+        OC2_NONE,
         COLSHAPE_JNTSPH,
     },
-    ARRAY_COUNT(sBiteElementsInit),
-    sBiteElementsInit,
+    ARRAY_COUNT(sHandsElementsInit),
+    sHandsElementsInit,
 };
 
 #define POT_ELEMENT_INIT                                        \
@@ -263,6 +282,18 @@ static void PotGod_BreakPot(PotGod* this, PlayState* play, PotGodFlyingPot* pot)
     SfxSource_PlaySfxAtFixedWorldPos(play, &pot->pos, 20, NA_SE_EV_POT_BROKEN);
 }
 
+/* The middle of the pot's mouth, where the arms come out */
+static void PotGod_GetMouthPos(PotGod* this, Vec3f* dst)
+{
+    *dst = this->actor.world.pos;
+    dst->y += POT_GOD_BODY_HEIGHT - 4.0f + this->bodyRise + this->hopHeight;
+}
+
+static int PotGod_ObjectsLoaded(PotGod* this, PlayState* play)
+{
+    return Object_IsLoaded(&play->objectCtx, this->tsuboSlot) && Object_IsLoaded(&play->objectCtx, this->guardSlot);
+}
+
 void PotGod_Init(Actor* thisx, PlayState* play)
 {
     PotGod* this = (PotGod*)thisx;
@@ -276,25 +307,24 @@ void PotGod_Init(Actor* thisx, PlayState* play)
     }
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
-    Actor_SetScale(&this->actor, POT_GOD_SCALE);
+    Actor_SetScale(&this->actor, 0.01f);
     this->actor.colChkInfo.damageTable = &sDamageTable;
     this->actor.colChkInfo.mass = MASS_HEAVY;
     this->actor.colChkInfo.health = POT_GOD_HEALTH;
-    this->actor.shape.yOffset = -15000.0f;
-    ActorShape_Init(&this->actor.shape, -15000.0f, NULL, 64.0f);
+    ActorShape_Init(&this->actor.shape, 0.0f, NULL, 0.0f);
 
-    /* Dead Hand: our own object, already in segment 6. The guard's skeleton is set up with the cutscene. */
-    SkelAnime_InitFlex(play, &this->skelAnime, (void*)object_dh_Skel_007E88, (void*)ANIM_DH_WALK, this->jointTable, this->morphTable, 16);
+    /* Dead Hand's hand: our own object, already in segment 6. The guard's skeleton is set up with the cutscene. */
+    SkelAnime_InitFlex(play, &this->armSkelAnime, (void*)SKEL_DH_HAND, (void*)ANIM_DH_HAND, this->armJointTable, this->armMorphTable, 4);
 
     Collider_InitCylinder(play, &this->collider);
     Collider_SetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
-    Collider_InitJntSph(play, &this->colliderBite);
-    Collider_SetJntSph(play, &this->colliderBite, &this->actor, &sBiteInit, this->colliderBiteElements);
+    Collider_InitJntSph(play, &this->colliderHands);
+    Collider_SetJntSph(play, &this->colliderHands, &this->actor, &sHandsInit, this->colliderHandsElements);
     Collider_InitJntSph(play, &this->colliderPots);
     Collider_SetJntSph(play, &this->colliderPots, &this->actor, &sPotsInit, this->colliderPotsElements);
 
     this->subCamId = CAM_ID_MAIN;
-    this->guardScale = 1.0f;
+    this->bodyRise = -(POT_GOD_BODY_HEIGHT + 20.0f);
     this->actor.draw = NULL;
     this->actionFunc = PotGod_Watch;
 }
@@ -304,7 +334,7 @@ void PotGod_Destroy(Actor* thisx, PlayState* play)
     PotGod* this = (PotGod*)thisx;
 
     Collider_DestroyCylinder(play, &this->collider);
-    Collider_DestroyJntSph(play, &this->colliderBite);
+    Collider_DestroyJntSph(play, &this->colliderHands);
     Collider_DestroyJntSph(play, &this->colliderPots);
 }
 
@@ -380,17 +410,12 @@ static void PotGod_StartCutscene(PotGod* this, PlayState* play)
     Camera* mainCam;
     Actor* guard;
 
-    /* The room objects load in the background; by now they are long done, but make sure */
     guard = PotGod_FindGuard(play);
-    if (guard != NULL && (!Object_IsLoaded(&play->objectCtx, this->guardSlot) || !Object_IsLoaded(&play->objectCtx, this->tsuboSlot)))
-        return;
-
     if (guard != NULL)
     {
         PotGod_SetCpuSegment(PotGod_ObjectSegment(this->guardSlot));
         SkelAnime_Init(play, &this->guardSkelAnime, (void*)gEnHeishiSkel, (void*)gEnHeishiIdleAnim, this->guardJointTable, this->guardMorphTable, 17);
         PotGod_SetCpuSegment(PotGod_ObjectSegment(this->actor.objectSlot));
-
         this->guardPos = guard->world.pos;
         Actor_Kill(guard);
     }
@@ -440,7 +465,8 @@ static void PotGod_WaitCalm(PotGod* this, PlayState* play)
         this->calmFrames = 0;
     }
 
-    if (this->calmFrames >= 20)
+    /* The room objects load in the background; by now they are long done, but make sure */
+    if (this->calmFrames >= 20 && PotGod_ObjectsLoaded(this, play))
         PotGod_StartCutscene(this, play);
 }
 
@@ -453,14 +479,15 @@ static void PotGod_EndCutscene(PotGod* this, PlayState* play)
     SEQCMD_PLAY_SEQUENCE(SEQ_PLAYER_BGM_MAIN, 0, 0, NA_BGM_MINI_BOSS);
     this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE;
     this->summonTimer = 60;
-    PotGod_SetupWalk(this);
+    PotGod_SetupHop(this);
 }
 
-/* Shout, collapse, transform, roar */
+/* Shout, collapse and sink, the pot bursts out, the arms tear out of it, roar */
 static void PotGod_Cutscene(PotGod* this, PlayState* play)
 {
     s16 t;
     Vec3f center;
+    Vec3f mouth;
 
     t = this->csTimer++;
 
@@ -481,7 +508,7 @@ static void PotGod_Cutscene(PotGod* this, PlayState* play)
     }
     else if (t < 120)
     {
-        /* Collapse, in pain */
+        /* Collapse, in pain, and get dragged into the floor */
         if (t == 60)
         {
             if (this->drawGuard)
@@ -495,42 +522,63 @@ static void PotGod_Cutscene(PotGod* this, PlayState* play)
         }
         if (t == 90)
             Actor_PlaySfx(&this->actor, SFX_TALON_CRY);
-        Math_ApproachF(&this->guardSink, 12.0f, 0.1f, 1.0f);
+        Math_ApproachF(&this->guardSink, (t < 100) ? 12.0f : 40.0f, 0.1f, 1.5f);
         if ((t & 3) == 0)
             PotGod_SpawnBlood(play, &center, 30.0f, 60);
         PotGod_UpdateCsCamera(this, play, 90.0f, 25.0f, 20.0f);
     }
-    else if (t < 170)
+    else if (t < 150)
     {
-        /* Transformation: the guard twists into the floor, the Pot God rises */
+        /* The pot bursts out of the floor where he went down */
         if (t == 120)
         {
             this->drawBody = TRUE;
-            Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_LAUGH);
-            PotGod_Quake(play, 6, 50);
+            Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_HIDE);
+            PotGod_Quake(play, 6, 40);
         }
-        Math_ApproachF(&this->guardScale, 0.0f, 0.15f, 0.04f);
-        this->actor.shape.yOffset = CLAMP_MAX(this->actor.shape.yOffset + 375.0f, 0.0f);
-        PotGod_SpawnBlood(play, &center, 50.0f, 90);
-        if ((t % 6) == 0)
+        if (t == 128)
+            this->drawGuard = FALSE;
+        Math_ApproachF(&this->bodyRise, 0.0f, 0.25f, 8.0f);
+        if ((t & 1) == 0)
+            PotGod_SpawnBlood(play, &center, 50.0f, 90);
+        if ((t % 8) == 0)
         {
             PotGod_SpawnShards(play, &center, 4, 6.0f);
             SfxSource_PlaySfxAtFixedWorldPos(play, &center, 20, NA_SE_EV_POT_BROKEN);
         }
         PotGod_UpdateCsCamera(this, play, 200.0f, 90.0f, 70.0f);
     }
-    else if (t < 230)
+    else if (t < 190)
+    {
+        /* One by one, the arms tear out of its mouth */
+        this->bodyRise = 0.0f;
+        for (s32 i = 0; i < POT_GOD_ARMS; ++i)
+        {
+            if (t == 150 + i * 8)
+            {
+                PotGod_GetMouthPos(this, &mouth);
+                Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_HAND_AT);
+                for (s32 j = 0; j < 4; ++j)
+                    PotGod_SpawnBlood(play, &mouth, 20.0f, 80);
+                PotGod_Quake(play, 3, 8);
+            }
+            if (t >= 150 + i * 8)
+                Math_ApproachF(&this->armGrow[i], 1.0f, 0.3f, 0.12f);
+        }
+        PotGod_UpdateCsCamera(this, play, 210.0f, 110.0f, 90.0f);
+    }
+    else if (t < 250)
     {
         /* Roar */
-        if (t == 170)
+        if (t == 190)
         {
-            this->drawGuard = FALSE;
-            this->actor.shape.yOffset = 0.0f;
-            Animation_MorphToPlayOnce(&this->skelAnime, (void*)ANIM_DH_REACH, -6.0f);
             Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_LAUGH);
+            PotGod_Quake(play, 5, 30);
             PotGod_ShowText(play, TEXT_COLOR_RED "POT GOD" TEXT_CZ TEXT_NL "Keeper of Every Broken Pot" TEXT_FADE("\x3c") TEXT_END);
         }
-        PotGod_UpdateCsCamera(this, play, 200.0f, 80.0f, 80.0f);
+        for (s32 i = 0; i < POT_GOD_ARMS; ++i)
+            this->armGrow[i] = 1.0f;
+        PotGod_UpdateCsCamera(this, play, 200.0f, 90.0f, 90.0f);
     }
     else if (play->msgCtx.msgMode == MSGMODE_NONE)
     {
@@ -545,97 +593,121 @@ static void PotGod_Cutscene(PotGod* this, PlayState* play)
         PotGod_SetCpuSegment(PotGod_ObjectSegment(this->actor.objectSlot));
     }
     if (this->drawBody)
-        SkelAnime_Update(&this->skelAnime);
+        SkelAnime_Update(&this->armSkelAnime);
 }
 
-static void PotGod_SetupWalk(PotGod* this)
+static void PotGod_SetupHop(PotGod* this)
 {
-    Animation_Change(&this->skelAnime, (void*)ANIM_DH_WALK, 1.0f, 0.0f, Animation_GetLastFrame((void*)ANIM_DH_WALK) - 3.0f, ANIMMODE_LOOP, -6.0f);
-    this->actor.speed = 1.5f;
-    this->actionFunc = PotGod_Walk;
+    this->timer = 0;
+    this->slamTilt = 0;
+    this->slamActive = FALSE;
+    this->actionFunc = PotGod_Hop;
 }
 
-static void PotGod_SetupAttack(PotGod* this)
+static void PotGod_SetupSlam(PotGod* this)
 {
-    Animation_MorphToPlayOnce(&this->skelAnime, (void*)ANIM_DH_REACH, -6.0f);
-    this->actionState = 0;
+    this->timer = 0;
     this->actor.speed = 0.0f;
-    this->actionFunc = PotGod_Attack;
+    this->hopHeight = 0.0f;
+    this->actionFunc = PotGod_Slam;
 }
 
 static void PotGod_SetupSummon(PotGod* this)
 {
-    Animation_MorphToLoop(&this->skelAnime, (void*)ANIM_DH_SUMMON, -4.0f);
     this->actor.speed = 0.0f;
+    this->hopHeight = 0.0f;
     this->timer = 0;
     this->actionFunc = PotGod_Summon;
 }
 
-static void PotGod_Walk(PotGod* this, PlayState* play)
+/* It has no legs: it hops at Link, landing with a thud */
+static void PotGod_Hop(PotGod* this, PlayState* play)
 {
-    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 1, 0x200, 0);
+    s16 t;
+
+    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 1, 0x300, 0);
     this->actor.world.rot.y = this->actor.shape.rot.y;
-    SkelAnime_Update(&this->skelAnime);
-    if (((s32)this->skelAnime.curFrame % 8) == 0)
-        Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_WALK);
-    if ((play->gameplayFrames & 0x5F) == 0)
-        Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_LAUGH);
+    SkelAnime_Update(&this->armSkelAnime);
 
     if (this->summonTimer > 0)
         this->summonTimer--;
 
-    if (this->actor.xzDistToPlayer <= 90.0f)
+    t = this->timer;
+    if (t < POT_GOD_HOP_AIR)
     {
-        this->actor.speed = 0.0f;
-        if (PotGod_IsFacingPlayer(this, 0x2AAA))
-            PotGod_SetupAttack(this);
+        this->hopHeight = Math_SinS((t * 0x8000) / POT_GOD_HOP_AIR) * 24.0f;
+        this->actor.speed = (this->actor.xzDistToPlayer > 70.0f) ? POT_GOD_HOP_SPEED : 0.0f;
     }
     else
     {
-        this->actor.speed = 1.5f;
-        if (this->summonTimer == 0 && this->actor.xzDistToPlayer > 140.0f)
-            PotGod_SetupSummon(this);
-    }
-}
-
-static void PotGod_BiteOff(PotGod* this)
-{
-    this->colliderBite.base.atFlags = this->colliderBite.elements[0].base.atElemFlags = AT_NONE;
-    this->colliderBite.elements[0].base.atDmgInfo.dmgFlags = 0;
-    this->colliderBite.elements[0].base.atDmgInfo.damage = 0;
-}
-
-static void PotGod_Attack(PotGod* this, PlayState* play)
-{
-    if (SkelAnime_Update(&this->skelAnime))
-        this->actionState++;
-
-    switch (this->actionState)
-    {
-    case 0:
-        Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 1, 0x5DC, 0);
-        break;
-    case 1:
-        Animation_PlayOnce(&this->skelAnime, (void*)ANIM_DH_BITE);
-        Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_BITE);
-        this->actionState++;
-        break;
-    case 2:
-        if (this->skelAnime.curFrame >= 4.0f)
+        if (t == POT_GOD_HOP_AIR)
         {
-            this->colliderBite.base.atFlags = this->colliderBite.elements[0].base.atElemFlags = AT_ON | AT_TYPE_ENEMY;
-            this->colliderBite.elements[0].base.atDmgInfo.dmgFlags = DMG_DEFAULT;
-            this->colliderBite.elements[0].base.atDmgInfo.damage = 8;
+            Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_WALK);
+            PotGod_Quake(play, 2, 6);
         }
-        if (this->colliderBite.base.atFlags & (AT_HIT | AT_BOUNCED))
-            PotGod_BiteOff(this);
-        break;
-    default:
-        PotGod_BiteOff(this);
-        PotGod_SetupWalk(this);
-        break;
+        this->hopHeight = 0.0f;
+        this->actor.speed = 0.0f;
     }
-    this->actor.world.rot.y = this->actor.shape.rot.y;
+    if ((play->gameplayFrames & 0x5F) == 0)
+        Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_LAUGH);
+
+    /* Only decide on the ground */
+    if (++this->timer < POT_GOD_HOP_LENGTH)
+        return;
+    this->timer = 0;
+
+    if (this->actor.xzDistToPlayer <= 110.0f && PotGod_IsFacingPlayer(this, 0x2AAA))
+        PotGod_SetupSlam(this);
+    else if (this->summonTimer == 0 && this->actor.xzDistToPlayer > 160.0f)
+        PotGod_SetupSummon(this);
+}
+
+/* The two front arms rear back, then slam down in front of it */
+static void PotGod_Slam(PotGod* this, PlayState* play)
+{
+    s16 t;
+
+    SkelAnime_Update(&this->armSkelAnime);
+    t = this->timer++;
+
+    if (t < 16)
+    {
+        Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 1, 0x600, 0);
+        this->actor.world.rot.y = this->actor.shape.rot.y;
+        Math_SmoothStepToS(&this->slamTilt, -0x1800, 1, 0x400, 0);
+        if (t == 4)
+            Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_GRIP);
+    }
+    else if (t < 24)
+    {
+        if (t == 16)
+        {
+            Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_HAND_AT);
+            this->slamActive = TRUE;
+        }
+        Math_SmoothStepToS(&this->slamTilt, 0x5800, 1, 0x1400, 0);
+        if (t == 22)
+        {
+            PotGod_Quake(play, 4, 10);
+            for (s32 i = 0; i < POT_GOD_SLAM_ARMS; ++i)
+                PotGod_SpawnBlood(play, &this->handPos[i], 10.0f, 70);
+        }
+    }
+    else if (t < 50)
+    {
+        this->slamActive = FALSE;
+        Math_SmoothStepToS(&this->slamTilt, 0, 1, 0x300, 0);
+    }
+    else
+    {
+        PotGod_SetupHop(this);
+    }
+
+    if (this->colliderHands.base.atFlags & (AT_HIT | AT_BOUNCED))
+    {
+        this->colliderHands.base.atFlags &= ~(AT_HIT | AT_BOUNCED);
+        this->slamActive = FALSE;
+    }
 }
 
 static void PotGod_LaunchPot(PotGod* this, PlayState* play, s32 index)
@@ -648,7 +720,7 @@ static void PotGod_LaunchPot(PotGod* this, PlayState* play, s32 index)
     if (pot->active)
         return;
 
-    pot->pos = this->headPos;
+    PotGod_GetMouthPos(this, &pot->pos);
     pot->pos.x += Math_SinS(this->actor.shape.rot.y + 0x4000 * (index - 1)) * 30.0f;
     pot->pos.y += 25.0f;
     pot->pos.z += Math_CosS(this->actor.shape.rot.y + 0x4000 * (index - 1)) * 30.0f;
@@ -666,11 +738,13 @@ static void PotGod_LaunchPot(PotGod* this, PlayState* play, s32 index)
     Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_HAND_AT);
 }
 
+/* The arms reach into its mouth and fling pots at Link */
 static void PotGod_Summon(PotGod* this, PlayState* play)
 {
     Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 1, 0x400, 0);
     this->actor.world.rot.y = this->actor.shape.rot.y;
-    SkelAnime_Update(&this->skelAnime);
+    SkelAnime_Update(&this->armSkelAnime);
+    this->slamTilt = (s16)(Math_SinS(this->timer * 0x1800) * 0x1800);
 
     switch (this->timer)
     {
@@ -691,15 +765,16 @@ static void PotGod_Summon(PotGod* this, PlayState* play)
     if (++this->timer >= 50)
     {
         this->summonTimer = 100 + (s16)(Rand_ZeroOne() * 60.0f);
-        PotGod_SetupWalk(this);
+        PotGod_SetupHop(this);
     }
 }
 
 static void PotGod_SetupDamage(PotGod* this)
 {
-    Animation_MorphToPlayOnce(&this->skelAnime, (void*)ANIM_DH_DAMAGE, -6.0f);
-    if (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND)
-        this->actor.speed = -1.0f;
+    this->actor.speed = 0.0f;
+    this->hopHeight = 0.0f;
+    this->slamActive = FALSE;
+    this->timer = 0;
     Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_DAMAGE);
     this->isHurt = TRUE;
     this->actionFunc = PotGod_Damage;
@@ -707,24 +782,33 @@ static void PotGod_SetupDamage(PotGod* this)
 
 static void PotGod_Damage(PotGod* this, PlayState* play)
 {
-    if (this->actor.speed < 0.0f)
-        this->actor.speed += 0.15f;
-    if (SkelAnime_Update(&this->skelAnime))
+    Vec3f mouth;
+
+    SkelAnime_Update(&this->armSkelAnime);
+    this->wobble = (s16)(Math_SinS(this->timer * 0x3000) * (0x800 - this->timer * 0x50));
+    this->slamTilt = (s16)(Math_CosS(this->timer * 0x2000) * 0x1000);
+    if (this->timer == 0)
+    {
+        PotGod_GetMouthPos(this, &mouth);
+        for (s32 i = 0; i < 3; ++i)
+            PotGod_SpawnBlood(play, &mouth, 30.0f, 80);
+    }
+    if (++this->timer >= 20)
     {
         this->isHurt = FALSE;
-        this->actor.world.rot.y = this->actor.shape.rot.y;
-        PotGod_SetupWalk(this);
+        this->wobble = 0;
+        PotGod_SetupHop(this);
     }
 }
 
 static void PotGod_SetupDeath(PotGod* this, PlayState* play)
 {
-    Animation_MorphToPlayOnce(&this->skelAnime, (void*)ANIM_DH_DEATH, -1.0f);
     this->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE);
     this->actor.speed = 0.0f;
+    this->hopHeight = 0.0f;
+    this->slamActive = FALSE;
     this->timer = 0;
     Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_DEAD);
-    PotGod_BiteOff(this);
     for (s32 i = 0; i < POT_GOD_FLYING_POTS; ++i)
     {
         if (this->pots[i].active)
@@ -737,25 +821,31 @@ static void PotGod_SetupDeath(PotGod* this, PlayState* play)
 static void PotGod_Death(PotGod* this, PlayState* play)
 {
     Vec3f center;
+    Vec3f mouth;
 
     center = this->actor.world.pos;
-    center.y += 40.0f;
-    SkelAnime_Update(&this->skelAnime);
+    center.y += POT_GOD_BODY_HEIGHT * 0.5f;
+    PotGod_GetMouthPos(this, &mouth);
     this->timer++;
 
     if (this->timer < 60)
     {
+        /* The arms go limp and droop over the rim while it shakes and bleeds */
+        Math_SmoothStepToS(&this->slamTilt, 0x6000, 1, 0x200, 0);
+        this->wobble = (s16)(Math_SinS(this->timer * 0x3800) * 0x600);
         if ((this->timer & 3) == 0)
-            PotGod_SpawnBlood(play, &center, 60.0f, 80);
+            PotGod_SpawnBlood(play, &mouth, 40.0f, 80);
+        if (this->timer == 30)
+            Actor_PlaySfx(&this->actor, NA_SE_EN_DEADHAND_HAND_DEAD);
         return;
     }
 
     if (this->timer == 60)
     {
         /* Shatter into a hail of pottery */
-        PotGod_SpawnShards(play, &this->headPos, 30, 8.0f);
+        PotGod_SpawnShards(play, &mouth, 30, 8.0f);
         PotGod_SpawnShards(play, &center, 30, 6.0f);
-        SfxSource_PlaySfxAtFixedWorldPos(play, &this->headPos, 40, NA_SE_EV_POT_BROKEN);
+        SfxSource_PlaySfxAtFixedWorldPos(play, &mouth, 40, NA_SE_EV_POT_BROKEN);
         SfxSource_PlaySfxAtFixedWorldPos(play, &center, 40, NA_SE_EV_POT_BROKEN);
         PotGod_Quake(play, 5, 20);
         this->drawBody = FALSE;
@@ -781,9 +871,9 @@ static void PotGod_CollisionCheck(PotGod* this, PlayState* play)
     s32 hit;
 
     hit = FALSE;
-    if (this->colliderBite.base.acFlags & AC_HIT)
+    if (this->colliderHands.base.acFlags & AC_HIT)
     {
-        this->colliderBite.base.acFlags &= ~AC_HIT;
+        this->colliderHands.base.acFlags &= ~AC_HIT;
         hit = TRUE;
     }
     if (this->collider.base.acFlags & AC_HIT)
@@ -799,7 +889,6 @@ static void PotGod_CollisionCheck(PotGod* this, PlayState* play)
     if (this->actor.colChkInfo.damageEffect == 0 || this->actor.colChkInfo.damage == 0)
         return;
 
-    PotGod_BiteOff(this);
     Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_OPA, 8);
     if (Actor_ApplyDamage(&this->actor) == 0)
         PotGod_SetupDeath(this, play);
@@ -851,6 +940,23 @@ static void PotGod_UpdatePots(PotGod* this, PlayState* play)
     this->colliderPots.base.atFlags &= ~(AT_HIT | AT_BOUNCED);
 }
 
+/* The front hands' spheres follow the hands (positions from the last draw) */
+static void PotGod_UpdateHands(PotGod* this)
+{
+    ColliderJntSphElement* elem;
+
+    for (s32 i = 0; i < POT_GOD_SLAM_ARMS; ++i)
+    {
+        elem = &this->colliderHands.elements[i];
+        elem->dim.worldSphere.center.x = this->handPos[i].x;
+        elem->dim.worldSphere.center.y = this->handPos[i].y;
+        elem->dim.worldSphere.center.z = this->handPos[i].z;
+        elem->dim.worldSphere.radius = 14;
+        elem->base.atElemFlags = this->slamActive ? ATELEM_ON : ATELEM_NONE;
+        elem->base.atElemFlags &= ~ATELEM_HIT;
+    }
+}
+
 static int PotGod_PotsActive(PotGod* this)
 {
     for (s32 i = 0; i < POT_GOD_FLYING_POTS; ++i)
@@ -863,7 +969,7 @@ static int PotGod_PotsActive(PotGod* this)
 
 static int PotGod_IsFighting(PotGod* this)
 {
-    return this->actionFunc == PotGod_Walk || this->actionFunc == PotGod_Attack || this->actionFunc == PotGod_Summon || this->actionFunc == PotGod_Damage;
+    return this->actionFunc == PotGod_Hop || this->actionFunc == PotGod_Slam || this->actionFunc == PotGod_Summon || this->actionFunc == PotGod_Damage;
 }
 
 void PotGod_Update(Actor* thisx, PlayState* play)
@@ -879,38 +985,60 @@ void PotGod_Update(Actor* thisx, PlayState* play)
 
     this->shardAngle += 0x300;
     Actor_MoveXZGravity(&this->actor);
-    Actor_UpdateBgCheckInfo(play, &this->actor, 20.0f, 45.0f, 45.0f, UPDBGCHECKINFO_FLAG_OOT_0 | UPDBGCHECKINFO_FLAG_OOT_2 | UPDBGCHECKINFO_FLAG_OOT_3 | UPDBGCHECKINFO_FLAG_OOT_4);
-    this->actor.focus.pos = this->headPos;
+    Actor_UpdateBgCheckInfo(play, &this->actor, 20.0f, POT_GOD_BODY_RADIUS, 45.0f, UPDBGCHECKINFO_FLAG_OOT_0 | UPDBGCHECKINFO_FLAG_OOT_2 | UPDBGCHECKINFO_FLAG_OOT_3 | UPDBGCHECKINFO_FLAG_OOT_4);
+    PotGod_GetMouthPos(this, &this->actor.focus.pos);
     PotGod_UpdatePots(this, play);
+    PotGod_UpdateHands(this);
 
     Collider_UpdateCylinder(&this->actor, &this->collider);
+    this->collider.dim.yShift = (s16)this->hopHeight;
     if (PotGod_IsFighting(this))
     {
         CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
         if (!this->isHurt)
         {
             CollisionCheck_SetAC(play, &play->colChkCtx, &this->collider.base);
-            CollisionCheck_SetAC(play, &play->colChkCtx, &this->colliderBite.base);
+            CollisionCheck_SetAC(play, &play->colChkCtx, &this->colliderHands.base);
         }
-        CollisionCheck_SetAT(play, &play->colChkCtx, &this->colliderBite.base);
+        if (this->slamActive)
+            CollisionCheck_SetAT(play, &play->colChkCtx, &this->colliderHands.base);
     }
     if (PotGod_PotsActive(this))
         CollisionCheck_SetAT(play, &play->colChkCtx, &this->colliderPots.base);
 }
 
-static void PotGod_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, void* thisx, Gfx** gfx)
+/* Each arm writhes on its own; the front two also rear back and slam */
+static s32 PotGod_ArmOverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, void* thisx)
 {
-    Vec3f headOffset = { 2000.0f, 1000.0f, 0.0f };
+    PotGod* this = (PotGod*)thisx;
+    s16 phase;
+
+    /* Like En_Dha: these rotations straighten the arm (pointing up), plus our writhing */
+    phase = kArmPhase[this->drawArm] + this->shardAngle * 3;
+    switch (limbIndex)
+    {
+    case 1:
+        rot->y = (s16)(Math_CosS(phase) * 0x600);
+        rot->z += (s16)(Math_SinS(phase) * 0x900);
+        break;
+    case 2:
+        rot->z = (s16)(Math_SinS(phase + 0x3000) * 0xC00);
+        break;
+    case 3:
+        rot->y = (s16)(Math_SinS(phase * 2) * 0x1000);
+        rot->z = (s16)(Math_CosS(phase + 0x2000) * 0x800);
+        break;
+    }
+    return FALSE;
+}
+
+static void PotGod_ArmPostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, void* thisx)
+{
+    static Vec3f sHandOffset = { 1100.0f, 0.0f, 0.0f };
     PotGod* this = (PotGod*)thisx;
 
-    if (limbIndex == POT_GOD_HEAD_LIMB)
-    {
-        Matrix_MultVec3f(&headOffset, &this->headPos);
-        Matrix_Push();
-        Matrix_Translate(headOffset.x, headOffset.y, headOffset.z, MTXMODE_APPLY);
-        Collider_UpdateSpheres(1, &this->colliderBite);
-        Matrix_Pop();
-    }
+    if (limbIndex == 3)
+        Matrix_MultVec3f(&sHandOffset, &this->handPos[this->drawArm]);
 }
 
 static void PotGod_DrawPotDList(PlayState* play, Gfx* dl, Vec3f* pos, s16 rx, s16 ry, s16 rz, f32 scale)
@@ -929,16 +1057,12 @@ static void PotGod_DrawPotDList(PlayState* play, Gfx* dl, Vec3f* pos, s16 rx, s1
 static void PotGod_DrawGuard(PotGod* this, PlayState* play)
 {
     void* seg;
-    f32 s;
     s16 shakeX;
     s16 shakeZ;
-    s16 spin;
 
     seg = PotGod_ObjectSegment(this->guardSlot);
-    s = this->guardScale * 0.01f;
     shakeX = (s16)Rand_CenteredFloat(0x600);
     shakeZ = (s16)Rand_CenteredFloat(0x600);
-    spin = (this->csTimer > 120) ? (s16)((this->csTimer - 120) * 0x1400) : 0;
 
     OPEN_DISPS(play->state.gfxCtx);
     PotGod_SetCpuSegment(seg);
@@ -946,8 +1070,8 @@ static void PotGod_DrawGuard(PotGod* this, PlayState* play)
     Gfx_SetupDL_25Opa(play->state.gfxCtx);
     Matrix_Push();
     Matrix_Translate(this->guardPos.x, this->guardPos.y - this->guardSink, this->guardPos.z, MTXMODE_NEW);
-    Matrix_RotateZYX(shakeX, this->guardYaw + spin, shakeZ, MTXMODE_APPLY);
-    Matrix_Scale(s, s * (0.6f + 0.4f * this->guardScale), s, MTXMODE_APPLY);
+    Matrix_RotateZYX(shakeX, this->guardYaw, shakeZ, MTXMODE_APPLY);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
     SkelAnime_DrawOpa(play, this->guardSkelAnime.skeleton, this->guardSkelAnime.jointTable, NULL, NULL, this);
     Matrix_Pop();
     seg = PotGod_ObjectSegment(this->actor.objectSlot);
@@ -956,56 +1080,73 @@ static void PotGod_DrawGuard(PotGod* this, PlayState* play)
     CLOSE_DISPS();
 }
 
+/* Dead Hand's arms, growing out of the mouth */
+static void PotGod_DrawArms(PotGod* this, PlayState* play)
+{
+    Vec3f mouth;
+    f32 s;
+    s16 yaw;
+    s16 tilt;
+
+    PotGod_GetMouthPos(this, &mouth);
+    Gfx_SetupDL_25Opa(play->state.gfxCtx);
+    for (s32 i = 0; i < POT_GOD_ARMS; ++i)
+    {
+        if (this->armGrow[i] <= 0.01f)
+            continue;
+
+        yaw = this->actor.shape.rot.y + kArmYaw[i];
+        tilt = POT_GOD_ARM_TILT + (s16)(Math_SinS(kArmPhase[i] + this->shardAngle * 2) * 0x600);
+        if (i < POT_GOD_SLAM_ARMS || this->actionFunc == PotGod_Death)
+            tilt += this->slamTilt;
+        s = POT_GOD_ARM_SCALE * this->armGrow[i];
+
+        this->drawArm = i;
+        Matrix_Push();
+        Matrix_Translate(mouth.x + Math_SinS(yaw) * POT_GOD_RIM_RADIUS, mouth.y, mouth.z + Math_CosS(yaw) * POT_GOD_RIM_RADIUS, MTXMODE_NEW);
+        Matrix_RotateZYX(tilt, yaw, this->wobble, MTXMODE_APPLY);
+        Matrix_Scale(s, s, s, MTXMODE_APPLY);
+        SkelAnime_DrawFlexOpa(play, this->armSkelAnime.skeleton, this->armSkelAnime.jointTable, this->armSkelAnime.dListCount,
+            PotGod_ArmOverrideLimbDraw, PotGod_ArmPostLimbDraw, this);
+        Matrix_Pop();
+    }
+}
+
 static void PotGod_DrawBody(PotGod* this, PlayState* play)
 {
     void* seg;
     Vec3f pos;
-    f32 rise;
     s16 angle;
 
     OPEN_DISPS(play->state.gfxCtx);
-
-    /* Dead Hand's body */
-    Gfx_SetupDL_25Opa(play->state.gfxCtx);
-    gDPSetEnvColor(POLY_OPA_DISP++, 0, 0, 0, 255);
-    gSPSegment(POLY_OPA_DISP++, 0x08, kDListEmpty);
-    POLY_OPA_DISP = SkelAnime_DrawFlex(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount, NULL, PotGod_PostLimbDraw, &this->actor, POLY_OPA_DISP);
 
     /* The pot parts */
     seg = PotGod_ObjectSegment(this->tsuboSlot);
     gSPSegment(POLY_OPA_DISP++, 0x06, seg);
     Gfx_SetupDL_25Opa(play->state.gfxCtx);
 
-    /* A giant pot swallowing the head, wobbling */
-    rise = this->actor.shape.yOffset * this->actor.scale.y;
-    pos = this->headPos;
-    pos.y -= 22.0f;
-    PotGod_DrawPotDList(play, (Gfx*)object_tsubo_DL_0017C0, &pos,
-        (s16)(Math_SinS(this->shardAngle * 3) * 0x500), this->actor.shape.rot.y, (s16)(Math_CosS(this->shardAngle * 2) * 0x500), 0.25f);
+    /* The giant pot */
+    pos = this->actor.world.pos;
+    pos.y += this->bodyRise + this->hopHeight;
+    PotGod_DrawPotDList(play, (Gfx*)object_tsubo_DL_0017C0, &pos, this->wobble, this->actor.shape.rot.y, (s16)(this->wobble / 2), POT_GOD_BODY_SCALE);
 
-    /* Shards circling the body */
+    /* Shards circling it */
     for (s32 i = 0; i < POT_GOD_SHARDS; ++i)
     {
         angle = this->shardAngle + i * (0x10000 / POT_GOD_SHARDS);
-        pos.x = this->actor.world.pos.x + Math_SinS(angle) * 45.0f;
-        pos.y = this->actor.world.pos.y + rise + 45.0f + Math_SinS(angle * 2) * 8.0f;
-        pos.z = this->actor.world.pos.z + Math_CosS(angle) * 45.0f;
+        pos.x = this->actor.world.pos.x + Math_SinS(angle) * (POT_GOD_BODY_RADIUS + 20.0f);
+        pos.y = this->actor.world.pos.y + this->bodyRise + this->hopHeight + 50.0f + Math_SinS(angle * 2) * 12.0f;
+        pos.z = this->actor.world.pos.z + Math_CosS(angle) * (POT_GOD_BODY_RADIUS + 20.0f);
         PotGod_DrawPotDList(play, (Gfx*)object_tsubo_DL_001960, &pos, angle * 2, angle, 0, 0.12f);
     }
 
-    /* Small pots crowning it */
-    for (s32 i = 0; i < 3; ++i)
-    {
-        angle = -this->shardAngle + i * (0x10000 / 3);
-        pos.x = this->headPos.x + Math_SinS(angle) * 25.0f;
-        pos.y = this->headPos.y + 22.0f;
-        pos.z = this->headPos.z + Math_CosS(angle) * 25.0f;
-        PotGod_DrawPotDList(play, (Gfx*)object_tsubo_DL_0017C0, &pos, 0, angle, 0, 0.06f);
-    }
-
+    /* Back to our own object (Dead Hand's), for the arms */
     seg = PotGod_ObjectSegment(this->actor.objectSlot);
+    PotGod_SetCpuSegment(seg);
     gSPSegment(POLY_OPA_DISP++, 0x06, seg);
     CLOSE_DISPS();
+
+    PotGod_DrawArms(this, play);
 }
 
 static void PotGod_DrawFlyingPots(PotGod* this, PlayState* play)

@@ -194,7 +194,7 @@ export const CUSTOM_SETTINGS = [
     name: 'Pot God',
     category: 'custom.oot',
     type: 'boolean',
-    description: 'Adds the Pot God, a mini boss hiding in the Market Pot House. As child, break every pot in the room: the guard screams "OH GOD!" and turns into the Pot God, half pot and half Dead Hand. Defeat it (sword or Deku Sticks) and 20 pots appear all over Hyrule Field, each holding a randomized check. The 20 pots are added to the pool whatever the pot shuffle setting is.',
+    description: 'Adds the Pot God, a mini boss hiding in the Market Pot House. As child, break every pot in the room: the guard screams "OH GOD!" and is dragged into the floor, and the Pot God bursts out: a giant bleeding pot with Dead Hand\'s arms writhing out of it. Defeat it (sword or Deku Sticks) and 20 pots appear all over Hyrule Field, each holding a randomized check. The 20 pots are added to the pool whatever the pot shuffle setting is.',
     default: false,
     cond: hasOoT,
   },
