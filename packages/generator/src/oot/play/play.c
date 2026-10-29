@@ -1,5 +1,6 @@
 #include <combo.h>
 #include <combo/audio.h>
+#include <combo/boss_kit.h>
 #include <combo/checks.h>
 #include <combo/config.h>
 #include <combo/context.h>
@@ -500,8 +501,9 @@ static void Play_AfterInit(PlayState* play)
     /* Signs */
     ComboPlay_SpawnExtraSigns(play);
 
-    /* Fork: Pot God */
+    /* Fork: Pot God, and the boss kit's arenas */
     PotGod_SpawnForScene(play);
+    BossKit_OnSceneInit(play);
 
     /* Adult kakariko gate */
     if (Config_Flag(CFG_OOT_ADULT_KAKARIKO_GATE) && play->sceneId == SCE_OOT_KAKARIKO_VILLAGE && gSave.age == AGE_ADULT)
@@ -534,6 +536,12 @@ static void Play_AfterInit(PlayState* play)
     case SCE_OOT_LAIR_TWINROVA:
     case SCE_OOT_LAIR_GANONDORF:
     case SCE_OOT_GANON_BATTLE_ARENA:
+        if (BossKit_CurrentFight(play) != BOSS_KIT_FIGHT_NONE)
+        {
+            /* Fork: a boss kit arena is not a dungeon (saving there sends Link home, dying retries the fight) */
+            comboClearCustomRespawn(CUSTOM_RESPAWN_MODE_DUNGEON_ENTRANCE);
+            break;
+        }
         if (!gSharedCustomSave.respawn[CUSTOM_RESPAWN_MODE_DUNGEON_ENTRANCE].playerParams)
         {
             /* Copy to the custom death respawn */

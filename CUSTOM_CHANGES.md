@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-10-29: Pot God hellfire arena, drag-down cutscene and boss kit
+
+- Where in the app: Custom > Ocarina of Time > "Pot God Fight" (Hellfire Arena / Pot House) and Custom > Ocarina of Time > "Boss Kit: Health Bars"
+- What it does: after the guard screams "OH GOD!" and sinks into the floor, his hand now shoots out, grabs Link and drags him down with him. Link lands in a hellfire arena (Volvagia's lair, emptied of Volvagia, its rocks, platform, blue warp and heart container, and with its heat turned off so child Link is fine), where the ground wells up with blood and the Pot God bursts out of it, to Volvagia's music. It no longer follows Link into the lava pits. Dying there restarts the fight in the arena; winning sends Link back to the Pot House once the text is closed. "Pot House" fights it in the room like before. The fight is built on a new boss kit for future custom bosses: arenas (warp in, clear the vanilla boss, place Link and the boss, retry on death, return after winning), cutscene camera, text and title cards, quakes, music, object and debris helpers, and an optional on-screen health bar. Also aimed at the crash when the boss appeared: the Pot House part now only uses objects the room already has, the pot shards are drawn by the boss itself instead of the vanilla shard effect, and nothing is drawn from an object that isn't loaded. Not tested in game yet; see `docs/custom/pot-god.md` and `docs/custom/boss-kit.md`
+- Files: `packages/core/src/settings/custom.ts` (settings), `packages/generator/include/combo/boss_kit.h` (new), `packages/generator/src/oot/boss_kit.c` (new), `packages/generator/include/combo/actor_id.h`, `packages/generator/src/oot/actors.c` (blocked arena actors), `packages/generator/src/oot/play/play.c` (arena setup), `packages/generator/src/oot/play/pot_god.c`, `packages/generator/src/oot/ovl/actors/Custom_Pot_God_Watcher/Custom_Pot_God_Watcher.c` and `.h` (new, the Pot House cutscene), `packages/generator/src/oot/ovl/actors/Custom_Pot_God/Custom_Pot_God.c` and `.h` (the boss), `docs/custom/boss-kit.md` (new), `docs/custom/pot-god.md`, `CUSTOMIZING.md`
+
 ## 2026-10-27: Pot God redesign and crash fix
 
 - Where in the app: Custom > Ocarina of Time > "Pot God" (no new control; changes that mini boss)
