@@ -8,6 +8,7 @@
 #include <combo/actor.h>
 #include <combo/multi.h>
 #include <combo/actors.h>
+#include <combo/boss_kit.h>
 
 static s16 sActorIdToSpawn;
 
@@ -307,6 +308,10 @@ static int canSpawnSoul(PlayState *play, s16 actorId, u16 variable)
 
 static int canSpawnActor(PlayState *play, s16 actorId, u16 param)
 {
+    /* Fork: boss kit arenas keep their own boss out */
+    if (BossKit_IsActorBlocked(play, actorId))
+        return 0;
+
     switch (actorId)
     {
     case ACTOR_EN_SYATEKI_MAN:

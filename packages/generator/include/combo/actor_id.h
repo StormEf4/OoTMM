@@ -8,6 +8,7 @@
 # define ACTOR_CUSTOM_POT_GOD          0x003
 # define ACTOR_EN_GIRLA                0x004
 # define ACTOR_CUSTOM_WARP             0x005
+# define ACTOR_CUSTOM_POT_GOD_WATCHER  0x006
 # define ACTOR_EN_PART                 0x007
 # define ACTOR_EN_LIGHT                0x008
 # define ACTOR_EN_DOOR                 0x009

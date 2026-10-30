@@ -3,8 +3,10 @@
 /*
  * Fork: the Pot God (Custom > Ocarina of Time > "Pot God").
  *
- * As child, the Market Pot House gets a dormant Pot God that watches the
- * pots (see Custom_Pot_God). Once it is defeated, 20 pots holding checks
+ * As child, the Market Pot House gets a watcher (Custom_Pot_God_Watcher)
+ * that wakes the Pot God (Custom_Pot_God) once every pot is broken; the fight
+ * happens in the boss kit's hellfire arena or right there, depending on the
+ * "Pot God Fight" setting. Once it is defeated, 20 pots holding checks
  * appear all over Hyrule Field. They use the xflags declared in
  * data/checks/oot/overworld/hyrule_field.xml (room 0, actors 0xc0 to 0xd3).
  */
@@ -73,7 +75,7 @@ void PotGod_SpawnForScene(PlayState* play)
     {
     case SCE_OOT_GUARD_HOUSE:
         if (gSave.age == AGE_CHILD && !SaveFlag_Get(SAVE_FLAG_POT_GOD_DEFEATED))
-            Actor_Spawn(&play->actorCtx, play, ACTOR_CUSTOM_POT_GOD, 0, 0, 0, 0, 0, 0, 0);
+            Actor_Spawn(&play->actorCtx, play, ACTOR_CUSTOM_POT_GOD_WATCHER, 0, 0, 0, 0, 0, 0, 0);
         break;
     case SCE_OOT_HYRULE_FIELD:
         if (SaveFlag_Get(SAVE_FLAG_POT_GOD_DEFEATED))
