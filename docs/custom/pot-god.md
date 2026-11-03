@@ -4,7 +4,7 @@ Fork feature. Controls on the Custom page, under Ocarina of Time:
 
 - **Pot God** (`potGod`): the mini boss and its 20 Hyrule Field pots.
 - **Pot God Fight** (`potGodArena`): where it is fought. "Hellfire Arena" (default): the guard drags Link down into Volvagia's lair, emptied out. "Pot House": right in the room.
-- **Reverse Saria's Song (Pot Room Warp)** (`potGodSariaWarp`): a warp to the Market Pot House.
+- **Pot Room Warp Song** (`potGodWarpSong`): a new song that warps to the Market Pot House.
 - **Boss Kit: Health Bars** (`bossKitHealthBar`): a health bar while fighting it.
 
 The fight is built on the [boss kit](boss-kit.md).
@@ -24,14 +24,14 @@ Not tested in game yet: there are no ROMs in the cloud sessions, so everything b
 
 If you leave the room before beating it, it comes back the next time and you break the pots again. Dying in the arena restarts the fight in the arena; saving and quitting there loads at Link's house, and the pots are back in the Pot House. As adult the room is unchanged.
 
-**Reverse Saria's Song**: once you know Saria's Song, play it backwards in free play (C-Left, C-Right, C-Down, C-Left, C-Right, C-Down). It asks "Warp to the Market Pot House?" and warps you there on Yes. It works wherever warp songs work. These are the same notes as the Song of Healing; with this setting on, playing those notes in free play gives this warp prompt instead, but they still count as the Song of Healing for signs. When an actor or spot asks for a song (for example a hidden Song of Healing spot), the warp is off so the Song of Healing still works there.
+**Pot Room Warp Song**: play A, C-Up, A, C-Up, C-Left, C-Right on the Ocarina in free play. It asks "Warp to the Market Pot House?" and warps you there on Yes. It works wherever warp songs work, and needs nothing but the Ocarina (and those four buttons when ocarina buttons are shuffled). Its notes are its own: no other song in either game (vanilla or the MM songs OoTMM adds) ends with them, and it ends with no other song, so the Song of Healing and every other song work exactly as in vanilla OoTMM. When an actor or spot asks for a song, it doesn't answer. (It replaced "Reverse Saria's Song", which used the Song of Healing's notes.)
 
 ## Logic
 
 - `POT_GOD_DEFEATED` is an event in "Market Pot House Child" that needs `setting(potGod) && can_use_sword_or_sticks`.
 - "Hyrule Field Pot God Pots" is a region reached from Hyrule Field with that event; its 20 locations need nothing else.
 - The pots are always kept in the pool when `potGod` is on (`isPotGodPot` in `packages/logic/src/world/transform.ts`), and always removed when it's off.
-- `POT_GOD_WARP` is a global exit (`setting(potGodSariaWarp) && can_play_saria`) to the Market Pot House, for both ages.
+- `POT_GOD_WARP` is a global exit (`setting(potGodWarpSong) && has_ocarina` and the A, C-Up, C-Left and C-Right buttons) to the Market Pot House, for both ages.
 
 ## How it works
 

@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-03: Pot Room Warp Song replaces Reverse Saria's Song
+
+- Where in the app: Custom > Ocarina of Time > "Pot Room Warp Song" (was "Reverse Saria's Song (Pot Room Warp)"; the setting key is now `potGodWarpSong`, so turn it on again in saved presets)
+- What it does: the warp to the Market Pot House is now its own song, A, C-Up, A, C-Up, C-Left, C-Right, instead of Saria's Song backwards (which had the Song of Healing's notes). Everything from the old version is gone: no more Song of Healing notes, no more "still counts as the Song of Healing for signs" override, no Song of Healing fanfare or effect, and it no longer needs Saria's Song. It only needs the Ocarina (and those buttons when ocarina buttons are shuffled), plays Soaring's fanfare and effect, and still asks before warping, works where warp songs work, and only answers free play. Logic: the warp needs the setting, the Ocarina and the A, C-Up, C-Left and C-Right buttons. Not tested in game yet
+- Files: `packages/generator/src/oot/ocarina.c`, `packages/core/src/settings/custom.ts`, `data/world/oot/overworld/_system.yml` (logic), `packages/logic/tests/seeds/pot-god.test.ts`, `docs/custom/pot-god.md`
+
 ## 2026-11-03: Pot God crash fix (pot textures) and boss kit safety
 
 - Where in the app: Custom > Ocarina of Time > "Pot God" (no new control; fixes that mini boss and every boss built on the boss kit)

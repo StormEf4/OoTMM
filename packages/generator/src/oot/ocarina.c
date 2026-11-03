@@ -18,7 +18,7 @@ typedef enum {
     CUSTOM_SONG_GORON_HALF,
     CUSTOM_SONG_ZORA,
     CUSTOM_SONG_ORDER,
-    CUSTOM_SONG_SARIA_REVERSE, /* Fork: Pot God warp */
+    CUSTOM_SONG_POT_WARP, /* Fork: Pot Room Warp Song */
     CUSTOM_SONG_MAX,
 } CustomOcarinaSong;
 
@@ -75,27 +75,27 @@ static OcarinaSongButtons sSongHealing = {
     }
 };
 
-/* Fork: Saria's Song backwards (the same notes as the Song of Healing) */
-static OcarinaSongButtons sSongSariaReverse = {
+/*
+ * Fork: the Pot Room Warp Song (A, C-Up, A, C-Up, C-Left, C-Right). Its own
+ * notes: no other song in either game ends with them, and they end with no
+ * other song (songs match on the last notes played).
+ */
+static OcarinaSongButtons sSongPotWarp = {
     6,
     {
+        OCARINA_BTN_A,
+        OCARINA_BTN_C_UP,
+        OCARINA_BTN_A,
+        OCARINA_BTN_C_UP,
         OCARINA_BTN_C_LEFT,
         OCARINA_BTN_C_RIGHT,
-        OCARINA_BTN_C_DOWN,
-        OCARINA_BTN_C_LEFT,
-        OCARINA_BTN_C_RIGHT,
-        OCARINA_BTN_C_DOWN,
     }
 };
 
-/*
- * Fork: the Pot God warp only answers free play, so songs asked for by
- * actors and spots (like the Song of Healing) are left alone.
- */
-static int canPlaySariaReverse(void)
+/* Fork: free play only, so it never answers an actor or spot asking for a song */
+static int canPlayPotWarp(void)
 {
-    return Config_Flag(CFG_CUSTOM_POT_GOD_SARIA_WARP)
-        && gSave.info.inventory.quest.songSaria
+    return Config_Flag(CFG_CUSTOM_POT_GOD_WARP_SONG)
         && gPlay->msgCtx.ocarinaAction == OCARINA_ACTION_FREE_PLAY;
 }
 
@@ -210,10 +210,9 @@ void Ocarina_CheckCustomSongs(void)
         comboCheckSong(&sSongOrder, CUSTOM_SONG_ORDER);
     }
 
-    /* Checked after the Song of Healing so it wins when both match */
-    if (canPlaySariaReverse())
+    if (canPlayPotWarp())
     {
-        comboCheckSong(&sSongSariaReverse, CUSTOM_SONG_SARIA_REVERSE);
+        comboCheckSong(&sSongPotWarp, CUSTOM_SONG_POT_WARP);
     }
 }
 
@@ -367,15 +366,14 @@ static OcarinaNote sOcarinaCustomSongNotes[CUSTOM_SONG_MAX - 1][20] = {
 
     },
 
-    // Fork: Saria's Song backwards (played back like the Song of Healing)
+    // Fork: Pot Room Warp Song (A, C-Up, A, C-Up, C-Left, C-Right)
     {
-        { OCARINA_PITCH_B4, 32, 88, 0, 0, 0 },
-        { OCARINA_PITCH_A4, 33, 88, 0, 0, 0 },
-        { OCARINA_PITCH_F4, 33, 69, 0, 0, 0 },
-        { OCARINA_PITCH_B4, 32, 94, 0, 0, 0 },
-        { OCARINA_PITCH_A4, 33, 88, 0, 0, 0 },
-        { OCARINA_PITCH_F4, 121, 86, 2, 0, 0 },
-        { OCARINA_PITCH_NONE, 10, 84, 0, 0, 0 },
+        { OCARINA_PITCH_D4, 18, 84, 0, 0, 0 },
+        { OCARINA_PITCH_D5, 18, 88, 0, 0, 0 },
+        { OCARINA_PITCH_D4, 18, 80, 0, 0, 0 },
+        { OCARINA_PITCH_D5, 18, 90, 0, 0, 0 },
+        { OCARINA_PITCH_B4, 36, 88, 0, 0, 0 },
+        { OCARINA_PITCH_A4, 108, 94, 2, 0, 0 },
         { OCARINA_PITCH_NONE, 0, 90, 0, 0, 0 },
     },
 };
@@ -422,8 +420,8 @@ void Ocarina_AfterStart()
             case CUSTOM_SONG_ORDER:
                 check = gCustomSave.hasSongOrder;
                 break;
-            case CUSTOM_SONG_SARIA_REVERSE:
-                check = canPlaySariaReverse();
+            case CUSTOM_SONG_POT_WARP:
+                check = canPlayPotWarp();
                 break;
         }
 
@@ -796,8 +794,8 @@ static void HandleElegy(PlayState* play)
     Message_Close(play);
 }
 
-/* Fork: reverse Saria's Song, warps to the Market Pot House (see docs/custom/pot-god.md) */
-static void sariaReverseMessage(PlayState* play)
+/* Fork: the Pot Room Warp Song, warps to the Market Pot House (see docs/custom/pot-god.md) */
+static void potWarpMessage(PlayState* play)
 {
     char* b;
 
@@ -806,7 +804,7 @@ static void sariaReverseMessage(PlayState* play)
     comboTextAppendStr(&b, "Warp to the " TEXT_COLOR_RED "Market Pot House" TEXT_CZ "?" TEXT_NL TEXT_NL TEXT_COLOR_GREEN TEXT_CHOICE2 "Yes" TEXT_NL "No" TEXT_END);
 }
 
-static void SetupSariaReverse(PlayState* play)
+static void SetupPotWarp(PlayState* play)
 {
     if (play->interfaceCtx.restrictions.warpSongs)
     {
@@ -818,11 +816,11 @@ static void SetupSariaReverse(PlayState* play)
     else
     {
         PlayerDisplayTextBox(play, 0xe0, NULL);
-        sariaReverseMessage(play);
+        potWarpMessage(play);
     }
 }
 
-static void HandleSariaReverse(PlayState* play)
+static void HandlePotWarp(PlayState* play)
 {
     Player* link;
 
@@ -872,8 +870,8 @@ void Ocarina_HandleLastPlayedSong(PlayState* play, Player* player, s16 lastPlaye
         case CUSTOM_SONG_DOUBLE_TIME:
             SetupSongOfDoubleTime(play);
             break;
-        case CUSTOM_SONG_SARIA_REVERSE:
-            SetupSariaReverse(play);
+        case CUSTOM_SONG_POT_WARP:
+            SetupPotWarp(play);
             break;
         case CUSTOM_SONG_HEALING:
         case CUSTOM_SONG_AWAKENING:
@@ -1197,8 +1195,8 @@ void Ocarina_HandleCustomSongs(Player* player, PlayState* play)
     case CUSTOM_SONG_DOUBLE_TIME:
         HandleSongOfDoubleTime(play);
         break;
-    case CUSTOM_SONG_SARIA_REVERSE:
-        HandleSariaReverse(play);
+    case CUSTOM_SONG_POT_WARP:
+        HandlePotWarp(play);
         break;
     }
 }
@@ -1214,7 +1212,7 @@ static s16 sCustomSongActorEffectIds[CUSTOM_SONG_MAX - 1] = {
     ACTOR_CUSTOM_OCEFF_WIPE5,
     ACTOR_CUSTOM_OCEFF_WIPE5,
     ACTOR_CUSTOM_OCEFF_WIPE5,
-    ACTOR_CUSTOM_OCEFF_WIPE7,
+    ACTOR_CUSTOM_OCEFF_WIPE6, /* Fork: Pot Room Warp Song (Soaring's effect) */
 };
 
 static u16 sCustomSongActorEffectParams[CUSTOM_SONG_MAX - 1] = {
@@ -1246,10 +1244,6 @@ void Ocarina_ResetOcarinaNoteState()
             Actor_Spawn(&play->actorCtx, play, actorId, player->actor.world.pos.x, player->actor.world.pos.y, player->actor.world.pos.z, 0, 0, 0, actorParams);
         }
         play->msgCtx.unk_e3f2 = play->msgCtx.lastPlayedSong = OCARINA_SONG_CUSTOM_START + sCustomSongPlayed;
-
-        /* Fork: the reverse Saria's Song notes still count as the Song of Healing (signs) */
-        if (sCustomSongPlayed == CUSTOM_SONG_SARIA_REVERSE && gCustomSave.hasSongHealing)
-            play->msgCtx.unk_e3f2 = play->msgCtx.lastPlayedSong = OCARINA_SONG_HEALING;
     }
 }
 
@@ -1282,7 +1276,7 @@ static u16 sOcarinaCustomSongFanfares[CUSTOM_SONG_MAX - 1] = {
     FANFARE_SONG_GORON_HALF,
     FANFARE_SONG_ZORA,
     FANFARE_SONG_ORDER,
-    FANFARE_SONG_HEALING,
+    FANFARE_SONG_SOARING, /* Fork: Pot Room Warp Song */
 };
 
 void Ocarina_PlayFanfare(u16 seqId, u8 ioData)
@@ -1310,7 +1304,7 @@ const char* sCustomSongPlayedText[CUSTOM_SONG_MAX - 1] = {
     TEXT_COLOR_RED "Goron Lullaby Intro",
     TEXT_COLOR_RED "New Wave Bossa Nova",
     TEXT_COLOR_RED "Oath to Order",
-    TEXT_COLOR_RED "Saria's Song backwards",
+    TEXT_COLOR_RED "Pot Room Warp Song",
 };
 
 void Ocarina_DisplaySongPlayedTextbox(PlayState* play, u16 textId)
