@@ -899,7 +899,8 @@ static void PotGod_DrawBody(PotGod* this, PlayState* play)
     Vec3f pos;
     s16 angle;
 
-    /* The pot parts */
+    /* The pot parts. UseObject also sets the pot textures: OoTMM's patched pot list
+     * calls segments 0x0A/0x0B for them, and drawing it without them crashed. */
     BossKit_UseObject(play, this->tsuboSlot);
     Gfx_SetupDL_25Opa(play->state.gfxCtx);
 

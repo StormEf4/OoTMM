@@ -501,9 +501,9 @@ static void Play_AfterInit(PlayState* play)
     /* Signs */
     ComboPlay_SpawnExtraSigns(play);
 
-    /* Fork: Pot God, and the boss kit's arenas */
-    PotGod_SpawnForScene(play);
+    /* Fork: the boss kit's arenas (first: it also resets the kit's object table), and the Pot God */
     BossKit_OnSceneInit(play);
+    PotGod_SpawnForScene(play);
 
     /* Adult kakariko gate */
     if (Config_Flag(CFG_OOT_ADULT_KAKARIKO_GATE) && play->sceneId == SCE_OOT_KAKARIKO_VILLAGE && gSave.age == AGE_ADULT)

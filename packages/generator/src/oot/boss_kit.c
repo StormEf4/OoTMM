@@ -10,14 +10,22 @@
 #include <combo/text.h>
 #include <combo/collision.h>
 #include <combo/play.h>
+#include <combo/csmc.h>
 
 /*
  * Fork: the boss kit. See include/combo/boss_kit.h and docs/custom/boss-kit.md.
  */
 
 #define EX_OBJECT_SLOTS_NORMAL  19
+#define EX_OBJECT_SLOTS_TOTAL   128
 
 extern void* gExObjectsAddr[];
+
+/*
+ * Which object each slot holds, for the slots the kit handed out. The extra
+ * slots' own table is private to src/common/object.c. 0 = unknown.
+ */
+static s16 sSlotObjectIds[EX_OBJECT_SLOTS_TOTAL];
 
 typedef struct BossKitArena
 {
@@ -117,6 +125,9 @@ void BossKit_OnSceneInit(PlayState* play)
     const BossKitFight* fight;
     const BossKitArena* arena;
     Player* player;
+
+    /* The extra object slots were emptied with the old scene */
+    memset(sSlotObjectIds, 0, sizeof(sSlotObjectIds));
 
     if (sFightId == BOSS_KIT_FIGHT_NONE)
         return;
@@ -276,9 +287,30 @@ void BossKit_PlayChildVoice(PlayState* play, u16 adultSfx)
 }
 
 /* Objects */
+
+static s16 BossKit_SlotObjectId(s32 slot)
+{
+    s16 id;
+
+    if (slot < 0 || slot >= EX_OBJECT_SLOTS_TOTAL)
+        return 0;
+    if (slot < EX_OBJECT_SLOTS_NORMAL)
+    {
+        /* Negative while it is still loading */
+        id = gPlay->objectCtx.status[slot].id;
+        return (id < 0) ? -id : id;
+    }
+    return sSlotObjectIds[slot];
+}
+
 s32 BossKit_GetObjectSlot(PlayState* play, s16 objectId)
 {
-    return Object_GetSlot(&play->objectCtx, objectId);
+    s32 slot;
+
+    slot = Object_GetSlot(&play->objectCtx, objectId);
+    if (slot >= 0 && slot < EX_OBJECT_SLOTS_TOTAL)
+        sSlotObjectIds[slot] = objectId;
+    return slot;
 }
 
 void* BossKit_ObjectSegment(s32 slot)
@@ -295,6 +327,52 @@ int BossKit_ObjectReady(PlayState* play, s32 slot)
     if (slot < 0 || !Object_IsLoaded(&play->objectCtx, slot))
         return 0;
     return BossKit_ObjectSegment(slot) != NULL;
+}
+
+/*
+ * OoTMM patches some vanilla display lists so the item a pot, grass or chest
+ * holds can change its look (src/oot/objects/ .S files): their texture loads are
+ * replaced by calls to segments 0x0A and 0x0B, which the vanilla actor sets
+ * right before drawing. Drawing one of those lists without setting the
+ * segments makes the RSP jump to garbage and the game crashes (the Pot God's
+ * first three versions did exactly that). So the kit always sets them.
+ */
+static const Gfx kBossKitEmptyDList[] = {
+    gsSPEndDisplayList(),
+};
+
+/* Only read by the chest code in the Treasure Chest Shop (params) */
+static Actor sBossKitDummyActor;
+
+void BossKit_PrepareTextures(PlayState* play, s16 objectId)
+{
+    /* Safe default: a patched list we don't know about draws untextured instead of crashing */
+    OPEN_DISPS(play->state.gfxCtx);
+    gSPSegment(POLY_OPA_DISP++, 0x0a, kBossKitEmptyDList);
+    gSPSegment(POLY_OPA_DISP++, 0x0b, kBossKitEmptyDList);
+    gSPSegment(POLY_XLU_DISP++, 0x0a, kBossKitEmptyDList);
+    gSPSegment(POLY_XLU_DISP++, 0x0b, kBossKitEmptyDList);
+    CLOSE_DISPS();
+
+    /* The plain look, as the vanilla actor would set it for an empty pot, grass or chest */
+    switch (objectId)
+    {
+    case OBJECT_TSUBO:
+        csmcPotPreDraw(NULL, play, 0, 0, CSMC_POT_NORMAL);
+        break;
+    case OBJECT_GAMEPLAY_DANGEON_KEEP:
+        csmcPotPreDraw(NULL, play, 0, 0, CSMC_POT_NORMAL_DANGEON);
+        break;
+    case OBJECT_KUSA:
+        csmcGrassPreDraw(play, 0, 0, CSMC_GRASS_NORMAL, 1, 0);
+        break;
+    case OBJECT_GAMEPLAY_FIELD_KEEP:
+        csmcGrassPreDraw(play, 0, 0, CSMC_GRASS_NORMAL, 0, 0);
+        break;
+    case OBJECT_BOX:
+        csmcChestPreDraw(&sBossKitDummyActor, play, 0, 0);
+        break;
+    }
 }
 
 void BossKit_UseObjectCpu(s32 slot)
@@ -319,6 +397,8 @@ void BossKit_UseObject(PlayState* play, s32 slot)
     gSPSegment(POLY_OPA_DISP++, 0x06, seg);
     gSPSegment(POLY_XLU_DISP++, 0x06, seg);
     CLOSE_DISPS();
+
+    BossKit_PrepareTextures(play, BossKit_SlotObjectId(slot));
 }
 
 /* Effects */
@@ -416,6 +496,9 @@ void BossKit_DebrisDraw(PlayState* play, BossKitDebris* debris, s32 objectSlot, 
     prevSegment = gSegments[6];
     OPEN_DISPS(play->state.gfxCtx);
     gSPSegment(POLY_OPA_DISP++, 0x06, seg);
+    CLOSE_DISPS();
+    BossKit_PrepareTextures(play, BossKit_SlotObjectId(objectSlot));
+    OPEN_DISPS(play->state.gfxCtx);
     Gfx_SetupDL_25Opa(play->state.gfxCtx);
     for (s32 i = 0; i < BOSS_KIT_DEBRIS_MAX; ++i)
     {
