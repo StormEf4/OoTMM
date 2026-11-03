@@ -31,10 +31,10 @@
     "SONG_TP_SPIRIT": "can_play_tp_spirit"
     "SONG_TP_LIGHT": "can_play_tp_light"
     "MM SOARING": "can_play_soaring && setting(games, ootmm)"
-    "POT_GOD_WARP": "setting(potGodSariaWarp) && can_play_saria"
+    "POT_GOD_WARP": "setting(potGodWarpSong) && has_ocarina && ocarina_button_a && ocarina_button_up && ocarina_button_left && ocarina_button_right"
     "EGGS": "true"
 
-# Fork: Saria's Song played backwards warps to the Market Pot House
+# Fork: the Pot Room Warp Song (A, C-Up, A, C-Up, C-Left, C-Right) warps to the Market Pot House
 "POT_GOD_WARP":
   region: NONE
   age_change: false

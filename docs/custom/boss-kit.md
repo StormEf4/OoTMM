@@ -34,7 +34,28 @@ Dying in the arena restarts the fight there (Continue brings Link back to the ar
 
 - **Cutscenes**: `BossKit_CutsceneStart` and `BossKit_CutsceneEnd` (manual cutscene, sub camera, Link frozen, the other actors halted; bosses are in the `BOSS` category so they keep updating). `BossKit_CameraOrbit` eases the camera toward a shot of a point from a given direction, distance and heights. `BossKit_PlayerIsCalm` says when Link can be put in a cutscene (on the ground, no text, no item held up, no fade going on).
 - **Text and sound**: `BossKit_ShowText`, `BossKit_ShowTitle` (red name plus a subtitle, closes itself), `BossKit_Quake`, `BossKit_PlayBgm`, `BossKit_StopBgm`, `BossKit_PlayChildVoice` (plays one of Link's voice clips, the child version when he is a child: child clips are 0x20 after the adult ones).
-- **Objects**: `BossKit_GetObjectSlot` loads an object that isn't in the scene into the fork's extra object slots. `BossKit_ObjectReady` checks it's there. `BossKit_UseObject` points segment 6 at an object for both the CPU (skeletons, animations) and the RSP (display lists); call it again with the actor's own slot afterwards. `BossKit_UseObjectCpu` is the CPU half, for `SkelAnime_Init` and `SkelAnime_Update` on another object's skeleton.
+- **Objects**: `BossKit_GetObjectSlot` loads an object that isn't in the scene into the fork's extra object slots (always get extra objects through it, so the kit knows which object a slot holds). `BossKit_ObjectReady` checks it's there. `BossKit_UseObject` points segment 6 at an object for both the CPU (skeletons, animations) and the RSP (display lists), and sets the texture segments that OoTMM's patched lists need (see below); call it again with the actor's own slot afterwards. `BossKit_UseObjectCpu` is the CPU half, for `SkelAnime_Init` and `SkelAnime_Update` on another object's skeleton.
 - **Effects**: `BossKit_SpawnBlood` (Dead Hand's blood). `BossKitDebris` is a small debris system the boss keeps in its own struct and draws itself from any display list (`BossKit_DebrisSpawn`, `BossKit_DebrisUpdate`, `BossKit_DebrisDraw`). It replaces the vanilla shard effect, which needs its object to be in the scene's normal slots.
 - **Arena safety**: `BossKit_KeepOnFloor` undoes a move that would take the boss off the arena floor (into a pit or the lava).
 - **Health bar**: `BossKit_DrawHealthBar(play, health, maxHealth)` draws a red bar at the bottom of the screen when "Boss Kit: Health Bars" is on. Call it from the boss's draw while it is fighting.
+
+## Patched vanilla display lists (read this before drawing a vanilla object)
+
+OoTMM rewrites some vanilla display lists so pots, grass and chests can show what they hold (`packages/generator/src/oot/objects/*.S`): their texture loads become calls to segments 0x0A and 0x0B, and the vanilla actor sets those segments (the `csmc*PreDraw` functions in `src/common/csmc/`) right before drawing. Drawing one of those lists without setting them makes the RSP jump to garbage, and the game crashes on the first frame it's drawn. That was the Pot God's crash for three versions.
+
+The kit handles it: `BossKit_UseObject` and `BossKit_DebrisDraw` call `BossKit_PrepareTextures`, which points 0x0A and 0x0B at the plain look for the patched objects and at an empty list for every other object.
+
+| Object | Patched lists | Set to |
+| --- | --- | --- |
+| `object_tsubo` | the pot (`DL_0017C0`) | plain pot (`csmcPotPreDraw`) |
+| `gameplay_dangeon_keep` | dungeon pots | plain dungeon pot |
+| `object_kusa` | grass | plain grass (`csmcGrassPreDraw`, alt) |
+| `gameplay_field_keep` | grass | plain grass |
+| `object_box` | chests | plain chest (`csmcChestPreDraw`) |
+
+Rules for a new boss:
+
+1. Draw other objects only after `BossKit_UseObject` (never set segment 6 by hand), and get them with `BossKit_GetObjectSlot`.
+2. Keep objects (`gameplay_keep`, `gameplay_field_keep`, `gameplay_dangeon_keep`) aren't in slots: call `BossKit_PrepareTextures(play, OBJECT_...)` yourself before drawing their lists.
+3. If you set segments 0x0A or 0x0B for your own textures, do it after `BossKit_UseObject`.
+4. When OoTMM patches another object this way, add it to the switch in `BossKit_PrepareTextures` (`src/oot/boss_kit.c`) and to this table. Until then it draws untextured, which is ugly but doesn't crash.

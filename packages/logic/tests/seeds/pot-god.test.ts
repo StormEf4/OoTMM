@@ -10,10 +10,10 @@ test("Can make a seed - Pot God", async () => {
   expect(res).toBeDefined();
 })
 
-test("Can make a seed - Pot God with reverse Saria's Song warp", async () => {
-  const res = await makeTestSeed("PotGodSariaWarp", {
+test("Can make a seed - Pot God with the Pot Room Warp Song", async () => {
+  const res = await makeTestSeed("PotGodWarpSong", {
     potGod: true,
-    potGodSariaWarp: true,
+    potGodWarpSong: true,
   });
 
   expect(res).toBeDefined();
@@ -31,7 +31,7 @@ test("Can make a seed - Pot God with pot shuffle", async () => {
 test("Can make a seed - Pot God with indoors ER", async () => {
   const res = await makeTestSeed("PotGodEr", {
     potGod: true,
-    potGodSariaWarp: true,
+    potGodWarpSong: true,
     erIndoors: 'full',
   });
 
