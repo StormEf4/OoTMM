@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-23: Handoff notes for a new Claude account
+
+- Where in the app: nowhere (documentation only)
+- What it does: adds `HANDOFF.md`, a single document for handing this fork to another Claude account: project overview, build/run setup, how the fork's additions are organized, every feature PR so far, known pitfalls (CSMC-patched display lists need segments 0x0A/0x0B, building and checking C patches without ROMs), open work (PR #12 still open) and the files the new account needs besides the repo. The old project memory notes are copied verbatim into `docs/handoff/memory/`
+- Files: `HANDOFF.md` (new), `docs/handoff/memory/*.md` (new), `CUSTOM_CHANGES.md`
+
 ## 2026-10-29: Pot God hellfire arena, drag-down cutscene and boss kit
 
 - Where in the app: Custom > Ocarina of Time > "Pot God Fight" (Hellfire Arena / Pot House) and Custom > Ocarina of Time > "Boss Kit: Health Bars"
