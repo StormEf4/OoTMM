@@ -7,8 +7,20 @@ Every change made in this fork, newest first. Each entry says where the change s
 ## 2026-11-23: Handoff notes for a new Claude account
 
 - Where in the app: nowhere (documentation only)
-- What it does: adds `HANDOFF.md`, a single document for handing this fork to another Claude account: project overview, build/run setup, how the fork's additions are organized, every feature PR so far, known pitfalls (CSMC-patched display lists need segments 0x0A/0x0B, building and checking C patches without ROMs), open work (PR #12 still open) and the files the new account needs besides the repo. The old project memory notes are copied verbatim into `docs/handoff/memory/`
+- What it does: adds `HANDOFF.md`, a single document for handing this fork to another Claude account: project overview, build/run setup, how the fork's additions are organized, every feature PR so far, known pitfalls (CSMC-patched display lists need segments 0x0A/0x0B, building and checking C patches without ROMs), open work and the files the new account needs besides the repo. The old project memory notes are copied verbatim into `docs/handoff/memory/`
 - Files: `HANDOFF.md` (new), `docs/handoff/memory/*.md` (new), `CUSTOM_CHANGES.md`
+
+## 2026-11-03: Pot Room Warp Song replaces Reverse Saria's Song
+
+- Where in the app: Custom > Ocarina of Time > "Pot Room Warp Song" (was "Reverse Saria's Song (Pot Room Warp)"; the setting key is now `potGodWarpSong`, so turn it on again in saved presets)
+- What it does: the warp to the Market Pot House is now its own song, A, C-Up, A, C-Up, C-Left, C-Right, instead of Saria's Song backwards (which had the Song of Healing's notes). Everything from the old version is gone: no more Song of Healing notes, no more "still counts as the Song of Healing for signs" override, no Song of Healing fanfare or effect, and it no longer needs Saria's Song. It only needs the Ocarina (and those buttons when ocarina buttons are shuffled), plays Soaring's fanfare and effect, and still asks before warping, works where warp songs work, and only answers free play. Logic: the warp needs the setting, the Ocarina and the A, C-Up, C-Left and C-Right buttons. Not tested in game yet
+- Files: `packages/generator/src/oot/ocarina.c`, `packages/core/src/settings/custom.ts`, `data/world/oot/overworld/_system.yml` (logic), `packages/logic/tests/seeds/pot-god.test.ts`, `docs/custom/pot-god.md`
+
+## 2026-11-03: Pot God crash fix (pot textures) and boss kit safety
+
+- Where in the app: Custom > Ocarina of Time > "Pot God" (no new control; fixes that mini boss and every boss built on the boss kit)
+- What it does: fixes the crash the moment the Pot God started to rise out of the ground. OoTMM rewrites the vanilla pot's display list so a pot can show what it holds: instead of loading its own textures, the list calls two texture lists (segments 0x0A and 0x0B) that the pot actor sets right before drawing. The Pot God drew that list without setting them, so the game jumped to garbage and crashed on the first frame the pot was drawn, in every version so far. The boss kit now sets those segments every time a boss switches to another object: the plain look for the objects OoTMM patches this way (pots, grass, chests, and the pots and grass in the keep objects), and a harmless empty list for anything else, so a future boss drawing a patched list draws it untextured instead of crashing. Bosses get this through `BossKit_UseObject` and the kit's debris; `BossKit_PrepareTextures` is there for drawing from a keep object. Not tested in game yet
+- Files: `packages/generator/include/combo/boss_kit.h`, `packages/generator/src/oot/boss_kit.c`, `packages/generator/src/oot/play/play.c` (kit setup runs first), `packages/generator/src/oot/ovl/actors/Custom_Pot_God/Custom_Pot_God.c`, `docs/custom/boss-kit.md`, `docs/custom/pot-god.md`
 
 ## 2026-10-29: Pot God hellfire arena, drag-down cutscene and boss kit
 

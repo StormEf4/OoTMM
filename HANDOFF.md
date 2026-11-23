@@ -77,13 +77,14 @@ Cloud sessions have no ROMs, so nothing can be tested in game; everything is com
 | #9 | 10-26 | **Pot God** mini boss in the child Market Pot House (break every pot) + 20 Hyrule Field pot checks; Reverse Saria's Song warp | `potGod`, `potGodSariaWarp`. Doc: pot-god |
 | #10 | 10-27 | Pot God redesign (giant pot + four Dead Hand arms) | |
 | #11 | 10-29 | Drag-down cutscene, **hellfire arena** (emptied Volvagia lair) and the **OoT boss kit** | `potGodArena`, `bossKitHealthBar`. Doc: boss-kit |
-| **#12 (OPEN)** | 11-03 | **Fixes the Pot God crash** and replaces Reverse Saria's Song with a **Pot Room Warp Song** (A, C-Up, A, C-Up, C-Left, C-Right; `CUSTOM_SONG_POT_WARP`), because the reversed Saria notes were exactly the Song of Healing. Branch `claude/project-thread-cmiz8i` | `potGodWarpSong` |
+| #12 | 11-03 (merged 11-23) | **Fixes the Pot God crash** and replaces Reverse Saria's Song with a **Pot Room Warp Song** (A, C-Up, A, C-Up, C-Left, C-Right; `CUSTOM_SONG_POT_WARP`), because the reversed Saria notes were exactly the Song of Healing | `potGodWarpSong` |
+| #13 | 11-23 | This handoff document | |
 
 Nothing above has been tested in game by Claude (no ROMs). Elijah tests on his machine.
 
 ## 6. Known pitfalls
 
-- **CSMC-patched display lists need segments 0x0A/0x0B.** PRs #9, #10 and #11 all crashed the moment the Pot God rose. Root cause: OoTMM's CSMC patches (`src/oot/objects/tsubo.S`, `box.S`, `kusa.S`) replace texture loads in vanilla pot/chest/grass DLs with `gsSPDisplayList(0x0A000000)` / `0x0B000000`; the vanilla actor sets those segments in `csmc*PreDraw`. Drawing object_tsubo `DL_0017C0` from a custom actor without them = RSP crash. Earlier suspects (extra object slots, Dead Hand skeleton, Kakera) were wrong. Fix in PR #12: `BossKit_UseObject` calls `BossKit_PrepareTextures(play, objectId)` (empty DL default + plain look for patched objects) and the kit tracks slot to object in `BossKit_GetObjectSlot`. **Rule: before drawing any vanilla DL from a custom actor, grep `src/*/objects/*.S` for patches to that object.**
+- **CSMC-patched display lists need segments 0x0A/0x0B.** PRs #9, #10 and #11 all crashed the moment the Pot God rose. Root cause: OoTMM's CSMC patches (`src/oot/objects/tsubo.S`, `box.S`, `kusa.S`) replace texture loads in vanilla pot/chest/grass DLs with `gsSPDisplayList(0x0A000000)` / `0x0B000000`; the vanilla actor sets those segments in `csmc*PreDraw`. Drawing object_tsubo `DL_0017C0` from a custom actor without them = RSP crash. Earlier suspects (extra object slots, Dead Hand skeleton, Kakera) were wrong. Fixed in PR #12: `BossKit_UseObject` calls `BossKit_PrepareTextures(play, objectId)` (empty DL default + plain look for patched objects) and the kit tracks slot to object in `BossKit_GetObjectSlot`. **Rule: before drawing any vanilla DL from a custom actor, grep `src/*/objects/*.S` for patches to that object.**
 - **No ROMs in the cloud.** Verify addresses against the decomps (section 3); say clearly in PRs and the change log that a change is compile-checked only.
 - **Emulator first.** A crash unrelated to the change may be the emulator (see section 1).
 - **Song collisions.** Songs match on suffix; a new song must not equal the tail of any OoT or MM song.
@@ -93,7 +94,7 @@ Nothing above has been tested in game by Claude (no ROMs). Elijah tests on his m
 
 ## 7. Open and unfinished work
 
-1. **PR #12 is open and unmerged.** It holds the Pot God crash fix and the warp-song replacement. `master` still has the crashing Pot God and Reverse Saria's Song. Next step: Elijah tests the PR's app build (artifact `my-app` on the PR's Actions run) and merges, then confirm the fight works in game.
+1. **Pot God crash fix (PR #12) is merged but not yet confirmed in game.** Next step: Elijah plays the latest app release through the Pot God fight (Pot House and Hellfire Arena) and the Pot Room Warp Song, and reports anything broken.
 2. **Nothing since PR #5 has been tested in game**: Magic Hookshot, Infinite Magic, Fairy Companion, Pot God, boss kit. Expect follow-up fixes after Elijah tests.
 3. **More fairy styles** planned (Fairy Companion drop-down). "Hey! Listen!" voice is still vanilla for the Furby.
 4. **Pot God extras:** no recorded "OH GOD!" voice (text box + vanilla screams), no kneeling animation. Only one arena exists (`BOSS_KIT_ARENA_HELLFIRE`); the kit is ready for more bosses.

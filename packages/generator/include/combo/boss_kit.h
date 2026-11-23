@@ -78,12 +78,23 @@ void    BossKit_PlayBgm(u16 seqId);
 void    BossKit_StopBgm(void);
 void    BossKit_PlayChildVoice(PlayState* play, u16 adultSfx);
 
-/* Objects */
+/* Objects: always get extra objects with BossKit_GetObjectSlot and draw them after BossKit_UseObject */
 s32     BossKit_GetObjectSlot(PlayState* play, s16 objectId);
 int     BossKit_ObjectReady(PlayState* play, s32 slot);
 void*   BossKit_ObjectSegment(s32 slot);
-/* Point segment 6 at an object, on the CPU (skeletons, animations) and the RSP (display lists) */
+/*
+ * Point segment 6 at an object, on the CPU (skeletons, animations) and the RSP
+ * (display lists), and set the texture segments (0x0A, 0x0B) that OoTMM's
+ * patched pot, grass and chest lists need (see BossKit_PrepareTextures).
+ */
 void    BossKit_UseObject(PlayState* play, s32 slot);
+/*
+ * Set segments 0x0A and 0x0B for drawing lists of objectId: the plain look for
+ * the objects OoTMM patches (pots, grass, chests, and the keep objects' pots and
+ * grass), a safe empty list otherwise. BossKit_UseObject does it for you; call
+ * it yourself only before drawing from a keep object (segments 4 and 5).
+ */
+void    BossKit_PrepareTextures(PlayState* play, s16 objectId);
 /* Same, CPU only (for SkelAnime updates) */
 void    BossKit_UseObjectCpu(s32 slot);
 
