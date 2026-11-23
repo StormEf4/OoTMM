@@ -4,7 +4,7 @@ Fork feature. Controls on the Custom page, under Ocarina of Time:
 
 - **Pot God** (`potGod`): the mini boss and its 20 Hyrule Field pots.
 - **Pot God Fight** (`potGodArena`): where it is fought. "Hellfire Arena" (default): the guard drags Link down into Volvagia's lair, emptied out. "Pot House": right in the room.
-- **Reverse Saria's Song (Pot Room Warp)** (`potGodSariaWarp`): a warp to the Market Pot House.
+- **Pot Room Warp Song** (`potGodWarpSong`): a new song that warps to the Market Pot House.
 - **Boss Kit: Health Bars** (`bossKitHealthBar`): a health bar while fighting it.
 
 The fight is built on the [boss kit](boss-kit.md).
@@ -24,21 +24,21 @@ Not tested in game yet: there are no ROMs in the cloud sessions, so everything b
 
 If you leave the room before beating it, it comes back the next time and you break the pots again. Dying in the arena restarts the fight in the arena; saving and quitting there loads at Link's house, and the pots are back in the Pot House. As adult the room is unchanged.
 
-**Reverse Saria's Song**: once you know Saria's Song, play it backwards in free play (C-Left, C-Right, C-Down, C-Left, C-Right, C-Down). It asks "Warp to the Market Pot House?" and warps you there on Yes. It works wherever warp songs work. These are the same notes as the Song of Healing; with this setting on, playing those notes in free play gives this warp prompt instead, but they still count as the Song of Healing for signs. When an actor or spot asks for a song (for example a hidden Song of Healing spot), the warp is off so the Song of Healing still works there.
+**Pot Room Warp Song**: play A, C-Up, A, C-Up, C-Left, C-Right on the Ocarina in free play. It asks "Warp to the Market Pot House?" and warps you there on Yes. It works wherever warp songs work, and needs nothing but the Ocarina (and those four buttons when ocarina buttons are shuffled). Its notes are its own: no other song in either game (vanilla or the MM songs OoTMM adds) ends with them, and it ends with no other song, so the Song of Healing and every other song work exactly as in vanilla OoTMM. When an actor or spot asks for a song, it doesn't answer. (It replaced "Reverse Saria's Song", which used the Song of Healing's notes.)
 
 ## Logic
 
 - `POT_GOD_DEFEATED` is an event in "Market Pot House Child" that needs `setting(potGod) && can_use_sword_or_sticks`.
 - "Hyrule Field Pot God Pots" is a region reached from Hyrule Field with that event; its 20 locations need nothing else.
 - The pots are always kept in the pool when `potGod` is on (`isPotGodPot` in `packages/logic/src/world/transform.ts`), and always removed when it's off.
-- `POT_GOD_WARP` is a global exit (`setting(potGodSariaWarp) && can_play_saria`) to the Market Pot House, for both ages.
+- `POT_GOD_WARP` is a global exit (`setting(potGodWarpSong) && has_ocarina` and the A, C-Up, C-Left and C-Right buttons) to the Market Pot House, for both ages.
 
 ## How it works
 
 - **Actors**: two, both in the `BOSS` category so they keep updating while the other actors are halted.
   - `Custom_Pot_God_Watcher` (actor id 0x006, unused in OoT, object `gameplay_keep`) lives in the Pot House. It counts `Obj_Tsubo` actors in the room; once it has seen at least 8 and they are all gone, it waits for 20 calm frames (`BossKit_PlayerIsCalm`) and starts the cutscene. The guard (En_Heishi) is removed and redrawn from his own `object_sd` with the vanilla "dying guard" animation. In arena mode it then puts Link in the "grabbed by a Wallmaster" cutscene action, pulls him to the guard, sinks him with `shape.yOffset` (only how he is drawn, so he can't fall out of the room) and calls `BossKit_StartFight`. In Pot House mode it spawns the Pot God where the guard went down.
   - `Custom_Pot_God` (actor id 0x003, `OBJECT_DH`) is the boss. In the arena the boss kit spawns it (params `BOSS_KIT_PARAMS_ARENA`). It also loads `object_tsubo`. The model is assembled at draw time: the room pot's display list scaled up 4x as the body, and Dead Hand's hand skeleton (the arms that grab from the floor, as En_Dha draws them) drawn four times from the pot's mouth, each with its own writhing. There's no new asset. Pot shards use the boss kit's debris, drawn by the boss itself.
-- **Crash history**: the first two versions crashed the moment the Pot God appeared in the Pot House (the exact cause wasn't found without a ROM or a crash screen). What changed at that moment both times: the pot's display list and Dead Hand's skeleton drawn from extra object slots, and the vanilla shard effect (`Effect_Ss_Kakera`) with `object_tsubo`. Now the Pot House actor only uses objects the room already has, the shards no longer use the vanilla effect, and nothing is drawn from an object that isn't loaded. If it still crashes, a photo of the crash screen says where.
+- **Crash history**: every version up to PR #11 crashed the moment the Pot God started to rise (Elijah pinned it to that frame in the arena). The cause: OoTMM patches `object_tsubo`'s pot display list (`src/oot/objects/tsubo.S`) so its texture loads call segments 0x0A and 0x0B, which `Obj_Tsubo` sets with `csmcPotPreDraw` just before drawing. The Pot God drew the list without them, so the RSP jumped to garbage. Fixed in the boss kit: `BossKit_UseObject` now sets those segments for every patched object (see `docs/custom/boss-kit.md`). The earlier changes (no Dead Hand body, no vanilla shard effect, only the room's objects in the Pot House) were not the cause but are kept.
 - **Spawning**: `PotGod_SpawnForScene` (`src/oot/play/pot_god.c`), called from `Play_AfterInit`. In the child Market Pot House it spawns the watcher until the save flag is set. In Hyrule Field, once the flag is set, it spawns the 20 pots (`Obj_Tsubo`, params `0x11f`, so they use `object_tsubo` and drop nothing of their own) at fixed x/z, high up, so they snap to the floor. Each pot is spawned with `g.xflagOverride` set to the xflag of its check (Hyrule Field, setup 0, room 0, actor ids 0xc0 to 0xd3), declared in `data/checks/oot/overworld/hyrule_field.xml`.
 - **Cutscenes**: manual cutscenes with a sub camera (like En_Clear_Tag), through the boss kit.
 - **Voice**: there is no recorded "OH GOD!" (the game can't play new voice clips without new audio data). The line is shown as a red text box with vanilla screams (Talon's surprise and cries, Ingo's cry). There is no kneeling animation either, so the guard collapses with the dying guard animation.
