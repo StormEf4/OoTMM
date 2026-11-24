@@ -1278,10 +1278,54 @@ static f32 TransformOot_MapStartFrame(f32 frame, const ComboImportedPlayerAnimat
     return frame;
 }
 
+/*
+ * Idle: MM gives the Goron and Zora their own standing idle (Player_GetIdleAnim: pg_wait, pz_wait) in place of every
+ * idle Link has. Only the pose is redirected, while OoT keeps playing its own 89 frame idle, so OoT's idle and fidget
+ * logic (which compares skelAnime.animation) is untouched. The frame is scaled so the loop stays seamless.
+ */
+#define OOT_IDLE_FRAMES         89
+
+static const u32 kOotIdleAnims[] = {
+    0x04003240, /* gPlayerAnim_link_normal_wait_free */
+    0x04003238, /* gPlayerAnim_link_normal_wait */
+    0x04002be0, /* gPlayerAnim_link_fighter_wait_long */
+};
+
+static const ComboImportedPlayerAnimationHeader* TransformOot_FormIdleAnim(void* animation)
+{
+    const ComboImportedPlayerAnimationHeader* idle;
+    s32 i;
+
+    if (sState != TF_STATE_FORM)
+        return NULL;
+    if (sDrawnForm == TRANSFORM_OOT_FORM_GORON)
+        idle = &gPlayerAnim_pg_wait;
+    else if (sDrawnForm == TRANSFORM_OOT_FORM_ZORA)
+        idle = &gPlayerAnim_pz_wait;
+    else
+        return NULL;
+
+    for (i = 0; i < ARRAY_COUNT(kOotIdleAnims); ++i)
+    {
+        if ((u32)animation == kOotIdleAnims[i])
+            return idle;
+    }
+    return NULL;
+}
+
 void* TransformOot_RedirectAnimation(void* animation, s32* frame)
 {
+    const ComboImportedPlayerAnimationHeader* idle;
     const FormInstrumentAnims* inst;
     s32 count;
+
+    idle = TransformOot_FormIdleAnim(animation);
+    if (idle)
+    {
+        count = idle->frameCount;
+        *frame = (*frame < 0) ? 0 : ((*frame * count) / OOT_IDLE_FRAMES) % count;
+        return (void*)idle;
+    }
 
     if (animation != OOT_ANIM_OCARINA_START && animation != OOT_ANIM_OCARINA_SWING && animation != OOT_ANIM_OCARINA_END)
         return animation;

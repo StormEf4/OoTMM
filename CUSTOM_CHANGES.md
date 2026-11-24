@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-24: Goron and Zora use their MM idle (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "MM Goron Transformation Mask" and "MM Zora Transformation Mask" rows, OoT column (no new control; changes those items)
+- What it does: standing still as a Goron or Zora in OoT now plays MM's Goron and Zora idle animations instead of Link's. Walking, running and jumping stay as they are, because MM also uses Link's animations for those. Compile-checked only, not tested in game yet
+- Files: `packages/generator/src/oot/transform_mask.c`, `data/defs/link-animations.yml`, `packages/generator/include/combo/custom_animations.h`, `docs/custom/transform-masks.md`
+
 ## 2026-11-24: Deku, Goron and Zora play their MM instruments on the Ocarina (OoT)
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "Deku Mask", "MM Goron Transformation Mask" and "MM Zora Transformation Mask" rows, OoT column (no new control; changes those items, also with their Shared options)

@@ -62,6 +62,10 @@ Redirected calls (all OoT 1.0, relocations zeroed in `transform_mask_oot.S`):
 | 0x8083A314 (`Player_ActionHandler_Roll`) | `Player_TryRoll` | 0x80854148 | `TransformOot_TryRoll` |
 | 0x80839FE0 (`Player_ActionHandler_10`, no sword) | `Player_SetupRoll` | 0x808540F4 | `TransformOot_SetupLockOnRoll` |
 
+## Idle
+
+MM gives the Goron and Zora their own idle (`Player_GetIdleAnim`: `pg_wait`, `pz_wait`). The other movement animations (walk, run, jump, roll, ...) are Link's in MM too, so they stay OoT's. `TransformOot_RedirectAnimation` loads the form idle's pose whenever OoT loads one of its three idles (`link_normal_wait_free` 0x04003240, `link_normal_wait` 0x04003238, `link_fighter_wait_long` 0x04002BE0, 89 frames each), with the frame scaled to the form idle's length. `skelAnime.animation` stays OoT's, so OoT's idle and fidget logic is untouched. Still missing from MM: the form versions of doors, chests, ladders, drinking and taking the mask off (they have OoT timing tied to them, so they need more than a swap).
+
 ## Instruments (phase 5)
 
 Like MM, a Deku, Goron or Zora plays the ocarina on its own instrument: Deku pipes, Goron drums, Zora guitar.
