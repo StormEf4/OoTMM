@@ -205,3 +205,9 @@ animations:
     home_game: mm
     header_offset: 0xE2A8
     frame_data_offset: 0x1A38E0
+
+  # MM transformation masks in OoT: Goron idle (the Zora idle pz_wait is above)
+  - name: gPlayerAnim_pg_wait
+    home_game: mm
+    header_offset: 0xE260
+    frame_data_offset: 0xFD5B0
