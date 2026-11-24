@@ -35,6 +35,7 @@
  *   Goron and Zora punch combos and the Zora jump kick reuse OoT's sword attack code with MM's entries in its
  *   attack table; the Deku spin (A button) is its own player action.
  * - Goron roll (A) with spikes, and ground pound (B while curled): its own player action, see "Goron roll" below.
+ * - Zora fast swimming (hold A in water): on top of OoT's swim actions, see "Zora fast swimming" below.
  * - Instruments: playing the ocarina as a form uses MM's instrument animations and draws MM's Deku pipes, Goron drums
  *   or Zora guitar (see "Instruments" below).
  *
@@ -1703,11 +1704,141 @@ static const ComboImportedPlayerAnimationHeader* TransformOot_FormIdleAnim(void*
     return NULL;
 }
 
+/*
+ * Zora fast swimming (phase 4): MM's func_80850734 / Player_Action_56 / func_80850BF8 / func_80850BA8, simplified.
+ * Holding A in water as a Zora swims like a fish: a dash at 16 that settles at 9, the stick's up and down pitch the
+ * Zora (up dives, like MM) and left and right turn it and roll it. OoT's swim actions stay in charge of everything else:
+ * - the movement they set is replaced after the player update (speedXZ, yaw, velocity.y), like func_80850BA8;
+ * - every animation frame they load becomes MM's pz_fishswim (TransformOot_RedirectAnimation);
+ * - the model is pitched and rolled at the root, like MM's Player_OverrideLimbDrawGameplayCommon. OoT's own swim pitch
+ *   (Player unk_6C2, same convention as MM's unk_AAA) is cleared while swimming fast and takes over the pitch after.
+ */
+#define ZORA_SWIM_SPEED         9.0f
+#define ZORA_SWIM_DASH_SPEED    16.0f
+#define ZORA_SWIM_SURFACE_PITCH 0x7d0
+#define PLAYER_SWIM_PITCH(p)    (*(s16*)((u8*)(p) + 0x6b2)) /* decomp Player unk_6C2, at 0x6B2 in 1.0 (func_8083D330) */
+
+static s32 sZoraSwim;
+static f32 sZoraSwimSpeed;
+static f32 sZoraSwimFrame;
+static s16 sZoraPitch;
+static s16 sZoraRoll;
+static s16 sZoraRollSpeed;
+
+static s32 TransformOot_CanZoraSwim(PlayState* play, Player* player)
+{
+    if (sDrawnForm != TRANSFORM_OOT_FORM_ZORA || sState != TF_STATE_FORM)
+        return 0;
+    if (!(player->stateFlags1 & PLAYER_ACTOR_STATE_WATER))
+        return 0;
+    if (player->stateFlags1 & (PLAYER_STATE1_TALKING | PLAYER_STATE1_DEAD | PLAYER_STATE1_10 | PLAYER_STATE1_29))
+        return 0;
+    if (player->csAction != PLAYER_CSACTION_NONE)
+        return 0;
+    return (play->state.input[0].cur.button & BTN_A) != 0;
+}
+
+/* After the player update */
+static void TransformOot_UpdateZoraSwim(PlayState* play, Player* player)
+{
+    Input* input;
+    f32 surfaceDepth;
+    s16 pitchTarget;
+    s16 turn;
+    f32 stickCos;
+
+    if (!TransformOot_CanZoraSwim(play, player))
+    {
+        if (sZoraSwim)
+        {
+            /* OoT's swim pitch carries on from MM's */
+            PLAYER_SWIM_PITCH(player) = sZoraPitch;
+            player->speedXZ = Math_CosS(sZoraPitch) * sZoraSwimSpeed;
+        }
+        sZoraSwim = 0;
+        return;
+    }
+
+    input = &play->state.input[0];
+    if (!sZoraSwim)
+    {
+        /* func_80850734: the dash that starts it */
+        sZoraSwim = 1;
+        sZoraSwimFrame = 0.0f;
+        sZoraPitch = PLAYER_SWIM_PITCH(player);
+        sZoraRoll = 0;
+        sZoraRollSpeed = 0;
+        sZoraSwimSpeed = player->speedXZ;
+        if (sZoraSwimSpeed < ZORA_SWIM_DASH_SPEED)
+            sZoraSwimSpeed = ZORA_SWIM_DASH_SPEED;
+        Player_PlaySfx(player, NA_SE_PL_DIVE_BUBBLE);
+    }
+
+    /* Pitch: the stick's up dives, kept slightly down near the surface so the Zora doesn't leave the water */
+    pitchTarget = input->rel.stick_y * 0xc8;
+    surfaceDepth = ((f32*)player->ageProperties)[9] + 10.0f; /* unk_24 */
+    if (player->actor.depthInWater < surfaceDepth && pitchTarget < ZORA_SWIM_SURFACE_PITCH)
+        pitchTarget = ZORA_SWIM_SURFACE_PITCH;
+    Math_SmoothStepToS(&sZoraPitch, pitchTarget, 4, 0xfa0, 0x190);
+
+    /* Bounce off the floor */
+    if ((player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && sZoraPitch > 0)
+    {
+        sZoraPitch = -sZoraPitch;
+        Player_PlaySfx(player, NA_SE_PL_BODY_BOUND);
+    }
+
+    /* Roll: holding the stick sideways rolls over and over (MM's unk_B8A / unk_B86[1]) */
+    Math_ScaledStepToS(&sZoraRollSpeed, input->rel.stick_x * 0x64, 0x384);
+    if (sZoraRollSpeed == 0 && input->rel.stick_x == 0)
+        Math_SmoothStepToS(&sZoraRoll, 0, 4, 0x5dc, 0x64);
+    else
+        sZoraRoll += sZoraRollSpeed;
+
+    /* func_80850BF8: speed and turning */
+    Math_AsymStepToF(&sZoraSwimSpeed, ZORA_SWIM_SPEED, 1.0f, (ABS(sZoraSwimSpeed) * 0.01f) + 0.4f);
+    stickCos = Math_CosS(input->rel.stick_x * 0x10e);
+    turn = (s16)CLAMP(((input->rel.stick_x >= 0) ? 1.0f : -1.0f) * (1.0f - stickCos) * -1100.0f, -0x1f40, 0x1f40);
+    player->yaw += turn;
+    player->actor.shape.rot.y = player->yaw;
+
+    /* func_80850BA8 */
+    player->speedXZ = Math_CosS(sZoraPitch) * sZoraSwimSpeed;
+    player->actor.velocity.y = -Math_SinS(sZoraPitch) * sZoraSwimSpeed;
+    player->actor.gravity = 0.0f;
+    PLAYER_SWIM_PITCH(player) = 0;
+
+    sZoraSwimFrame += 1.0f;
+    if (sZoraSwimFrame >= (f32)gPlayerAnim_pz_fishswim.frameCount)
+    {
+        sZoraSwimFrame -= (f32)gPlayerAnim_pz_fishswim.frameCount;
+        Player_PlaySfx(player, NA_SE_PL_SWIM);
+    }
+}
+
+/* MM's Player_OverrideLimbDrawGameplayCommon for a Zora with PLAYER_STATE3_8000, on the root limb */
+static void TransformOot_ZoraSwimRoot(Vec3f* pos, Vec3s* rot)
+{
+    Matrix_Translate(pos->x, ((Math_CosS(sZoraPitch) - 1.0f) * 200.0f) + pos->y, pos->z, MTXMODE_APPLY);
+    Matrix_RotateXF(BINANG_TO_RAD(sZoraPitch), MTXMODE_APPLY);
+    Matrix_RotateZF(BINANG_TO_RAD(sZoraRoll), MTXMODE_APPLY);
+    Matrix_RotateZYX(rot->x, rot->y, rot->z, MTXMODE_APPLY);
+    pos->x = pos->y = pos->z = 0.0f;
+    rot->x = rot->y = rot->z = 0;
+}
+
 void* TransformOot_RedirectAnimation(void* animation, s32* frame)
 {
     const ComboImportedPlayerAnimationHeader* idle;
     const FormInstrumentAnims* inst;
     s32 count;
+
+    /* Zora fast swimming: every frame OoT's swim actions load is MM's fish swim */
+    if (sZoraSwim && sDrawnForm == TRANSFORM_OOT_FORM_ZORA)
+    {
+        *frame = (s32)sZoraSwimFrame % gPlayerAnim_pz_fishswim.frameCount;
+        return (void*)&gPlayerAnim_pz_fishswim;
+    }
 
     idle = TransformOot_FormIdleAnim(animation);
     if (idle)
@@ -1827,11 +1958,15 @@ void TransformOot_AfterPlayerUpdate(Player* player, PlayState* play)
 
     info = TransformOot_Info(sDrawnForm);
     if (!info)
+    {
+        sZoraSwim = 0;
         return;
+    }
 
     /* The player may have reset its boot data during the update */
     TransformOot_ApplyForm(play, player);
     TransformOot_UpdateInstrument(player);
+    TransformOot_UpdateZoraSwim(play, player);
     if (info->swordLength > 0.0f)
         TransformOot_SetSwordLengths(info);
     TransformOot_UpdateDamage(player);
@@ -2068,6 +2203,9 @@ static s32 TransformOot_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** d
 
     /* Head look, leg IK, body part positions... OoT's hand, waist and sheath models are replaced below */
     ret = vanillaOverride ? vanillaOverride(play, limbIndex, dList, pos, rot, arg) : 0;
+
+    if (limbIndex == PLAYER_LIMB_ROOT && sZoraSwim && sDrawnForm == TRANSFORM_OOT_FORM_ZORA && !sDrawFirstPerson)
+        TransformOot_ZoraSwimRoot(pos, rot);
 
     if (sDrawFirstPerson)
         *dList = NULL;

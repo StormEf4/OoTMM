@@ -217,3 +217,9 @@ animations:
     home_game: mm
     header_offset: 0xE208
     frame_data_offset: 0x234E80
+
+  # MM transformation masks in OoT: Zora fast swimming
+  - name: gPlayerAnim_pz_fishswim
+    home_game: mm
+    header_offset: 0xE3D8
+    frame_data_offset: 0x330C0

@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-24: Zora fast swimming (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "MM Zora Transformation Mask" row, OoT column (no new control; changes that item, also with its Shared option)
+- What it does: holding A in water as a Zora in OoT now swims like MM's Zora: a quick dash, then fast swimming with MM's fish swim animation. Up and down on the stick dive and rise (up dives, like MM), and left and right turn and roll the Zora. It stays just under the surface instead of jumping out. Letting go of A goes back to OoT's normal swimming. Sounds are OoT's. Built with the ROMs and a seed generated, not tested in game yet
+- Files: `packages/generator/src/oot/transform_mask.c`, `data/defs/link-animations.yml`, `packages/generator/include/combo/custom_animations.h` (generated from the ROMs), `docs/custom/transform-masks.md`
+
 ## 2026-11-24: Fix possible crash drawing the Deku and the curled Goron (OoT)
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "Deku Mask" and "MM Goron Transformation Mask" rows, OoT column (no new control; fixes those items)

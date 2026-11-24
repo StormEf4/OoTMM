@@ -80,6 +80,18 @@ Details:
 - **Sounds** are OoT's, since OoT has none of MM's Goron ball sounds: curling `NA_SE_PL_ROLL`, rolling `NA_SE_EV_BIGBALL_ROLL` (the Goron City Goron), bounce `NA_SE_EV_STONE_BOUND`, charge `NA_SE_IT_SWORD_CHARGE`, spikes `NA_SE_IT_ROLLING_CUT_LV1`, pound `NA_SE_IT_HAMMER_HIT`.
 - Not ported: MM's momentum vector (`unk_B08`/`unk_B0C`, the ball keeps its direction for a moment after turning), slope rolling, the bounces after a pound, the ball squash (`unk_ABC`), the spike trail and dust effects, MM's pound actor (`EnTest`), breaking MM-only objects.
 
+## Zora fast swimming (phase 4)
+
+Holding A in water as a Zora swims like MM's Zora (`func_80850734`, `Player_Action_56`, simplified): a dash at speed 16 that settles at 9, the stick's up and down pitch the Zora (up dives, like MM), and left and right turn it (`func_80850BF8`: up to 1100 binary angle per frame) and roll it over and over. Letting go of A hands back to OoT's swimming.
+
+It runs on top of OoT's swim actions instead of being an action of its own (OoT's diving, surfacing and breath code all stay as they are):
+- `TransformOot_UpdateZoraSwim`, after the player update, replaces the movement OoT's swim action set: `speedXZ = cos(pitch) x speed`, `velocity.y = -sin(pitch) x speed`, gravity 0, yaw turned by the stick (MM `func_80850BA8`). It runs while the Zora is in water (`PLAYER_ACTOR_STATE_WATER`), A is held, and nothing else holds Link (talking, getting an item, cutscene, dying).
+- Near the surface (depth under the form's `unk_24` + 10) the pitch stays at least 0x7D0 down, like MM, so the Zora skims just under the surface instead of leaving the water. Touching the floor reflects the pitch up.
+- `TransformOot_RedirectAnimation` loads MM's `pz_fishswim` (10 frames, looping) for every frame OoT's swim actions load.
+- The model is pitched and rolled at the root limb like MM's `Player_OverrideLimbDrawGameplayCommon` (`TransformOot_ZoraSwimRoot`, after OoT's override). OoT's own swim pitch, Player `unk_6C2`, is cleared while swimming fast so OoT doesn't pitch the model a second time, and set to MM's pitch when it ends so OoT's dive carries on from it. **That field is at 0x6B2 in OoT 1.0, not 0x6C2 as in the decomp's debug layout** (checked in the ROM: `func_8083D330` stores 16000 at 0x6B2).
+- Sounds are OoT's: `NA_SE_PL_DIVE_BUBBLE` for the dash and `NA_SE_PL_SWIM` once per stroke (MM's Zora swim sounds aren't in OoT).
+- Not ported: the `pz_waterroll` start animation, the dolphin jump out of the water, the Zora barrier (R), MM's stroke trails.
+
 ## Idle
 
 MM gives the Goron and Zora their own idle (`Player_GetIdleAnim`: `pg_wait`, `pz_wait`). The other movement animations (walk, run, jump, roll, ...) are Link's in MM too, so they stay OoT's. `TransformOot_RedirectAnimation` loads the form idle's pose whenever OoT loads one of its three idles (`link_normal_wait_free` 0x04003240, `link_normal_wait` 0x04003238, `link_fighter_wait_long` 0x04002BE0, 89 frames each), with the frame scaled to the form idle's length. `skelAnime.animation` stays OoT's, so OoT's idle and fidget logic is untouched. Still missing from MM: the form versions of doors, chests, ladders, drinking and taking the mask off (they have OoT timing tied to them, so they need more than a swap).
@@ -132,7 +144,7 @@ The mask draw callbacks (`kMaskCallbacks` in `Player.c`, entries for mask ids 0x
 
 ## Not done yet / unverified
 
-- Phases 3-5 from the research plan: Zora fins and Deku bubble (B), Zora fast swim and barrier, Deku water hops, guards, Deku flower. Instruments and the Goron roll / spikes / pound are done (above), simplified. More MM animations can be imported the same way as the phase 2 ones (offsets in the research notes).
+- Phases 3-5 from the research plan: Zora fins and Deku bubble (B), Zora barrier, Deku water hops, guards, Deku flower. Instruments, the Goron roll / spikes / pound and the Zora fast swim are done (above), simplified. More MM animations can be imported the same way as the phase 2 ones (offsets in the research notes).
 - Attack details not ported: the punch hitbox follows OoT's sword in the left hand, so right-hand punches hit on Link's left side; sounds and voices are OoT's sword swing and Link's voice (MM has Goron and Zora punch sounds and form voices that OoT doesn't have); no Goron fist growth (MM `unk_3D0`), no spin dust or sparkles; Goron and Zora still use OoT's own animations for everything else (idle, walking).
 - Not checked in game (no ROM in the build container): whether any form DL references MM gameplay_keep (segment 04), the eye texture format, how OoT's animations look on each form, and the attack timing (MM's active frames played at OoT's attack speed).
 - Leg IK still uses OoT adult values (feet may float or clip on slopes). A C port with MM's per-form constants can replace the calls at 0x8007aa20 / 0x8007aa64.
