@@ -16,6 +16,7 @@
 #include <combo/effect.h>
 #include <combo/boss_kit.h>
 #include <combo/magic.h>
+#include <combo/sfx_source.h>
 
 /*
  * MM transformation masks (OoT): Deku Mask, MM Goron Transformation Mask, MM Zora Transformation Mask
@@ -29,8 +30,9 @@
  * - Items: like MM, only the ocarina, lens, bottles, trade items and the transformation masks. Deku also has Deku
  *   Nuts and Goron the Powder Keg. Goron and Zora always punch with B (a sword is lent during the player update,
  *   like Fierce Deity, and drawn as a fist).
- * - Rules: Goron is heat proof, Zora never drowns, Goron and Deku sink and void out in deep water, Deku and Zora
- *   void out when set on fire, Goron and Zora can't crawl.
+ * - Rules: Goron is heat proof, Zora never drowns, Goron and Deku sink and void out in deep water (a Deku first hops
+ *   on it up to 5 times, see "Deku water hops" below), Deku and Zora void out when set on fire, Goron and Zora can't
+ *   crawl.
  * - The form stays on through loading zones, like in MM.
  * - Attacks, with MM's animations (imported from MM's link_animetion, see data/defs/link-animations.yml):
  *   Goron and Zora punch combos and the Zora jump kick reuse OoT's sword attack code with MM's entries in its
@@ -39,6 +41,7 @@
  * - Zora fast swimming (hold A in water): on top of OoT's swim actions, see "Zora fast swimming" below.
  * - Zora boomerang fins (hold B after a punch, let go to throw): an upper body action and OoT's boomerang actor, see
  *   "Zora boomerang fins" below. The arm fins are drawn like MM's (folded until B is used, hidden while thrown).
+ * - Deku bubble (B, 2 magic): an upper body action and a bubble built on OoT's boomerang actor, see "Deku bubble" below.
  * - Instruments: playing the ocarina as a form uses MM's instrument animations and draws MM's Deku pipes, Goron drums
  *   or Zora guitar (see "Instruments" below).
  *
@@ -46,6 +49,7 @@
  */
 
 #define TRANSFORM_FRAMES        20
+#define DEKU_HOPS               5
 #define TRANSFORM_SWAP_FRAME    10
 #define SINK_FRAMES             20
 #define SPAWN_GRACE_FRAMES      60
@@ -197,6 +201,10 @@ static u32 sOpaAfterSkeletonFrame;
 static u8  sZoraFinsOut;
 static u8  sZoraFinCaught;
 static u8  sZoraFinBlockedB;
+
+/* Deku: the bubble pose is looping (the bubble can be shot), hops left on water */
+static u8  sDekuBubblePose;
+static u8  sDekuHops;
 
 static const TransformFormInfo* TransformOot_Info(s32 form)
 {
@@ -560,6 +568,8 @@ void TransformOot_AfterPlayerInit(PlayState* play, Player* player)
     sZoraFinsOut = 0;
     sZoraFinCaught = 0;
     sZoraFinBlockedB = 0;
+    sDekuBubblePose = 0;
+    sDekuHops = DEKU_HOPS;
 
     if (keep)
     {
@@ -632,12 +642,16 @@ static void TransformOot_UpdateState(Player* player, PlayState* play)
 /*
  * Like Fierce Deity, Goron and Zora always punch with B. When B holds no sword, a sword is put on B for the duration
  * of the player update only (that is where the B button is read). It is drawn as a fist.
+ * The Deku gets one too, so that B always reaches the item use hook, which blows a bubble instead (the Deku can't
+ * use the sword itself, see TransformOot_CanUseItem).
  */
 static void TransformOot_LendSword(void)
 {
     u8* bItem;
 
-    if (sState != TF_STATE_FORM || (sForm != TRANSFORM_OOT_FORM_GORON && sForm != TRANSFORM_OOT_FORM_ZORA))
+    if (sState != TF_STATE_FORM)
+        return;
+    if (sForm != TRANSFORM_OOT_FORM_GORON && sForm != TRANSFORM_OOT_FORM_ZORA && sForm != TRANSFORM_OOT_FORM_DEKU)
         return;
 
     bItem = &gSave.info.equips.buttonItems[0];
@@ -2189,6 +2203,481 @@ static void TransformOot_UnblockPunch(PlayState* play)
     sZoraFinBlockedB = 0;
 }
 
+/*
+ * Deku bubble (phase 5)
+ *
+ * Like MM's Deku (func_808306F8, Player_UpperAction_7 to 9, En_Arrow ARROW_TYPE_DEKU_BUBBLE), simplified: B blows a
+ * bubble for 2 magic, it grows while B is held, and letting go shoots it. Held at full size too long, it shrinks and
+ * pops. B reaches TransformOot_TryDekuBubble through the item use hook (Player.c); like Goron and Zora, the Deku gets
+ * a sword on B during the player update when B is empty, so the press always gets there.
+ *
+ * The bubble is OoT's En_Boom with its update and draw replaced, like the Zora fins: it gives a quad hitbox that the
+ * draw moves. It hits as a Deku Seed. Aiming is third person only: at the Z-target, otherwise straight ahead.
+ */
+
+#define DEKU_BUBBLE_COST            2
+#define DEKU_BUBBLE_SIZE_MAX        16.0f
+#define DEKU_BUBBLE_SIZE_MIN        3.5f
+#define DEKU_BUBBLE_FULL_FRAMES     20
+#define DEKU_BUBBLE_LIFE            99
+#define DEKU_BUBBLE_DAMAGE          2
+
+/* OoT 1.0 0x8001D6FC (declared for MM only in effect.h): the hit puff En_Arrow uses for seeds */
+void EffectSsStone1_Spawn(PlayState* play, Vec3f* pos, s32 arg2);
+
+/* En_Boom, with the bubble's state in En_Boom's own fields (its effect index is left alone: its destroy deletes it) */
+typedef struct
+{
+    Actor           actor;
+    ColliderQuad    collider;
+    f32             size;           /* moveTo */
+    u8              wallHit;        /* grabbed */
+    u8              pad[3];
+    u8              timer;          /* returnTimer */
+    u8              fullTimer;      /* activeTimer */
+    u8              held;
+    s8              bounced;
+    s32             effectIndex;
+    WeaponInfo      weaponInfo;
+}
+OotDekuBubble;
+
+ASSERT_OFFSET(OotDekuBubble, collider,      0x13c);
+ASSERT_OFFSET(OotDekuBubble, size,          0x1bc);
+ASSERT_OFFSET(OotDekuBubble, timer,         0x1c4);
+ASSERT_OFFSET(OotDekuBubble, effectIndex,   0x1c8);
+ASSERT_OFFSET(OotDekuBubble, weaponInfo,    0x1cc);
+
+static void TransformOot_DekuBubbleUpdate(Actor* thisx, PlayState* play);
+static void TransformOot_DekuBubbleDraw(Actor* thisx, PlayState* play);
+static s32 TransformOot_DekuBubbleReadyUpper(Player* player, PlayState* play);
+static s32 TransformOot_DekuBubbleShootUpper(Player* player, PlayState* play);
+
+static OotDekuBubble* TransformOot_HeldDekuBubble(PlayState* play)
+{
+    Actor* actor;
+
+    for (actor = play->actorCtx.actors[ACTORCAT_MISC].first; actor != NULL; actor = actor->next)
+    {
+        if (actor->update == TransformOot_DekuBubbleUpdate && ((OotDekuBubble*)actor)->held)
+            return (OotDekuBubble*)actor;
+    }
+    return NULL;
+}
+
+/* MM's Actor_SetSpeeds with func_8088A514: the smaller the bubble, the faster */
+static void TransformOot_DekuBubbleSetSpeed(OotDekuBubble* bubble)
+{
+    f32 speed;
+
+    speed = 16.0f - bubble->size;
+    if (speed < 1.0f)
+        speed = 1.0f;
+    bubble->actor.speed = Math_CosS(bubble->actor.world.rot.x) * speed;
+    bubble->actor.velocity.y = -Math_SinS(bubble->actor.world.rot.x) * speed;
+}
+
+static void TransformOot_PopDekuBubble(PlayState* play, OotDekuBubble* bubble, s32 effect)
+{
+    if (effect)
+        EffectSsStone1_Spawn(play, &bubble->actor.world.pos, 0);
+    SfxSource_PlaySfxAtFixedWorldPos(play, &bubble->actor.world.pos, 20, NA_SE_EN_AWA_BREAK);
+    Actor_Kill(&bubble->actor);
+}
+
+/* B as a Deku (Player.c, item use hook). Returns 1 when B was used here */
+s32 TransformOot_TryDekuBubble(PlayState* play, Player* player)
+{
+    OotDekuBubble* bubble;
+    Vec3f* head;
+
+    if (sState != TF_STATE_FORM || sDrawnForm != TRANSFORM_OOT_FORM_DEKU)
+        return 0;
+    if (player->heldItemButton != 0 || !(play->state.input[0].press.button & BTN_B))
+        return 0;
+
+    if (player->upperActionFunc == TransformOot_DekuBubbleReadyUpper || player->upperActionFunc == TransformOot_DekuBubbleShootUpper)
+        return 1;
+    if (player->stateFlags1 & (PLAYER_ACTOR_STATE_WATER | PLAYER_STATE1_ACTOR_CARRY | PLAYER_STATE1_13 | PLAYER_STATE1_14 | PLAYER_STATE1_21))
+        return 1;
+
+    /* MM needs 2 magic. Without a magic meter, Magic_RequestChange fails without a sound */
+    if (!gSave.info.playerData.isMagicAcquired)
+    {
+        PlaySound(NA_SE_SY_ERROR);
+        return 1;
+    }
+
+    head = &player->bodyPartsPos[PLAYER_BODYPART_HEAD];
+    bubble = (OotDekuBubble*)Actor_Spawn(&play->actorCtx, play, ACTOR_EN_BOOM, head->x, head->y, head->z,
+        0, player->actor.shape.rot.y, 0, 0);
+    if (!bubble)
+        return 1;
+
+    if (!Magic_RequestChangeCustom(play, DEKU_BUBBLE_COST, MAGIC_CONSUME_NOW))
+    {
+        Actor_Kill(&bubble->actor);
+        return 1;
+    }
+
+    bubble->actor.update = TransformOot_DekuBubbleUpdate;
+    bubble->actor.draw = TransformOot_DekuBubbleDraw;
+    Actor_SetScale(&bubble->actor, 1.0f);
+    bubble->actor.shape.rot = bubble->actor.world.rot;
+    bubble->actor.gravity = 0.0f;
+    bubble->size = 0.0f;
+    bubble->wallHit = 0;
+    bubble->timer = DEKU_BUBBLE_LIFE;
+    bubble->fullTimer = 0;
+    bubble->held = 1;
+    bubble->bounced = 0;
+    bubble->collider.elem.atDmgInfo.dmgFlags = DMG_SLINGSHOT;
+    bubble->collider.elem.atDmgInfo.damage = DEKU_BUBBLE_DAMAGE;
+
+    /* Load the bubble model now rather than on the first draw */
+    comboGetObject(CUSTOM_OBJECT_ID_EQ_DEKU_BUBBLE);
+
+    sDekuBubblePose = 0;
+    TransformOot_SetUpperAction(player, TransformOot_DekuBubbleReadyUpper);
+    TransformOot_PlayUpperAnim(play, player, &gPlayerAnim_pn_tamahakidf, 0);
+    return 1;
+}
+
+/* Letting go of B (Player_UpperAction_7): MM's func_8088A594 for the bubble, pointed at the Z-target if there is one */
+static void TransformOot_ShootDekuBubble(PlayState* play, Player* player)
+{
+    OotDekuBubble* bubble;
+    Vec3f* target;
+    Vec3f* pos;
+
+    TransformOot_SetUpperAction(player, TransformOot_DekuBubbleShootUpper);
+    TransformOot_PlayUpperAnim(play, player, &gPlayerAnim_pn_tamahaki, 0);
+
+    /* It may have popped already, from being held too long */
+    bubble = TransformOot_HeldDekuBubble(play);
+    if (!bubble)
+        return;
+
+    pos = &bubble->actor.world.pos;
+    if (player->focusActor)
+    {
+        target = &player->focusActor->focus.pos;
+        bubble->actor.world.rot.y = Math_Vec3f_Yaw(pos, target);
+        bubble->actor.world.rot.x = Math_Atan2S(Math_Vec3f_DistXZ(pos, target), pos->y - target->y);
+    }
+    else
+    {
+        bubble->actor.world.rot.y = player->actor.shape.rot.y;
+        bubble->actor.world.rot.x = player->actor.focus.rot.x;
+    }
+    bubble->actor.world.rot.z = 0;
+    bubble->actor.shape.rot = bubble->actor.world.rot;
+
+    bubble->held = 0;
+    if (bubble->size < DEKU_BUBBLE_SIZE_MIN)
+        bubble->size = DEKU_BUBBLE_SIZE_MIN;
+    bubble->timer = DEKU_BUBBLE_LIFE;
+    bubble->weaponInfo.active = 0;
+    TransformOot_DekuBubbleSetSpeed(bubble);
+    Player_PlaySfx(player, NA_SE_EN_NUTS_THROW);
+}
+
+/* Player_UpperAction_7: pn_tamahakidf, then held until B is let go */
+static s32 TransformOot_DekuBubbleReadyUpper(Player* player, PlayState* play)
+{
+    if (sDrawnForm != TRANSFORM_OOT_FORM_DEKU)
+    {
+        TransformOot_ResetUpperAction(play, player);
+        return 0;
+    }
+
+    if (TransformOot_UpdateUpperAnim(play, player) && !sDekuBubblePose)
+    {
+        TransformOot_PlayUpperAnim(play, player, &gPlayerAnim_pn_tamahakidf, 1);
+        sDekuBubblePose = 1;
+    }
+
+    /* Like MM, a short press still shoots, once the pose is reached */
+    if (sDekuBubblePose && !(play->state.input[0].cur.button & BTN_B))
+        TransformOot_ShootDekuBubble(play, player);
+    return 1;
+}
+
+/* Player_UpperAction_8 and 9 */
+static s32 TransformOot_DekuBubbleShootUpper(Player* player, PlayState* play)
+{
+    if (TransformOot_UpdateUpperAnim(play, player) || sDrawnForm != TRANSFORM_OOT_FORM_DEKU)
+    {
+        TransformOot_ResetUpperAction(play, player);
+        return 0;
+    }
+    return 1;
+}
+
+/* MM's func_8088A594 (held) and func_8088ACE0 (flying) for the bubble */
+static void TransformOot_DekuBubbleUpdate(Actor* thisx, PlayState* play)
+{
+    OotDekuBubble* bubble;
+    CollisionPoly* poly;
+    Player* player;
+    Vec3f hitPos;
+    s32 bgId;
+    s32 atHit;
+
+    bubble = (OotDekuBubble*)thisx;
+    player = GET_PLAYER(play);
+
+    if (bubble->held)
+    {
+        /* Let go without shooting (hit, climbing, mask off...): it pops */
+        if (sDrawnForm != TRANSFORM_OOT_FORM_DEKU || player->upperActionFunc != TransformOot_DekuBubbleReadyUpper)
+        {
+            TransformOot_PopDekuBubble(play, bubble, 0);
+            return;
+        }
+
+        if (bubble->fullTimer <= DEKU_BUBBLE_FULL_FRAMES)
+        {
+            if (Math_SmoothStepToF(&bubble->size, DEKU_BUBBLE_SIZE_MAX, 0.07f, 1.8f, 0.0f) > 0.5f)
+                return;
+            bubble->fullTimer++;
+        }
+        else if (Math_StepToF(&bubble->size, 1.0f, 0.4f))
+        {
+            TransformOot_PopDekuBubble(play, bubble, 1);
+        }
+        return;
+    }
+
+    if (player->stateFlags1 & PLAYER_STATE1_29)
+        return;
+
+    atHit = (bubble->collider.base.atFlags & AT_HIT) != 0;
+    if (bubble->timer == 0 || bubble->wallHit || atHit)
+    {
+        /* Bounces off what blocks it (a shield...), except torches */
+        if (atHit && (bubble->collider.base.atFlags & AT_BOUNCED) && bubble->collider.elem.atHitElem != NULL
+            && bubble->collider.elem.atHitElem->elemMaterial != ELEM_MATERIAL_UNK4
+            && bubble->collider.base.at != NULL && bubble->collider.base.at->id != ACTOR_OBJ_SYOKUDAI)
+        {
+            bubble->actor.world.pos = bubble->actor.prevPos;
+            bubble->actor.world.rot.y += (s16)(0x8000 + (s32)Rand_CenteredFloat(0x1f40));
+            bubble->actor.shape.rot.y = bubble->actor.world.rot.y;
+            bubble->actor.velocity.y = -bubble->actor.velocity.y;
+            bubble->collider.base.atFlags &= ~(AT_HIT | AT_BOUNCED);
+            bubble->bounced = -1;
+            return;
+        }
+
+        TransformOot_PopDekuBubble(play, bubble, bubble->wallHit || atHit);
+        return;
+    }
+    bubble->timer--;
+
+    /* It shrinks as it flies, wobbling, and pops at its smallest */
+    if (Math_StepToF(&bubble->size, 1.0f, 0.4f))
+    {
+        bubble->timer = 0;
+    }
+    else
+    {
+        bubble->actor.home.rot.x += (s16)(s32)(bubble->size * (500.0f + Rand_ZeroFloat(1400.0f)));
+        bubble->actor.world.rot.x += (s16)(s32)(500.0f * Math_SinS(bubble->actor.home.rot.x));
+        bubble->actor.shape.rot.x = bubble->actor.world.rot.x;
+        bubble->actor.home.rot.y += (s16)(s32)(bubble->size * (500.0f + Rand_ZeroFloat(1400.0f)));
+        bubble->actor.world.rot.y += (s16)(s32)(500.0f * Math_SinS(bubble->actor.home.rot.y));
+        bubble->actor.shape.rot.y = bubble->actor.world.rot.y;
+        TransformOot_DekuBubbleSetSpeed(bubble);
+    }
+
+    Actor_MoveWithGravity(&bubble->actor);
+    bubble->wallHit = BgCheck_EntityLineTest1(&play->colCtx, &bubble->actor.prevPos, &bubble->actor.world.pos, &hitPos,
+        &poly, 1, 1, 1, 1, &bgId) ? 1 : 0;
+    if (bubble->wallHit)
+        bubble->actor.world.pos = hitPos;
+    bubble->actor.focus.pos = bubble->actor.world.pos;
+}
+
+/* MM's EnArrow_Draw for the bubble: see-through and facing the camera while held, solid and stretched in flight */
+static void TransformOot_DekuBubbleDraw(Actor* thisx, PlayState* play)
+{
+    static Vec3f sQuadFirst[2] = { { 20.0f, -20.0f, 20.0f }, { 20.0f, -20.0f, 20.0f } };
+    static Vec3f sQuad[2][2] = {
+        { { 20.0f, -20.0f, 20.0f }, { -20.0f, 20.0f, 20.0f } },
+        { { -20.0f, -20.0f, 20.0f }, { 20.0f, 20.0f, 20.0f } },
+    };
+    static MtxF sIdentity = { .xx = 1.0f, .yy = 1.0f, .zz = 1.0f, .ww = 1.0f };
+    s32 (*Player_UpdateWeaponInfo)(PlayState*, ColliderQuad*, WeaponInfo*, Vec3f*, Vec3f*);
+    OotDekuBubble* bubble;
+    Vec3f* quad;
+    Vec3f tip;
+    Vec3f base;
+    void* obj;
+    f32 stretch;
+    f32 squeeze;
+    s32 alpha;
+
+    bubble = (OotDekuBubble*)thisx;
+
+    /* The hitbox, in flight only: two crossed quads every other frame, like MM's */
+    if (!bubble->held)
+    {
+        if (bubble->bounced >= 0)
+        {
+            quad = bubble->weaponInfo.active ? sQuad[play->gameplayFrames % 2] : sQuadFirst;
+            Matrix_MultVec3f(&quad[0], &tip);
+            Matrix_MultVec3f(&quad[1], &base);
+            Player_UpdateWeaponInfo = (void*)OOT_PLAYER_UPDATE_WEAPON_INFO;
+            Player_UpdateWeaponInfo(play, &bubble->collider, &bubble->weaponInfo, &tip, &base);
+        }
+        else
+        {
+            Collider_ResetQuadAT(play, &bubble->collider.base);
+        }
+    }
+
+    obj = comboGetObject(CUSTOM_OBJECT_ID_EQ_DEKU_BUBBLE);
+    if (!obj)
+        return;
+
+    alpha = 255 - (s32)(bubble->size * 4.0f);
+    stretch = bubble->actor.speed * 0.1f + 1.0f;
+    squeeze = (1.0f / stretch) * 0.002f;
+    stretch *= 0.002f;
+    Matrix_Scale(bubble->size * squeeze, bubble->size * squeeze, bubble->size * stretch, MTXMODE_APPLY);
+    Matrix_Translate(0.0f, 0.0f, 460.0f, MTXMODE_APPLY);
+
+    OPEN_DISPS(play->state.gfxCtx);
+    if (bubble->held)
+    {
+        /* MM's func_800B8118: the look-at the bubble's environment mapping needs */
+        func_8002ED80(&bubble->actor, play, 0);
+        Gfx_SetupDL_25Xlu(play->state.gfxCtx);
+        gSPSegment(POLY_XLU_DISP++, 0x0a, obj);
+        gSPDisplayList(POLY_XLU_DISP++, CUSTOM_OBJECT_EQ_DEKU_BUBBLE_0);
+        gDPSetRenderMode(POLY_XLU_DISP++, G_RM_FOG_SHADE_A, G_RM_AA_ZB_XLU_SURF2);
+        gDPSetCombineLERP(POLY_XLU_DISP++, TEXEL1, 0, PRIM_LOD_FRAC, TEXEL0, TEXEL1, TEXEL0, PRIM_LOD_FRAC, TEXEL0,
+            COMBINED, 0, ENVIRONMENT, 0, COMBINED, 0, ENVIRONMENT, 0);
+        gDPSetEnvColor(POLY_XLU_DISP++, 230, 225, 150, alpha);
+        Matrix_ReplaceRotation(&sIdentity);
+        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, 0x01000000, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+        gSPDisplayList(POLY_XLU_DISP++, CUSTOM_OBJECT_EQ_DEKU_BUBBLE_1);
+    }
+    else
+    {
+        /* MM's func_800B8050 */
+        func_8002EBCC(&bubble->actor, play, 0);
+        Gfx_SetupDL_25Opa(play->state.gfxCtx);
+        gSPSegment(POLY_OPA_DISP++, 0x0a, obj);
+        gSPDisplayList(POLY_OPA_DISP++, CUSTOM_OBJECT_EQ_DEKU_BUBBLE_0);
+        gDPSetCombineLERP(POLY_OPA_DISP++, TEXEL1, 0, PRIM_LOD_FRAC, TEXEL0, TEXEL1, TEXEL0, PRIM_LOD_FRAC, TEXEL0,
+            COMBINED, 0, PRIMITIVE, 0, 0, 0, 0, COMBINED);
+        gDPSetPrimColor(POLY_OPA_DISP++, 0, 0x7f, 230, 225, 150, 255);
+        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPDisplayList(POLY_OPA_DISP++, CUSTOM_OBJECT_EQ_DEKU_BUBBLE_2);
+    }
+    CLOSE_DISPS();
+}
+
+/* MM's Player_PostLimbDrawGameplay (Deku head): the held bubble sits in front of the mouth */
+static void TransformOot_HoldDekuBubble(PlayState* play)
+{
+    static Vec3f sMouth = { 1300.0f, -400.0f, 0.0f };
+    OotDekuBubble* bubble;
+    MtxF mf;
+
+    bubble = TransformOot_HeldDekuBubble(play);
+    if (!bubble)
+        return;
+
+    Matrix_Push();
+    Matrix_MultVec3f(&sMouth, &bubble->actor.world.pos);
+    Matrix_RotateZYX(0, 0x4000, 0, MTXMODE_APPLY);
+    Matrix_Get(&mf);
+    Matrix_MtxFToYXZRotS(&mf, &bubble->actor.world.rot, 0);
+    bubble->actor.shape.rot = bubble->actor.world.rot;
+    Matrix_Pop();
+}
+
+/*
+ * Deku water hops (phase 5)
+ *
+ * Like MM (func_808373F8): a Deku landing in, or walking into, deep water hops off it instead of sinking, up to 5
+ * times before touching ground again, each hop longer than the last. The 6th time it sinks and voids out as before.
+ * OoT starts swimming from func_8083D53C (1.0 0x8083B5F0), whose call is redirected here.
+ */
+
+#define OOT_PLAYER_START_SWIMMING   0x8083b41c /* func_8083D36C */
+#define OOT_PLAYER_SETUP_JUMP       0x80836a40 /* func_80838940 */
+#define OOT_ANIM_NORMAL_JUMP        ((void*)0x04002fe0)
+#define OOT_ANIM_NORMAL_RUN_JUMP    ((void*)0x04003148)
+#define OOT_SE_VO_LI_AUTO_JUMP      0x6814     /* NA_SE_VO_LI_AUTO_JUMP, declared for MM only in sfx_id.h */
+
+static s32 TransformOot_DekuHop(PlayState* play, Player* player)
+{
+    void (*Player_SetupJump)(Player*, void*, f32, PlayState*, u16);
+    void* anim;
+    Vec3f pos;
+    f32 speed;
+    s16 yawDiff;
+
+    if (sState != TF_STATE_FORM || sDrawnForm != TRANSFORM_OOT_FORM_DEKU || sDekuHops == 0)
+        return 0;
+    if (gSave.info.playerData.health == 0 || (player->stateFlags1 & PLAYER_ACTOR_STATE_WATER))
+        return 0;
+
+    /* OoT's automatic jump (1.0 0x808385CC), with MM's Deku minimum, then smaller for the first hops */
+    yawDiff = player->yaw - player->actor.shape.rot.y;
+    anim = (ABS(yawDiff) < 0x1000 && player->speedXZ > 4.0f) ? OOT_ANIM_NORMAL_RUN_JUMP : OOT_ANIM_NORMAL_JUMP;
+    if (player->speedXZ > IREG(66) / 100.0f)
+    {
+        speed = IREG(67) / 100.0f;
+    }
+    else
+    {
+        speed = IREG(68) / 100.0f + (IREG(69) * player->speedXZ) / 1000.0f;
+        if (speed < 8.0f)
+            speed = 8.0f;
+    }
+    speed *= 0.3f + (DEKU_HOPS - sDekuHops) * 0.18f;
+    if (speed < 4.0f)
+        speed = 4.0f;
+
+    player->actor.world.pos.y += player->actor.depthInWater;
+    Player_SetupJump = OverlayAddr(OOT_PLAYER_SETUP_JUMP);
+    Player_SetupJump(player, anim, speed, play, OOT_SE_VO_LI_AUTO_JUMP);
+    player->av2.actionVar2 = 1;
+    sDekuHops--;
+
+    pos = player->actor.world.pos;
+    EffectSsGSplash_Spawn(play, &pos, NULL, NULL, 0, 300);
+    EffectSsGRipple_Spawn(play, &pos, 100, 500, 0);
+    EffectSsGRipple_Spawn(play, &pos, 100, 500, 4);
+    Player_PlaySfx(player, NA_SE_PL_JUMP_WATER0);
+    return 1;
+}
+
+static void TransformOot_EnterDeepWater(PlayState* play, Player* player)
+{
+    void (*Player_StartSwimming)(PlayState*, Player*);
+
+    if (TransformOot_DekuHop(play, player))
+        return;
+
+    Player_StartSwimming = OverlayAddr(OOT_PLAYER_START_SWIMMING);
+    Player_StartSwimming(play, player);
+}
+
+PATCH_CALL(0x8083b720, TransformOot_EnterDeepWater);
+
+/* Hops come back on solid ground */
+static void TransformOot_UpdateDekuHops(Player* player)
+{
+    if (sDrawnForm != TRANSFORM_OOT_FORM_DEKU || (player->actor.bgCheckFlags & BGCHECKFLAG_GROUND))
+        sDekuHops = DEKU_HOPS;
+}
+
 void* TransformOot_RedirectAnimation(void* animation, s32* frame)
 {
     const ComboImportedPlayerAnimationHeader* idle;
@@ -2306,6 +2795,7 @@ void TransformOot_BeforePlayerUpdate(Player* player, PlayState* play)
     TransformOot_QueuePunch(play, player);
     TransformOot_TrackZoraFins(play);
     TransformOot_BlockPunch(play);
+    TransformOot_UpdateDekuHops(player);
 }
 
 void TransformOot_AfterPlayerUpdate(Player* player, PlayState* play)
@@ -2671,6 +3161,8 @@ static void TransformOot_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dLis
         return;
 
     TransformOot_DrawInstrument(play, (Player*)arg, limbIndex);
+    if (sDrawnForm == TRANSFORM_OOT_FORM_DEKU && limbIndex == PLAYER_LIMB_HEAD)
+        TransformOot_HoldDekuBubble(play);
     if (sDrawnForm == TRANSFORM_OOT_FORM_ZORA)
     {
         if (limbIndex == PLAYER_LIMB_L_FOREARM)

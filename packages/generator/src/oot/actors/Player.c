@@ -90,6 +90,10 @@ void Player_UseItem(PlayState* play, Player* link, s16 itemId)
         return;
     }
 
+    /* Deku: B blows a bubble (src/oot/transform_mask.c) */
+    if (TransformOot_TryDekuBubble(play, link))
+        return;
+
     /* Deku, Goron and Zora forms: the items they can use in MM */
     if (!TransformOot_CanUseItem(itemId))
     {

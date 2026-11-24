@@ -27,5 +27,6 @@ s32  TransformOot_DrawMask(PlayState* play, Player* player, s32 form);
 void TransformOot_BeforeInterfaceUpdate(void);
 void TransformOot_AfterInterfaceUpdate(void);
 void* TransformOot_RedirectAnimation(void* animation, s32* frame);
+s32  TransformOot_TryDekuBubble(PlayState* play, Player* player);
 
 #endif

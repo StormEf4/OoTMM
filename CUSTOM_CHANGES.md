@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-24: Deku bubble and water hops (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "Deku Mask" row, OoT column (no new control; changes that item, also with its Shared option)
+- What it does: as a Deku in OoT, B now blows a bubble like MM (it did nothing before). It costs 2 magic, grows while B is held, and shoots when B is let go, with MM's poses and MM's bubble model. It flies at the Z-targeted enemy, or straight ahead without one; small bubbles are fast, full ones go furthest, and held too long a full bubble shrinks and pops. It hits like a Deku Seed, pops on walls and bounces off shields. Without a magic meter or with too little magic, B plays the error sound. Also, a Deku that lands in or walks into deep water now hops off it like MM, up to 5 times (each hop longer) before it has to touch ground again; the sixth time it sinks and voids out as before. Aiming is third person only (MM aims in first person). OoT has no Deku flowers, so there is no flower launch. Built with the ROMs and a seed generated, not tested in game yet
+- Files: `packages/generator/src/oot/transform_mask.c`, `packages/generator/src/oot/actors/Player.c`, `packages/generator/include/combo/oot/transform_mask.h`, `packages/generator/src/oot/patches/transform_mask_oot.S`, `packages/generator/lib/combo/custom/custom-objects-builder.ts`, `packages/generator/include/combo/custom.h` (generated), `data/defs/link-animations.yml`, `packages/generator/include/combo/custom_animations.h` (generated from the ROMs), `docs/custom/transform-masks.md`
+
 ## 2026-11-24: Zora boomerang fins and arm fins (OoT)
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "MM Zora Transformation Mask" row, OoT column (no new control; changes that item, also with its Shared option)
