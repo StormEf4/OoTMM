@@ -12,6 +12,7 @@
 #include <combo/oot/player_action.h>
 #include <combo/common/animation.h>
 #include <combo/custom_animations.h>
+#include <combo/custom.h>
 #include <combo/effect.h>
 #include <combo/boss_kit.h>
 #include <combo/magic.h>
@@ -36,6 +37,8 @@
  *   attack table; the Deku spin (A button) is its own player action.
  * - Goron roll (A) with spikes, and ground pound (B while curled): its own player action, see "Goron roll" below.
  * - Zora fast swimming (hold A in water): on top of OoT's swim actions, see "Zora fast swimming" below.
+ * - Zora boomerang fins (hold B after a punch, let go to throw): an upper body action and OoT's boomerang actor, see
+ *   "Zora boomerang fins" below. The arm fins are drawn like MM's (folded until B is used, hidden while thrown).
  * - Instruments: playing the ocarina as a form uses MM's instrument animations and draws MM's Deku pipes, Goron drums
  *   or Zora guitar (see "Instruments" below).
  *
@@ -189,6 +192,11 @@ static void* sVanillaPostLimbDraw;
 static s32 sDrawFirstPerson;
 static Gfx* sOpaAfterSkeleton;
 static u32 sOpaAfterSkeletonFrame;
+
+/* Zora boomerang fins: bit per fin flying, one came back, a B press hidden from the player update */
+static u8  sZoraFinsOut;
+static u8  sZoraFinCaught;
+static u8  sZoraFinBlockedB;
 
 static const TransformFormInfo* TransformOot_Info(s32 form)
 {
@@ -549,6 +557,9 @@ void TransformOot_AfterPlayerInit(PlayState* play, Player* player)
     sLentSword = 0;
     sLentEquipment = 0;
     sLentSaveTunic = 0;
+    sZoraFinsOut = 0;
+    sZoraFinCaught = 0;
+    sZoraFinBlockedB = 0;
 
     if (keep)
     {
@@ -1012,10 +1023,18 @@ PATCH_CALL(0x80842c6c, TransformOot_StartMeleeAttack);
 PATCH_CALL(0x80842d44, TransformOot_StartMeleeAttack);
 PATCH_CALL(0x8084e0a4, TransformOot_StartMeleeAttack);
 
-/* Player_ActionHandler_8: Goron and Zora can't charge a spin attack, like in MM */
+static void TransformOot_TryZoraFins(PlayState* play, Player* player);
+
+/* Player_ActionHandler_8: Goron and Zora can't charge a spin attack, like in MM. Zora readies the boomerang fins instead */
 static void TransformOot_StartSpinCharge(PlayState* play, Player* player)
 {
     void (*Player_StartSpinCharge)(PlayState*, Player*);
+
+    if (sDrawnForm == TRANSFORM_OOT_FORM_ZORA)
+    {
+        TransformOot_TryZoraFins(play, player);
+        return;
+    }
 
     if (TransformOot_Punches())
         return;
@@ -1827,6 +1846,349 @@ static void TransformOot_ZoraSwimRoot(Vec3f* pos, Vec3s* rot)
     rot->x = rot->y = rot->z = 0;
 }
 
+/*
+ * Zora boomerang fins (phase 4): MM's func_80830E30 / Player_UpperAction_12 to 16 / En_Boom ZORA_BOOMERANG_LEFT and
+ * RIGHT, simplified. Still holding B when a punch ends (where OoT would charge a spin attack, Player_ActionHandler_8)
+ * readies the fins on the upper body (pz_cutterwaitA/B/C, then pz_cutterwaitanim), so Zora can still walk. Letting go of
+ * B throws both on frame 6 of pz_cutterattack, one from each hand, spreading out a little or closing in on the locked-on
+ * actor from both sides. Each fin is OoT's boomerang (En_Boom) with MM's fin model (custom object EQ_ZORA_FINS) and:
+ * - MM's damage (2) and cut: DMG_SLASH_MASTER on top of DMG_BOOMERANG, so enemies take the Zora punches' Master Sword
+ *   damage, while items, tokens and boomerang switches still react like to the boomerang;
+ * - MM's flight: through enemies (only walls and items send it back), out for MM's 20 frames, 36 locked on;
+ * - the arm fin it came from is hidden while it's out (MM's func_80126BD0), and catching one plays pz_cuttercatch.
+ * Like MM, Zora can't punch or ready the fins again until both are back.
+ */
+#define ZORA_FIN_SPAWN_FRAME        6.0f
+#define ZORA_FIN_RETURN             20
+#define ZORA_FIN_RETURN_LOCKED      36
+#define ZORA_FIN_SPREAD             0x190
+#define ZORA_FIN_SPREAD_LOCKED      0x36b0
+#define ZORA_FIN_DAMAGE             2
+#define ZORA_FIN_TILT               0x1f40
+#define ZORA_FIN_SPIN               0x2ee0
+
+#define OOT_LINK_ANIMATION_PLAY_ONCE    0x8008c178
+#define OOT_LINK_ANIMATION_PLAY_LOOP    0x8008c23c
+#define OOT_LINK_ANIMATION_ON_FRAME     0x8008c634
+#define OOT_PLAYER_UPDATE_WEAPON_INFO   0x8007af14 /* func_80090480 */
+#define OOT_PLAYER_SET_UPPER_ACTION     0x8083164c /* Player_SetUpperActionFunc */
+#define OOT_PLAYER_RESET_UPPER_ACTION   0x808326a0 /* func_80834644: back to the held item's upper action */
+
+/* OoT 1.0 EnBoom */
+typedef struct
+{
+    Actor           actor;
+    ColliderQuad    collider;
+    Actor*          moveTo;
+    Actor*          grabbed;
+    u8              returnTimer;
+    u8              activeTimer;
+    s32             effectIndex;
+    WeaponInfo      weaponInfo;
+    void*           actionFunc;
+}
+OotEnBoom;
+
+ASSERT_OFFSET(OotEnBoom, collider,      0x13c);
+ASSERT_OFFSET(OotEnBoom, moveTo,        0x1bc);
+ASSERT_OFFSET(OotEnBoom, returnTimer,   0x1c4);
+ASSERT_OFFSET(OotEnBoom, activeTimer,   0x1c5);
+ASSERT_OFFSET(OotEnBoom, effectIndex,   0x1c8);
+ASSERT_OFFSET(OotEnBoom, weaponInfo,    0x1cc);
+ASSERT_OFFSET(OotEnBoom, actionFunc,    0x1e8);
+
+#define ZORA_FIN_LEFT   0
+#define ZORA_FIN_RIGHT  1
+
+static s32 TransformOot_ZoraFinsReadyUpper(Player* player, PlayState* play);
+static s32 TransformOot_ZoraFinsThrowUpper(Player* player, PlayState* play);
+static s32 TransformOot_ZoraFinsWaitUpper(Player* player, PlayState* play);
+static s32 TransformOot_ZoraFinsCatchUpper(Player* player, PlayState* play);
+
+static s32 TransformOot_UpdateUpperAnim(PlayState* play, Player* player)
+{
+    s32 (*LinkAnimation_Update)(PlayState*, SkelAnime*);
+
+    LinkAnimation_Update = (void*)OOT_LINK_ANIMATION_UPDATE;
+    return LinkAnimation_Update(play, &player->upperSkelAnime);
+}
+
+static void TransformOot_PlayUpperAnim(PlayState* play, Player* player, const ComboImportedPlayerAnimationHeader* anim, s32 loop)
+{
+    void (*LinkAnimation_Play)(PlayState*, SkelAnime*, void*);
+
+    LinkAnimation_Play = (void*)(loop ? OOT_LINK_ANIMATION_PLAY_LOOP : OOT_LINK_ANIMATION_PLAY_ONCE);
+    LinkAnimation_Play(play, &player->upperSkelAnime, (void*)anim);
+}
+
+static void TransformOot_SetUpperAction(Player* player, void* func)
+{
+    void (*Player_SetUpperActionFunc)(Player*, void*);
+
+    Player_SetUpperActionFunc = OverlayAddr(OOT_PLAYER_SET_UPPER_ACTION);
+    Player_SetUpperActionFunc(player, func);
+}
+
+static void TransformOot_ResetUpperAction(PlayState* play, Player* player)
+{
+    void (*Player_ResetUpperAction)(PlayState*, Player*);
+
+    Player_ResetUpperAction = OverlayAddr(OOT_PLAYER_RESET_UPPER_ACTION);
+    Player_ResetUpperAction(play, player);
+}
+
+/* MM's func_80830E30: the pose follows the punch it comes from */
+static void TransformOot_TryZoraFins(PlayState* play, Player* player)
+{
+    const ComboImportedPlayerAnimationHeader* anim;
+
+    if (sZoraFinsOut || sState != TF_STATE_FORM)
+        return;
+
+    if (player->meleeWeaponAnimation == MWA_PUNCH_A)
+        anim = &gPlayerAnim_pz_cutterwaitA;
+    else if (player->meleeWeaponAnimation == MWA_PUNCH_B)
+        anim = &gPlayerAnim_pz_cutterwaitB;
+    else
+        anim = &gPlayerAnim_pz_cutterwaitC;
+
+    /* Load the fin model now rather than on the throw */
+    comboGetObject(CUSTOM_OBJECT_ID_EQ_ZORA_FINS);
+
+    TransformOot_SetUpperAction(player, TransformOot_ZoraFinsReadyUpper);
+    TransformOot_PlayUpperAnim(play, player, anim, 0);
+}
+
+/* The fins' update: En_Boom's, except that hitting an enemy doesn't send them back */
+static void TransformOot_ZoraFinUpdate(Actor* thisx, PlayState* play)
+{
+    OotEnBoom* fin;
+    Player* player;
+    Actor* hit;
+
+    fin = (OotEnBoom*)thisx;
+    player = GET_PLAYER(play);
+    if (player->stateFlags1 & PLAYER_STATE1_29)
+        return;
+
+    if (fin->collider.base.atFlags & AT_HIT)
+    {
+        hit = fin->collider.base.at;
+        if (hit == NULL || (hit->id != ACTOR_EN_ITEM00 && hit->id != ACTOR_EN_SI))
+            fin->collider.base.atFlags &= ~AT_HIT;
+    }
+
+    ((void (*)(OotEnBoom*, PlayState*))fin->actionFunc)(fin, play);
+    fin->actor.focus.pos = fin->actor.world.pos;
+    fin->actor.focus.rot = fin->actor.world.rot;
+    fin->activeTimer++;
+}
+
+/* MM's EnBoom_Draw for the fins: tilted out to the side of the hand they came from, spinning the other way */
+static void TransformOot_ZoraFinDraw(Actor* thisx, PlayState* play)
+{
+    static Vec3f sTip = { -960.0f, 0.0f, 0.0f };
+    static Vec3f sBase = { 960.0f, 0.0f, 0.0f };
+    s32 (*Player_UpdateWeaponInfo)(PlayState*, ColliderQuad*, WeaponInfo*, Vec3f*, Vec3f*);
+    OotEnBoom* fin;
+    void* obj;
+    Vec3f tip;
+    Vec3f base;
+    s32 left;
+    s16 spin;
+
+    fin = (OotEnBoom*)thisx;
+    left = (fin->actor.params == ZORA_FIN_LEFT);
+
+    Matrix_RotateYF(BINANG_TO_RAD(fin->actor.world.rot.y), MTXMODE_APPLY);
+    Matrix_RotateZF(BINANG_TO_RAD(left ? -ZORA_FIN_TILT : ZORA_FIN_TILT), MTXMODE_APPLY);
+    Matrix_RotateXF(BINANG_TO_RAD(fin->actor.world.rot.x), MTXMODE_APPLY);
+    Matrix_MultVec3f(&sTip, &tip);
+    Matrix_MultVec3f(&sBase, &base);
+
+    /* The fin's hitbox and trail, set in the draw like En_Boom's */
+    Player_UpdateWeaponInfo = (void*)OOT_PLAYER_UPDATE_WEAPON_INFO;
+    if (Player_UpdateWeaponInfo(play, &fin->collider, &fin->weaponInfo, &tip, &base))
+        EffectBlure_AddVertex(Effect_GetByIndex(fin->effectIndex), &tip, &base);
+
+    obj = comboGetObject(CUSTOM_OBJECT_ID_EQ_ZORA_FINS);
+    if (!obj)
+        return;
+
+    spin = (s16)(fin->activeTimer * ZORA_FIN_SPIN);
+    OPEN_DISPS(play->state.gfxCtx);
+    Gfx_SetupDL_25Opa(play->state.gfxCtx);
+    gSPSegment(POLY_OPA_DISP++, 0x0a, obj);
+    Matrix_RotateYF(BINANG_TO_RAD(left ? spin : -spin), MTXMODE_APPLY);
+    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPDisplayList(POLY_OPA_DISP++, left ? CUSTOM_OBJECT_EQ_ZORA_FINS_0 : CUSTOM_OBJECT_EQ_ZORA_FINS_1);
+    CLOSE_DISPS();
+}
+
+/* Player_UpperAction_14, frame 6 */
+static void TransformOot_ThrowZoraFins(PlayState* play, Player* player)
+{
+    OotEnBoom* fin;
+    Vec3f* hand;
+    s16 spread;
+    s32 side;
+    u8 thrown;
+
+    thrown = 0;
+    for (side = ZORA_FIN_LEFT; side <= ZORA_FIN_RIGHT; ++side)
+    {
+        hand = &player->bodyPartsPos[(side == ZORA_FIN_LEFT) ? PLAYER_BODYPART_L_HAND : PLAYER_BODYPART_R_HAND];
+        if (player->focusActor)
+            spread = (side == ZORA_FIN_LEFT) ? ZORA_FIN_SPREAD_LOCKED : -ZORA_FIN_SPREAD_LOCKED;
+        else
+            spread = (side == ZORA_FIN_LEFT) ? -ZORA_FIN_SPREAD : ZORA_FIN_SPREAD;
+
+        fin = (OotEnBoom*)Actor_Spawn(&play->actorCtx, play, ACTOR_EN_BOOM, hand->x, player->actor.world.pos.y + 50.0f, hand->z,
+            player->actor.focus.rot.x, player->actor.shape.rot.y + spread, 0, 0);
+        if (!fin)
+            continue;
+
+        fin->actor.params = side;
+        fin->actor.update = TransformOot_ZoraFinUpdate;
+        fin->actor.draw = TransformOot_ZoraFinDraw;
+        fin->moveTo = player->focusActor;
+        fin->returnTimer = player->focusActor ? ZORA_FIN_RETURN_LOCKED : ZORA_FIN_RETURN;
+        fin->collider.elem.atDmgInfo.dmgFlags = DMG_BOOMERANG | DMG_SLASH_MASTER;
+        fin->collider.elem.atDmgInfo.damage = ZORA_FIN_DAMAGE;
+
+        /* The camera follows the first one, like OoT's boomerang */
+        if (!thrown)
+            player->boomerangActor = &fin->actor;
+        thrown |= (1 << side);
+    }
+
+    if (!thrown)
+        return;
+
+    player->stateFlags1 |= PLAYER_STATE1_BOOMERANG_THROWN;
+    sZoraFinsOut = thrown;
+    sZoraFinCaught = 0;
+    Player_PlaySfx(player, NA_SE_IT_BOOMERANG_THROW);
+}
+
+/* Player_UpperAction_12 and 13: the pose, then the held fins until B is let go */
+static s32 TransformOot_ZoraFinsReadyUpper(Player* player, PlayState* play)
+{
+    if (sDrawnForm != TRANSFORM_OOT_FORM_ZORA)
+    {
+        TransformOot_ResetUpperAction(play, player);
+        return 0;
+    }
+
+    if (player->upperSkelAnime.animation != (void*)&gPlayerAnim_pz_cutterwaitanim)
+    {
+        if (TransformOot_UpdateUpperAnim(play, player))
+            TransformOot_PlayUpperAnim(play, player, &gPlayerAnim_pz_cutterwaitanim, 1);
+        return 1;
+    }
+
+    TransformOot_UpdateUpperAnim(play, player);
+    if (!(play->state.input[0].cur.button & BTN_B))
+    {
+        TransformOot_SetUpperAction(player, TransformOot_ZoraFinsThrowUpper);
+        TransformOot_PlayUpperAnim(play, player, &gPlayerAnim_pz_cutterattack, 0);
+    }
+    return 1;
+}
+
+/* Player_UpperAction_14 */
+static s32 TransformOot_ZoraFinsThrowUpper(Player* player, PlayState* play)
+{
+    s32 (*LinkAnimation_OnFrame)(SkelAnime*, f32);
+
+    if (TransformOot_UpdateUpperAnim(play, player))
+    {
+        TransformOot_SetUpperAction(player, TransformOot_ZoraFinsWaitUpper);
+        return 1;
+    }
+
+    LinkAnimation_OnFrame = (void*)OOT_LINK_ANIMATION_ON_FRAME;
+    if (LinkAnimation_OnFrame(&player->upperSkelAnime, ZORA_FIN_SPAWN_FRAME) && sDrawnForm == TRANSFORM_OOT_FORM_ZORA)
+        TransformOot_ThrowZoraFins(play, player);
+    return 1;
+}
+
+/* Player_UpperAction_15: the body is free until a fin comes back */
+static s32 TransformOot_ZoraFinsWaitUpper(Player* player, PlayState* play)
+{
+    if (sDrawnForm != TRANSFORM_OOT_FORM_ZORA || (!sZoraFinsOut && !sZoraFinCaught))
+    {
+        TransformOot_ResetUpperAction(play, player);
+        return 0;
+    }
+
+    if (!sZoraFinCaught)
+        return 0;
+
+    sZoraFinCaught = 0;
+    TransformOot_SetUpperAction(player, TransformOot_ZoraFinsCatchUpper);
+    TransformOot_PlayUpperAnim(play, player, &gPlayerAnim_pz_cuttercatch, 0);
+    Player_PlaySfx(player, NA_SE_PL_CATCH_BOOMERANG);
+    return 1;
+}
+
+/* Player_UpperAction_16 */
+static s32 TransformOot_ZoraFinsCatchUpper(Player* player, PlayState* play)
+{
+    if (!TransformOot_UpdateUpperAnim(play, player))
+        return 1;
+
+    if (sZoraFinsOut && sDrawnForm == TRANSFORM_OOT_FORM_ZORA)
+        TransformOot_SetUpperAction(player, TransformOot_ZoraFinsWaitUpper);
+    else
+        TransformOot_ResetUpperAction(play, player);
+    return 1;
+}
+
+/* Before the player update: which fins are still flying. En_Boom kills itself when it's caught */
+static void TransformOot_TrackZoraFins(PlayState* play)
+{
+    Actor* actor;
+    u8 out;
+
+    out = 0;
+    for (actor = play->actorCtx.actors[ACTORCAT_MISC].first; actor != NULL; actor = actor->next)
+    {
+        if (actor->update == TransformOot_ZoraFinUpdate)
+            out |= (1 << (actor->params & 1));
+    }
+
+    if (sZoraFinsOut & ~out)
+        sZoraFinCaught = 1;
+    sZoraFinsOut = out;
+}
+
+/* Like MM, no punching while the fins are out: B presses are hidden from the player update */
+static void TransformOot_BlockPunch(PlayState* play)
+{
+    u16* press;
+
+    sZoraFinBlockedB = 0;
+    if (!sZoraFinsOut || sDrawnForm != TRANSFORM_OOT_FORM_ZORA)
+        return;
+
+    press = &play->state.input[0].press.button;
+    if (*press & BTN_B)
+    {
+        *press &= ~BTN_B;
+        sZoraFinBlockedB = 1;
+    }
+}
+
+static void TransformOot_UnblockPunch(PlayState* play)
+{
+    if (!sZoraFinBlockedB)
+        return;
+
+    play->state.input[0].press.button |= BTN_B;
+    sZoraFinBlockedB = 0;
+}
+
 void* TransformOot_RedirectAnimation(void* animation, s32* frame)
 {
     const ComboImportedPlayerAnimationHeader* idle;
@@ -1942,6 +2304,8 @@ void TransformOot_BeforePlayerUpdate(Player* player, PlayState* play)
     TransformOot_LendSword();
     TransformOot_SwapAttackTable();
     TransformOot_QueuePunch(play, player);
+    TransformOot_TrackZoraFins(play);
+    TransformOot_BlockPunch(play);
 }
 
 void TransformOot_AfterPlayerUpdate(Player* player, PlayState* play)
@@ -1952,6 +2316,7 @@ void TransformOot_AfterPlayerUpdate(Player* player, PlayState* play)
         return;
 
     TransformOot_ClearQueuedPunch(play);
+    TransformOot_UnblockPunch(play);
     TransformOot_RestoreAttackTable();
     TransformOot_ReturnSword();
     TransformOot_ReturnEquipment(player);
@@ -2144,6 +2509,74 @@ static s32 TransformOot_ZoraHoldsGuitar(Player* player)
     return phase == 2 || (phase == 1 && player->skelAnime.curFrame >= 6.0f);
 }
 
+/*
+ * MM's func_80126BD0: the Zora's arm fins are drawn on the forearms, not in the limbs. Folded (40%, 60%, 70%) until the
+ * B weapon is out, opening and closing with the jump kick, put away for the guitar, hidden while thrown. The right one
+ * becomes the big guard fin while guarding, and MM's swim fins take their place while swimming fast.
+ */
+#define DL_ZORA_FIN_L           0x0600cc38
+#define DL_ZORA_FIN_R           0x0600cda0
+#define DL_ZORA_SWIM_FIN_L      0x06010868
+#define DL_ZORA_SWIM_FIN_R      0x06010978
+#define DL_ZORA_GUARD_FIN       0x060110a8
+
+/* MM D_801C0820 (pz_jumpAT), D_801C0838 (pz_jumpATend), D_801C0580 (pz_gakkistart) */
+static const ScaleKey kZoraFinsJumpKick[] = { { 0, 100, 100, 100 }, { 7, 100, 100, 100 }, { 12, 40, 60, 70 } };
+static const ScaleKey kZoraFinsJumpKickEnd[] = { { 0, 40, 60, 70 }, { 7, 40, 60, 70 }, { 12, 100, 100, 100 } };
+static const ScaleKey kZoraFinsGuitar[] = {
+    { 0, 100, 100, 100 }, { 9, 100, 100, 100 }, { 10, 150, 150, 150 }, { 12, 0, 0, 0 }, { 14, 0, 0, 0 },
+};
+
+static void TransformOot_DrawZoraArmFin(PlayState* play, Player* player, s32 side)
+{
+    SkelAnime* skel;
+    Vec3f scale;
+    s32 phase;
+    s32 ia;
+
+    if (sZoraFinsOut & (1 << side))
+        return;
+
+    if (side == ZORA_FIN_RIGHT && (player->stateFlags1 & PLAYER_STATE1_SHIELDING))
+    {
+        scale.x = scale.y = scale.z = 1.0f;
+        TransformOot_DrawScaled(play, &scale, DL_ZORA_GUARD_FIN);
+        return;
+    }
+
+    if (sZoraSwim)
+    {
+        /* Wider while rolling */
+        scale.x = scale.y = scale.z = (ABS(sZoraRollSpeed) * 0.00003f) + 0.5f;
+        TransformOot_DrawScaled(play, &scale, (side == ZORA_FIN_LEFT) ? DL_ZORA_SWIM_FIN_L : DL_ZORA_SWIM_FIN_R);
+        return;
+    }
+
+    skel = &player->skelAnime;
+    phase = TransformOot_InstrumentPhase(player);
+    ia = player->itemAction; /* decomp heldItemAction */
+    if (phase == 2)
+        return;
+    if (phase == 1)
+        TransformOot_ScaleAt(kZoraFinsGuitar, ARRAY_COUNT(kZoraFinsGuitar), skel->curFrame, &scale);
+    else if (skel->animation == (void*)&gPlayerAnim_pz_jumpAT)
+        TransformOot_ScaleAt(kZoraFinsJumpKick, ARRAY_COUNT(kZoraFinsJumpKick), skel->curFrame, &scale);
+    else if (skel->animation == (void*)&gPlayerAnim_pz_jumpATend)
+        TransformOot_ScaleAt(kZoraFinsJumpKickEnd, ARRAY_COUNT(kZoraFinsJumpKickEnd), skel->curFrame, &scale);
+    else if (ia >= PLAYER_IA_SWORD_MASTER && ia <= PLAYER_IA_SWORD_BIGGORON)
+        scale.x = scale.y = scale.z = 1.0f;
+    else
+    {
+        scale.x = 0.4f;
+        scale.y = 0.6f;
+        scale.z = 0.7f;
+    }
+
+    if (scale.x <= 0.0f && scale.y <= 0.0f && scale.z <= 0.0f)
+        return;
+    TransformOot_DrawScaled(play, &scale, (side == ZORA_FIN_LEFT) ? DL_ZORA_FIN_L : DL_ZORA_FIN_R);
+}
+
 static u32 TransformOot_HandDList(const TransformFormInfo* info, s32 limbIndex, Player* player)
 {
     if (limbIndex == PLAYER_LIMB_L_HAND)
@@ -2234,8 +2667,17 @@ static void TransformOot_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dLis
     if (vanillaPost)
         vanillaPost(play, limbIndex, dList, rot, arg);
 
-    if (!sDrawFirstPerson)
-        TransformOot_DrawInstrument(play, (Player*)arg, limbIndex);
+    if (sDrawFirstPerson)
+        return;
+
+    TransformOot_DrawInstrument(play, (Player*)arg, limbIndex);
+    if (sDrawnForm == TRANSFORM_OOT_FORM_ZORA)
+    {
+        if (limbIndex == PLAYER_LIMB_L_FOREARM)
+            TransformOot_DrawZoraArmFin(play, (Player*)arg, ZORA_FIN_LEFT);
+        else if (limbIndex == PLAYER_LIMB_R_FOREARM)
+            TransformOot_DrawZoraArmFin(play, (Player*)arg, ZORA_FIN_RIGHT);
+    }
 }
 
 static void TransformOot_SetFace(PlayState* play, const TransformFormInfo* info, u8* obj, Vec3s* jointTable, Player* player)

@@ -23,7 +23,7 @@ Reference for future changes. Settings (Items > Extended Items > Cross-Game Mask
 - B button:
   - Goron and Zora always punch, even with no sword: a sword is lent on B during the player update, like Fierce Deity, and drawn as a fist. Reach is 2000 (Goron) and 2500 (Zora) instead of 3000 / 4000.
   - Goron hits as `DMG_HAMMER_SWING` 2 (jump attack `DMG_HAMMER_JUMP` 4), so Goron punches break what the hammer breaks. Zora hits as `DMG_SLASH_MASTER` 1 (spin `DMG_SPIN_MASTER` 2, jump `DMG_JUMP_MASTER` 2). MM's form damage bits mean something else in OoT and must never be copied (table in the research notes).
-  - Goron and Zora punch with MM's three-hit combo and MM's animations (see Attacks below). They can't charge a spin attack.
+  - Goron and Zora punch with MM's three-hit combo and MM's animations (see Attacks below). They can't charge a spin attack: holding B after a punch readies the Zora's boomerang fins instead (see Zora boomerang fins below).
   - Deku has no sword: B does nothing yet (no error sound). The Deku attack is the spin on A.
 - Size and movement: MM's age properties and boot data for each form (below). Actor scale stays 0.01, the size comes from the model, like in MM. Heights: Deku 36, Goron 80, Zora 68.
 - Rules:
@@ -92,6 +92,21 @@ It runs on top of OoT's swim actions instead of being an action of its own (OoT'
 - Sounds are OoT's: `NA_SE_PL_DIVE_BUBBLE` for the dash and `NA_SE_PL_SWIM` once per stroke (MM's Zora swim sounds aren't in OoT).
 - Not ported: the `pz_waterroll` start animation, the dolphin jump out of the water, the Zora barrier (R), MM's stroke trails.
 
+## Zora boomerang fins (phase 4)
+
+Like MM's Zora (`func_80830E30`, `Player_UpperAction_12` to `16`, En_Boom `ZORA_BOOMERANG_LEFT` / `RIGHT`, simplified): still holding B when a punch ends readies the fins, letting go throws both, and they fly out and come back to be caught.
+
+- **Ready.** OoT would start charging a spin attack there (`Player_ActionHandler_8`, the `TransformOot_StartSpinCharge` hook), so for the Zora that hook calls `TransformOot_TryZoraFins` instead. It sets a custom upper body action (OoT's `Player_SetUpperActionFunc`, 1.0 `0x8083164C`), so the Zora can still walk and turn: `pz_cutterwaitA`, `B` or `C` depending on the punch it came from, then `pz_cutterwaitanim` looping. OoT's `Player_UpdateUpperBody` copies the upper body animation to the arms while moving and to the whole body while standing, like MM.
+- **Throw.** Letting go of B plays `pz_cutterattack`; on its frame 6, `TransformOot_ThrowZoraFins` spawns two OoT boomerangs (`ACTOR_EN_BOOM`) from the hands (`bodyPartsPos`, 50 above the feet). Not locked on, they leave at the facing angle -/+ 0x190 (MM's numbers: the left one leaves slightly right, and they cross); locked on, at +/- 0x36B0 so they close in on the target from both sides. `PLAYER_STATE1_BOOMERANG_THROWN` and `boomerangActor` are set so the camera follows them like OoT's boomerang, and Z-targeting waits, like MM.
+- **The fins.** Each fin is OoT's En_Boom with its update and draw replaced after the spawn (`params` 0 = left, 1 = right). The update (`TransformOot_ZoraFinUpdate`) runs En_Boom's own flight (`actionFunc`), but first forgets an AT hit on anything that isn't an item or a token, so the fins cut through enemies like MM's and only walls, items and tokens send them back. They fly out for 20 frames (36 locked on), MM's numbers. Damage is MM's 2 as `DMG_BOOMERANG | DMG_SLASH_MASTER`: OoT picks the damage table entry from the highest bit, so enemies take Master Sword damage like the Zora punches, while items, tokens and boomerang switches (which only accept the boomerang bit) still work. The draw (`TransformOot_ZoraFinDraw`, from MM's `EnBoom_Draw`) updates the hitbox and trail like En_Boom's (`Player_UpdateWeaponInfo`, 1.0 `0x8007AF14`), tilts each fin out by 0x1F40 to its side and spins them in opposite directions, with MM's fin models from MM's gameplay_keep (`0x0406FE20`, `0x0406FF68`, custom object `EQ_ZORA_FINS`).
+- **Catch.** En_Boom kills itself when it comes back to Link. `TransformOot_TrackZoraFins` looks for the fins in the actor list before each player update; when one is gone the upper body plays `pz_cuttercatch` (`NA_SE_PL_CATCH_BOOMERANG`), then returns to the held item's upper action (OoT's `func_80834644`, 1.0 `0x808326A0`).
+- While a fin is out, B presses are hidden from the player update (no punching, like MM) and the arm fin it came from isn't drawn.
+- Not ported: MM's over-the-shoulder aiming camera while holding the fins (`CAM_MODE_ZORAFIN`), the fin trail and splash effects in water, the Zora voice.
+
+## Arm fins
+
+MM draws the Zora's arm fins separately from the limbs, on the forearms (`func_80126BD0`), so they were missing before. `TransformOot_DrawZoraArmFin` draws them from `TransformOot_PostLimbDraw`: `0x0600CC38` / `0x0600CDA0` folded to 40%, 60%, 70% while the B weapon is put away and full size once it's out (OoT's decomp `heldItemAction`, `itemAction` in OoTMM's header, is a sword), opening and closing with the jump kick (`D_801C0820`, `D_801C0838`) and put away for the guitar (`D_801C0580`). The right one is the big guard fin (`0x060110A8`) while guarding (`PLAYER_STATE1_SHIELDING`), and the swim fins (`0x06010868` / `0x06010978`, wider while rolling) take their place while swimming fast.
+
 ## Idle
 
 MM gives the Goron and Zora their own idle (`Player_GetIdleAnim`: `pg_wait`, `pz_wait`). The other movement animations (walk, run, jump, roll, ...) are Link's in MM too, so they stay OoT's. `TransformOot_RedirectAnimation` loads the form idle's pose whenever OoT loads one of its three idles (`link_normal_wait_free` 0x04003240, `link_normal_wait` 0x04003238, `link_fighter_wait_long` 0x04002BE0, 89 frames each), with the frame scaled to the form idle's length. `skelAnime.animation` stays OoT's, so OoT's idle and fidget logic is untouched. Still missing from MM: the form versions of doors, chests, ladders, drinking and taking the mask off (they have OoT timing tied to them, so they need more than a swap).
@@ -144,7 +159,7 @@ The mask draw callbacks (`kMaskCallbacks` in `Player.c`, entries for mask ids 0x
 
 ## Not done yet / unverified
 
-- Phases 3-5 from the research plan: Zora fins and Deku bubble (B), Zora barrier, Deku water hops, guards, Deku flower. Instruments, the Goron roll / spikes / pound and the Zora fast swim are done (above), simplified. More MM animations can be imported the same way as the phase 2 ones (offsets in the research notes).
+- Phases 3-5 from the research plan: Deku bubble (B), Zora barrier, Deku water hops, MM's guard animations, Deku flower. Instruments, the Goron roll / spikes / pound, the Zora fast swim and the Zora boomerang fins are done (above), simplified. More MM animations can be imported the same way as the phase 2 ones (offsets in the research notes).
 - Attack details not ported: the punch hitbox follows OoT's sword in the left hand, so right-hand punches hit on Link's left side; sounds and voices are OoT's sword swing and Link's voice (MM has Goron and Zora punch sounds and form voices that OoT doesn't have); no Goron fist growth (MM `unk_3D0`), no spin dust or sparkles; Goron and Zora still use OoT's own animations for everything else (idle, walking).
 - Not checked in game (no ROM in the build container): whether any form DL references MM gameplay_keep (segment 04), the eye texture format, how OoT's animations look on each form, and the attack timing (MM's active frames played at OoT's attack speed).
 - Leg IK still uses OoT adult values (feet may float or clip on slopes). A C port with MM's per-form constants can replace the calls at 0x8007aa20 / 0x8007aa64.

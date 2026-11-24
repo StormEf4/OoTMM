@@ -537,6 +537,25 @@ export class CustomObjectsBuilder {
     return { name: 'GI_SHOVEL', ...editor.build() }
   }
 
+  /* Fork: MM's Zora boomerang fins (En_Boom ZORA_BOOMERANG_LEFT and RIGHT), thrown by the Zora mask in OoT */
+  private async makeEqZoraFins(): Promise<CustomObject> {
+    const editor = new ObjectEditor(0xa);
+    const obj = await this.getFile('mm', 'objects/gameplay_keep');
+    editor.loadSegment(0x04, obj);
+
+    editor.submitList(editor.listData(0x0406fe20)!);
+    editor.submitList(editor.listData(0x0406ff68)!);
+
+    return { name: 'EQ_ZORA_FINS', ...editor.build() };
+  }
+
+  /* Fork: objects added after all of upstream's, so upstream's object ids don't move */
+  async buildFork(): Promise<CustomObject[]> {
+    return [
+      await this.makeEqZoraFins(),
+    ];
+  }
+
   async build(): Promise<CustomObject[]> {
     return [
       await this.makeEqKokiriSword(),

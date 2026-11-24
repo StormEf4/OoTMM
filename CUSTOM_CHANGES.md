@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-24: Zora boomerang fins and arm fins (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "MM Zora Transformation Mask" row, OoT column (no new control; changes that item, also with its Shared option)
+- What it does: as a Zora in OoT, keeping B held after a punch now readies the boomerang fins like MM (MM's poses, and Zora can still walk while holding them). Letting go of B throws both fins, one from each hand. They spread out a little, or close in on the Z-targeted enemy from both sides, cut through enemies like MM's (same damage as the Zora punches, while still fetching items and tokens like the boomerang), then come back and are caught with MM's catch animation. The camera follows them like OoT's boomerang, and Zora can't punch or throw again until both are back. Also adds the Zora's arm fins, which were missing from the model: folded while the punches are put away, open once they're out, open and close with the jump kick, hidden while thrown, the big guard fin while guarding, and MM's swim fins while swimming fast. Built with the ROMs and a seed generated, not tested in game yet
+- Files: `packages/generator/src/oot/transform_mask.c`, `packages/generator/lib/combo/custom/custom-objects-builder.ts`, `packages/generator/lib/combo/custom/index.ts`, `packages/generator/include/combo/custom.h` (generated), `data/defs/link-animations.yml`, `packages/generator/include/combo/custom_animations.h` (generated from the ROMs), `docs/custom/transform-masks.md`
+
 ## 2026-11-24: Zora fast swimming (OoT)
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "MM Zora Transformation Mask" row, OoT column (no new control; changes that item, also with its Shared option)
