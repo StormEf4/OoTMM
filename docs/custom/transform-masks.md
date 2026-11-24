@@ -62,6 +62,14 @@ Redirected calls (all OoT 1.0, relocations zeroed in `transform_mask_oot.S`):
 | 0x8083A314 (`Player_ActionHandler_Roll`) | `Player_TryRoll` | 0x80854148 | `TransformOot_TryRoll` |
 | 0x80839FE0 (`Player_ActionHandler_10`, no sword) | `Player_SetupRoll` | 0x808540F4 | `TransformOot_SetupLockOnRoll` |
 
+## Instruments (phase 5)
+
+Like MM, a Deku, Goron or Zora plays the ocarina on its own instrument: Deku pipes, Goron drums, Zora guitar.
+
+- **Animations:** MM's `pn_/pg_/pz_gakkistart` (bring the instrument out) and `gakkiplay` (playing, loops) are imported like the attack animations. OoT's ocarina code is unchanged: when it sets `gPlayerAnim_link_normal_okarina_start` (0x040030A0), `_swing` (0x040030A8) or `_end` (0x04003098) on a form, `TransformOot_UpdateInstrument` (after the player update) swaps in the form's animation with the frame range and length fixed up: start becomes gakkistart, swing becomes the gakkiplay loop, end becomes gakkistart played backwards (MM's `Player_Anim_PlayOnceAdjustedReverse`). The frame loaded in that same update is redirected by `TransformOot_RedirectAnimation`, called from the player frame loader in `src/common/animations.c`, so OoT's pose never shows on the form.
+- **Models** (MM `Player_PostLimbDrawGameplay`): Goron drums (`0x0600FC18` + five drums) on the torso and Deku pipes (`0x06007390` + five pipes) on the head, from `TransformOot_PostLimbDraw` (wraps the vanilla post-limb draw). They grow in during gakkistart with MM's scale keys (`D_801C0428`, `D_801C0340`, `D_801C0368`). The Zora holds the guitar as its left hand (`0x0600E2A0`) from frame 6 of pz_gakkistart and while playing (no grow-in scale, MM's `D_801C0538`).
+- Not ported: the instrument sounds (OoT's sound bank has no drums, guitar or pipes, so it still sounds like the ocarina), the Goron per-note drum hits (`pg_gakkiplayA/L/D/U/R`) and `pg_gakkiwait`, and the torso squash while the Goron brings the drums out.
+
 ## Per-form data (`kForms` in `transform_mask.c`)
 
 | | Deku | Goron | Zora |
@@ -102,7 +110,7 @@ The mask draw callbacks (`kMaskCallbacks` in `Player.c`, entries for mask ids 0x
 
 ## Not done yet / unverified
 
-- Phases 3-5 from the research plan: Zora fins and Deku bubble (B), Goron roll / spikes / pound, Zora fast swim and barrier, Deku water hops, guards, Deku flower, instruments. More MM animations can be imported the same way as the phase 2 ones (offsets in the research notes).
+- Phases 3-5 from the research plan: Zora fins and Deku bubble (B), Goron roll / spikes / pound, Zora fast swim and barrier, Deku water hops, guards, Deku flower. Instruments are done (above) apart from their sounds. More MM animations can be imported the same way as the phase 2 ones (offsets in the research notes).
 - Attack details not ported: the punch hitbox follows OoT's sword in the left hand, so right-hand punches hit on Link's left side; sounds and voices are OoT's sword swing and Link's voice (MM has Goron and Zora punch sounds and form voices that OoT doesn't have); no Goron fist growth (MM `unk_3D0`), no spin dust or sparkles; Goron and Zora still use OoT's own animations for everything else (idle, walking).
 - Not checked in game (no ROM in the build container): whether any form DL references MM gameplay_keep (segment 04), the eye texture format, how OoT's animations look on each form, and the attack timing (MM's active frames played at OoT's attack speed).
 - Leg IK still uses OoT adult values (feet may float or clip on slopes). A C port with MM's per-form constants can replace the calls at 0x8007aa20 / 0x8007aa64.

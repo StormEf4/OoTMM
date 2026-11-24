@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-24: Deku, Goron and Zora play their MM instruments on the Ocarina (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "Deku Mask", "MM Goron Transformation Mask" and "MM Zora Transformation Mask" rows, OoT column (no new control; changes those items, also with their Shared options)
+- What it does: pulling out the Ocarina while transformed in OoT now works like MM: the Deku plays the Deku pipes, the Goron the drums and the Zora the guitar, each with MM's own animations to bring the instrument out, play it and put it away. Before, the form played OoT's ocarina animation with nothing in its hands. Songs work the same as before. The sound is still the ocarina (OoT has no drums, guitar or pipes sounds). Compile-checked only, not tested in game yet
+- Files: `packages/generator/src/oot/transform_mask.c`, `packages/generator/include/combo/oot/transform_mask.h`, `packages/generator/src/common/animations.c`, `data/defs/link-animations.yml`, `packages/generator/include/combo/custom_animations.h`, `docs/custom/transform-masks.md`
+
 ## 2026-11-23: Handoff notes for a new Claude account
 
 - Where in the app: nowhere (documentation only)

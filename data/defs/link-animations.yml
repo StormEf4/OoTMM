@@ -174,3 +174,34 @@ animations:
     home_game: mm
     header_offset: 0xE270
     frame_data_offset: 0xA44C0
+
+  # MM transformation masks in OoT: the forms' instruments when playing the ocarina (pipes, drums, guitar)
+  - name: gPlayerAnim_pg_gakkistart
+    home_game: mm
+    header_offset: 0xE1F8
+    frame_data_offset: 0x21F2F0
+
+  - name: gPlayerAnim_pg_gakkiplay
+    home_game: mm
+    header_offset: 0xE1F0
+    frame_data_offset: 0x1A61D0
+
+  - name: gPlayerAnim_pz_gakkistart
+    home_game: mm
+    header_offset: 0xE3E8
+    frame_data_offset: 0x4DCD0
+
+  - name: gPlayerAnim_pz_gakkiplay
+    home_game: mm
+    header_offset: 0xE3E0
+    frame_data_offset: 0x1A3530
+
+  - name: gPlayerAnim_pn_gakkistart
+    home_game: mm
+    header_offset: 0xE2B0
+    frame_data_offset: 0x145990
+
+  - name: gPlayerAnim_pn_gakkiplay
+    home_game: mm
+    header_offset: 0xE2A8
+    frame_data_offset: 0x1A38E0

@@ -2,6 +2,10 @@
 #include <combo/patch.h>
 #include <combo/custom_animations.h>
 
+#if defined(GAME_OOT)
+# include <combo/oot/transform_mask.h>
+#endif
+
 #define ANIMTASK_LOAD_PLAYER_FRAME 0
 
 #define COMBO_ANIM_TASK_REQ_OFFSET       0x04
@@ -206,6 +210,11 @@ static void Combo_AnimTaskQueue_AddLoadPlayerFrame(
     ImportedAnimTask* task;
     u32 size;
     u32 vrom;
+
+#if defined(GAME_OOT)
+    /* Fork: a Deku, Goron or Zora playing the ocarina uses its MM instrument animations */
+    animation = TransformOot_RedirectAnimation(animation, &frame);
+#endif
 
     if (!Combo_LinkAnimFrameDmaInfo(animation, frame, limbCount, &vrom, &size)) {
         return;

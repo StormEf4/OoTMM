@@ -3,6 +3,7 @@
 #include <combo/config.h>
 #include <combo/mask.h>
 #include <combo/math.h>
+#include <combo/matrix.h>
 #include <combo/sfx.h>
 #include <combo/collision.h>
 #include <combo/age.h>
@@ -30,6 +31,8 @@
  * - Attacks, with MM's animations (imported from MM's link_animetion, see data/defs/link-animations.yml):
  *   Goron and Zora punch combos and the Zora jump kick reuse OoT's sword attack code with MM's entries in its
  *   attack table; the Deku spin (A button) is its own player action.
+ * - Instruments: playing the ocarina as a form uses MM's instrument animations and draws MM's Deku pipes, Goron drums
+ *   or Zora guitar (see "Instruments" below).
  *
  * See docs/custom/transform-masks.md.
  */
@@ -177,6 +180,7 @@ static u8  sSavedSaveTunic;
 static s32 sLentSaveTunic;
 
 static void* sVanillaOverride;
+static void* sVanillaPostLimbDraw;
 static s32 sDrawFirstPerson;
 static Gfx* sOpaAfterSkeleton;
 static u32 sOpaAfterSkeletonFrame;
@@ -1219,6 +1223,143 @@ static void TransformOot_SetupLockOnRoll(Player* player, PlayState* play)
 
 PATCH_CALL(0x80839fe0, TransformOot_SetupLockOnRoll);
 
+/*
+ * Instruments (phase 5)
+ *
+ * Like MM, a Deku, Goron or Zora plays the ocarina on the form's own instrument, with MM's animations (MM z_player.c
+ * D_8085D17C / D_8085D190): gakkistart to bring it out, gakkiplay while playing, gakkistart backwards to put it away.
+ * OoT's ocarina code is left alone. Whenever it sets one of its three ocarina animations on a form, the form's
+ * animation takes its place after the player update (TransformOot_UpdateInstrument), and the frame OoT asked to load
+ * in that same update is redirected (TransformOot_RedirectAnimation, called from the player frame loader in
+ * src/common/animations.c), so OoT's ocarina pose never shows on the form. The instrument models are drawn like MM's
+ * Player_PostLimbDrawGameplay / Player_OverrideLimbDrawGameplayDefault (TransformOot_PostLimbDraw, TransformOot_HandDList).
+ */
+
+/* OoT gameplay_keep, the animations the ocarina code plays (12, 12 and 68 frames) */
+#define OOT_ANIM_OCARINA_END    ((void*)0x04003098) /* gPlayerAnim_link_normal_okarina_end */
+#define OOT_ANIM_OCARINA_START  ((void*)0x040030a0) /* gPlayerAnim_link_normal_okarina_start */
+#define OOT_ANIM_OCARINA_SWING  ((void*)0x040030a8) /* gPlayerAnim_link_normal_okarina_swing */
+#define OOT_OCARINA_START_LAST  11.0f
+
+typedef struct
+{
+    const ComboImportedPlayerAnimationHeader* start;
+    const ComboImportedPlayerAnimationHeader* play;
+}
+FormInstrumentAnims;
+
+static const FormInstrumentAnims kInstrumentAnims[] = {
+    /* TRANSFORM_OOT_FORM_NONE */  { NULL, NULL },
+    /* TRANSFORM_OOT_FORM_DEKU */  { &gPlayerAnim_pn_gakkistart, &gPlayerAnim_pn_gakkiplay },
+    /* TRANSFORM_OOT_FORM_GORON */ { &gPlayerAnim_pg_gakkistart, &gPlayerAnim_pg_gakkiplay },
+    /* TRANSFORM_OOT_FORM_ZORA */  { &gPlayerAnim_pz_gakkistart, &gPlayerAnim_pz_gakkiplay },
+};
+
+static const FormInstrumentAnims* TransformOot_InstrumentAnims(void)
+{
+    if (sState != TF_STATE_FORM)
+        return NULL;
+    if (sDrawnForm <= TRANSFORM_OOT_FORM_NONE || sDrawnForm >= ARRAY_COUNT(kInstrumentAnims))
+        return NULL;
+    return &kInstrumentAnims[sDrawnForm];
+}
+
+/* Frame f of OoT's 12 frame start / end animation, as a frame of the form's start animation */
+static f32 TransformOot_MapStartFrame(f32 frame, const ComboImportedPlayerAnimationHeader* anim)
+{
+    f32 last;
+
+    last = (f32)(anim->frameCount - 1);
+    frame = frame * last / OOT_OCARINA_START_LAST;
+    if (frame < 0.0f)
+        frame = 0.0f;
+    if (frame > last)
+        frame = last;
+    return frame;
+}
+
+void* TransformOot_RedirectAnimation(void* animation, s32* frame)
+{
+    const FormInstrumentAnims* inst;
+    s32 count;
+
+    if (animation != OOT_ANIM_OCARINA_START && animation != OOT_ANIM_OCARINA_SWING && animation != OOT_ANIM_OCARINA_END)
+        return animation;
+
+    inst = TransformOot_InstrumentAnims();
+    if (!inst)
+        return animation;
+
+    if (animation == OOT_ANIM_OCARINA_SWING)
+    {
+        count = inst->play->frameCount;
+        *frame = (*frame < 0) ? 0 : (*frame % count);
+        return (void*)inst->play;
+    }
+
+    if (animation == OOT_ANIM_OCARINA_START)
+        *frame = (s32)TransformOot_MapStartFrame((f32)*frame, inst->start);
+    else
+        *frame = (s32)((f32)(inst->start->frameCount - 1) - TransformOot_MapStartFrame((f32)*frame, inst->start));
+    return (void*)inst->start;
+}
+
+/* After the player update: put the form's animation in place of OoT's ocarina animation */
+static void TransformOot_UpdateInstrument(Player* player)
+{
+    const FormInstrumentAnims* inst;
+    SkelAnime* skel;
+    void* anim;
+    f32 last;
+    f32 count;
+
+    skel = &player->skelAnime;
+    anim = skel->animation;
+    if (anim != OOT_ANIM_OCARINA_START && anim != OOT_ANIM_OCARINA_SWING && anim != OOT_ANIM_OCARINA_END)
+        return;
+
+    inst = TransformOot_InstrumentAnims();
+    if (!inst)
+        return;
+
+    if (anim == OOT_ANIM_OCARINA_SWING)
+    {
+        /* Loops, like OoT's */
+        count = (f32)inst->play->frameCount;
+        skel->animation = (void*)inst->play;
+        skel->startFrame = 0.0f;
+        skel->endFrame = count - 1.0f;
+        skel->animLength = count;
+        while (skel->curFrame >= count)
+            skel->curFrame -= count;
+        if (skel->curFrame < 0.0f)
+            skel->curFrame = 0.0f;
+        return;
+    }
+
+    last = (f32)(inst->start->frameCount - 1);
+    skel->animation = (void*)inst->start;
+    skel->animLength = (f32)inst->start->frameCount;
+
+    if (anim == OOT_ANIM_OCARINA_START)
+    {
+        skel->curFrame = TransformOot_MapStartFrame(skel->curFrame, inst->start);
+        skel->startFrame = 0.0f;
+        skel->endFrame = last;
+        if (skel->playSpeed < 0.0f)
+            skel->playSpeed = -skel->playSpeed;
+    }
+    else
+    {
+        /* Putting it away: MM plays the start animation backwards */
+        skel->curFrame = last - TransformOot_MapStartFrame(skel->curFrame, inst->start);
+        skel->startFrame = last;
+        skel->endFrame = 0.0f;
+        if (skel->playSpeed > 0.0f)
+            skel->playSpeed = -skel->playSpeed;
+    }
+}
+
 void TransformOot_BeforePlayerUpdate(Player* player, PlayState* play)
 {
     if (player != GET_PLAYER(play))
@@ -1256,6 +1397,7 @@ void TransformOot_AfterPlayerUpdate(Player* player, PlayState* play)
 
     /* The player may have reset its boot data during the update */
     TransformOot_ApplyForm(play, player);
+    TransformOot_UpdateInstrument(player);
     if (info->swordLength > 0.0f)
         TransformOot_SetSwordLengths(info);
     TransformOot_UpdateDamage(player);
@@ -1288,10 +1430,158 @@ PATCH_CALL(0x8083d8b4, TransformOot_TryEnteringCrawlspace);
 
 /* Draw */
 
+/* Instrument models (MM object_link_nuts / goron / zora), drawn like MM's z_player_lib.c */
+#define DL_ZORA_GUITAR          0x0600e2a0 /* left hand holding the guitar */
+#define DL_GORON_DRUMS          0x0600fc18
+#define DL_DEKU_PIPES           0x06007390
+
+static const u32 kGoronDrums[] = { 0x06010590, 0x06010368, 0x06010140, 0x0600ff18, 0x0600fcf0 };
+static const u32 kDekuPipes[] = { 0x06007a28, 0x060077d0, 0x06007548, 0x06007900, 0x060076a0 };
+
+typedef struct
+{
+    s16 frame;
+    s16 x;
+    s16 y;
+    s16 z;
+}
+ScaleKey;
+
+/* MM D_801C0428: the drums pop out while the Goron brings them out */
+static const ScaleKey kGoronDrumsStart[] = {
+    { 0, 0, 0, 0 }, { 6, 0, 0, 0 }, { 7, 60, 60, 50 }, { 8, 120, 130, 100 },
+    { 9, 100, 120, 80 }, { 11, 100, 100, 100 }, { 13, 100, 100, 100 },
+};
+
+/* MM D_801C0340 (pipe base) and D_801C0368 (pipes) */
+static const ScaleKey kDekuPipesBaseStart[] = {
+    { 0, 0, 0, 0 }, { 5, 0, 0, 0 }, { 7, 100, 100, 100 }, { 9, 110, 110, 110 }, { 11, 100, 100, 100 },
+};
+
+static const ScaleKey kDekuPipesStart[] = {
+    { 0, 0, 0, 0 }, { 4, 0, 0, 0 }, { 6, 120, 150, 60 }, { 8, 130, 80, 160 },
+    { 9, 100, 100, 100 }, { 10, 90, 100, 90 }, { 11, 100, 100, 100 },
+};
+
+/* MM func_80124618, without reading past the end of the table */
+static void TransformOot_ScaleAt(const ScaleKey* keys, s32 count, f32 frame, Vec3f* out)
+{
+    const ScaleKey* prev;
+    const ScaleKey* next;
+    f32 t;
+    s32 i;
+
+    i = 1;
+    while (i < count - 1 && keys[i].frame < (s32)frame)
+        i++;
+    prev = &keys[i - 1];
+    next = &keys[i];
+
+    t = (next->frame != prev->frame) ? (frame - prev->frame) / (f32)(next->frame - prev->frame) : 1.0f;
+    if (t < 0.0f)
+        t = 0.0f;
+    if (t > 1.0f)
+        t = 1.0f;
+
+    out->x = F32_LERPIMP(prev->x, next->x, t) * 0.01f;
+    out->y = F32_LERPIMP(prev->y, next->y, t) * 0.01f;
+    out->z = F32_LERPIMP(prev->z, next->z, t) * 0.01f;
+}
+
+/* 0: no instrument, 1: bringing it out or putting it away (start animation), 2: playing */
+static s32 TransformOot_InstrumentPhase(Player* player)
+{
+    const FormInstrumentAnims* inst;
+
+    inst = TransformOot_InstrumentAnims();
+    if (!inst)
+        return 0;
+    if (player->skelAnime.animation == (void*)inst->start)
+        return 1;
+    if (player->skelAnime.animation == (void*)inst->play)
+        return 2;
+    return 0;
+}
+
+static void TransformOot_DrawScaled(PlayState* play, const Vec3f* scale, u32 dList)
+{
+    OPEN_DISPS(play->state.gfxCtx);
+    Matrix_Push();
+    Matrix_Scale(scale->x, scale->y, scale->z, MTXMODE_APPLY);
+    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPDisplayList(POLY_OPA_DISP++, dList);
+    Matrix_Pop();
+    CLOSE_DISPS();
+}
+
+/* MM Player_PostLimbDrawGameplay: Goron drums on the torso, Deku pipes on the head */
+static void TransformOot_DrawInstrument(PlayState* play, Player* player, s32 limbIndex)
+{
+    Vec3f scale;
+    Vec3f base;
+    s32 phase;
+    s32 i;
+
+    phase = TransformOot_InstrumentPhase(player);
+    if (!phase)
+        return;
+
+    if (sDrawnForm == TRANSFORM_OOT_FORM_GORON && limbIndex == PLAYER_LIMB_TORSO)
+    {
+        if (phase == 1)
+            TransformOot_ScaleAt(kGoronDrumsStart, ARRAY_COUNT(kGoronDrumsStart), player->skelAnime.curFrame, &scale);
+        else
+            scale.x = scale.y = scale.z = 1.0f;
+        if (scale.x <= 0.0f)
+            return;
+
+        TransformOot_DrawScaled(play, &scale, DL_GORON_DRUMS);
+        for (i = 0; i < ARRAY_COUNT(kGoronDrums); ++i)
+            TransformOot_DrawScaled(play, &scale, kGoronDrums[i]);
+    }
+    else if (sDrawnForm == TRANSFORM_OOT_FORM_DEKU && limbIndex == PLAYER_LIMB_HEAD)
+    {
+        if (phase == 1)
+        {
+            TransformOot_ScaleAt(kDekuPipesBaseStart, ARRAY_COUNT(kDekuPipesBaseStart), player->skelAnime.curFrame, &base);
+            TransformOot_ScaleAt(kDekuPipesStart, ARRAY_COUNT(kDekuPipesStart), player->skelAnime.curFrame, &scale);
+        }
+        else
+        {
+            base.x = base.y = base.z = 1.0f;
+            scale.x = scale.y = scale.z = 1.0f;
+        }
+
+        /* MM scales the base uniformly by its x */
+        base.y = base.z = base.x;
+        if (base.x > 0.0f)
+            TransformOot_DrawScaled(play, &base, DL_DEKU_PIPES);
+        if (scale.x > 0.0f || scale.y > 0.0f || scale.z > 0.0f)
+        {
+            for (i = 0; i < ARRAY_COUNT(kDekuPipes); ++i)
+                TransformOot_DrawScaled(play, &scale, kDekuPipes[i]);
+        }
+    }
+}
+
+/* MM: the Zora holds the guitar in the left hand from frame 6 of pz_gakkistart and while playing */
+static s32 TransformOot_ZoraHoldsGuitar(Player* player)
+{
+    s32 phase;
+
+    if (sDrawnForm != TRANSFORM_OOT_FORM_ZORA)
+        return 0;
+    phase = TransformOot_InstrumentPhase(player);
+    return phase == 2 || (phase == 1 && player->skelAnime.curFrame >= 6.0f);
+}
+
 static u32 TransformOot_HandDList(const TransformFormInfo* info, s32 limbIndex, Player* player)
 {
     if (limbIndex == PLAYER_LIMB_L_HAND)
     {
+        if (TransformOot_ZoraHoldsGuitar(player))
+            return DL_ZORA_GUITAR;
+
         switch (player->leftHandType)
         {
         case PLAYER_MODELTYPE_LH_OPEN:
@@ -1364,6 +1654,18 @@ static s32 TransformOot_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** d
     return ret;
 }
 
+static void TransformOot_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, void* arg)
+{
+    void (*vanillaPost)(PlayState*, s32, Gfx**, Vec3s*, void*);
+
+    vanillaPost = sVanillaPostLimbDraw;
+    if (vanillaPost)
+        vanillaPost(play, limbIndex, dList, rot, arg);
+
+    if (!sDrawFirstPerson)
+        TransformOot_DrawInstrument(play, (Player*)arg, limbIndex);
+}
+
 static void TransformOot_SetFace(PlayState* play, const TransformFormInfo* info, u8* obj, Vec3s* jointTable, Player* player)
 {
     s32 eyes;
@@ -1429,6 +1731,7 @@ s32 TransformOot_DrawSkeleton(PlayState* play, Vec3s* jointTable, s32 dListCount
         count = dListCount;
 
     sVanillaOverride = overrideLimbDraw;
+    sVanillaPostLimbDraw = postLimbDraw;
     sDrawFirstPerson = (overrideLimbDraw == OVERRIDE_FIRST_PERSON);
 
     /* The form skeleton is resolved through segment 6 on both the CPU and the RSP */
@@ -1443,7 +1746,7 @@ s32 TransformOot_DrawSkeleton(PlayState* play, Vec3s* jointTable, s32 dListCount
     /* Draw as adult: no child root scaling, adult leg IK, like Fierce Deity */
     savedAge = gSave.age;
     gSave.age = AGE_ADULT;
-    SkelAnime_DrawFlexLod(play, limbs, jointTable, count, TransformOot_OverrideLimbDraw, postLimbDraw, arg, lod);
+    SkelAnime_DrawFlexLod(play, limbs, jointTable, count, TransformOot_OverrideLimbDraw, TransformOot_PostLimbDraw, arg, lod);
     gSave.age = savedAge;
 
     gSegments[6] = savedSegment;
