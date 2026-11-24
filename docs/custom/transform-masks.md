@@ -38,7 +38,7 @@ Reference for future changes. Settings (Items > Extended Items > Cross-Game Mask
 | form | input | what happens | hits as |
 |---|---|---|---|
 | Goron | B | MM punch combo: left (`pg_punchA`), right (`pg_punchB`), finisher (`pg_punchC`) | `DMG_HAMMER_SWING` 2 |
-| Goron | Z-target + A forward, B in the air | roll / nothing (MM has no Goron jump attack) | |
+| Goron | A, Z-target + A forward / B in the air | curl up and roll (see Goron roll below) / nothing (MM has no Goron jump attack) | |
 | Zora | B | MM punch combo: `pz_attackA`, `pz_attackB`, kick `pz_attackC` | `DMG_SLASH_MASTER` 1 |
 | Zora | B in the air, Z-target + A forward (sword drawn) | MM jump kick `pz_jumpAT`, landing `pz_jumpATend`; 1.1x forward and 0.9x up speed like MM's `func_808395F0` | `DMG_JUMP_MASTER` 2 |
 | Deku | A (when A has nothing else to do), Z-target + A forward | MM spin (`pn_attack`): 3 turns, 20000 binary angle per frame slowing by 800, steerable, about 15 frames | `DMG_SLASH_KOKIRI` 1, cylinder r30 h40 |
@@ -61,6 +61,24 @@ Redirected calls (all OoT 1.0, relocations zeroed in `transform_mask_oot.S`):
 | 0x80842324 (`Player_Action_8084411C`, in the air) | `func_8083BBA0` (B in the air) | 0x80854DC8 | `TransformOot_TryAirAttack` |
 | 0x8083A314 (`Player_ActionHandler_Roll`) | `Player_TryRoll` | 0x80854148 | `TransformOot_TryRoll` |
 | 0x80839FE0 (`Player_ActionHandler_10`, no sword) | `Player_SetupRoll` | 0x808540F4 | `TransformOot_SetupLockOnRoll` |
+
+## Goron roll and ground pound (phase 3)
+
+A Goron curls up with A (from `TransformOot_TryRoll`, `TransformOot_SetupLockOnRoll` and the Z-target jump attack) into its own player action, `TransformOot_GoronRollAction`, a simplified MM `Player_Action_96`:
+
+| input | what happens | hits as |
+|---|---|---|
+| A | curl up: `pg_maru_change` frames 0-7 (imported from MM), then the ball replaces the skeleton | |
+| hold A + stick | roll: speed target = stick (linear) x 2.6, spin steps up by 0x7D0 to speed x 900 and acceleration follows the spin (spin x 0.0003), turning rate = speed x 20 + 300; walls bounce the ball back (MM's reflection rounding) at speed 6 or more | `DMG_SLASH_KOKIRI` 1, r25, at speed 6 or more |
+| keep rolling at full speed | spikes: 54 frames with the spin at 0x36B0 or more and 2 magic, then the spikes pop out (2 magic, then 1 every 10 frames), speed 18; a head-on wall hit, letting go of A or running out of magic takes them away | `DMG_HAMMER_SWING` 2, r25 |
+| B while curled on the ground (no spikes) | hop (14 up), hang at the top (gravity -0.2), drop (gravity -10), and pound on landing like the Megaton Hammer (`func_80842A28`: quake, `actorCtx.unk_02 = 4`, hammer sound) with MM's white shockwave; 10 frames to settle | `DMG_HAMMER_JUMP` 4, r60, 3 frames |
+| let go of A | spikes go first, then Goron uncurls (`pg_maru_change` backwards from frame 7) and goes to OoT's idle | |
+
+Details:
+- `player->state3 |= PLAYER_STATE3_1` every frame keeps OoT's ledge code (`func_8083AA10`) from starting a fall, so the ball rolls off ledges and keeps rolling, like MM. No fall damage while curled.
+- **Draw:** `TransformOot_DrawSkeleton` draws `TransformOot_DrawGoronBall` instead of the skeleton while the action is in its ball phase: `gLinkGoronCurledDL` (0x0600BDD8) and the spikes `lg_spike_model` (0x0600C540, scaled in over 3 frames) from `object_link_goron`, with MM's transform (12 units up, scale 1.15, rotated on X by the spin). MM sets segment 0x0C to an empty render mode list for this draw (`Scene_SetRenderModeXlu(play, 0, 1)`), so the draw does the same. The env color goes from white to MM's pound blue (80, 80, 200) while dropping into a pound and while the spikes charge. Both feet shadows are put under the ball.
+- **Sounds** are OoT's, since OoT has none of MM's Goron ball sounds: curling `NA_SE_PL_ROLL`, rolling `NA_SE_EV_BIGBALL_ROLL` (the Goron City Goron), bounce `NA_SE_EV_STONE_BOUND`, charge `NA_SE_IT_SWORD_CHARGE`, spikes `NA_SE_IT_ROLLING_CUT_LV1`, pound `NA_SE_IT_HAMMER_HIT`.
+- Not ported: MM's momentum vector (`unk_B08`/`unk_B0C`, the ball keeps its direction for a moment after turning), slope rolling, the bounces after a pound, the ball squash (`unk_ABC`), the spike trail and dust effects, MM's pound actor (`EnTest`), breaking MM-only objects.
 
 ## Idle
 
@@ -114,7 +132,7 @@ The mask draw callbacks (`kMaskCallbacks` in `Player.c`, entries for mask ids 0x
 
 ## Not done yet / unverified
 
-- Phases 3-5 from the research plan: Zora fins and Deku bubble (B), Goron roll / spikes / pound, Zora fast swim and barrier, Deku water hops, guards, Deku flower. Instruments are done (above) apart from their sounds. More MM animations can be imported the same way as the phase 2 ones (offsets in the research notes).
+- Phases 3-5 from the research plan: Zora fins and Deku bubble (B), Zora fast swim and barrier, Deku water hops, guards, Deku flower. Instruments and the Goron roll / spikes / pound are done (above), simplified. More MM animations can be imported the same way as the phase 2 ones (offsets in the research notes).
 - Attack details not ported: the punch hitbox follows OoT's sword in the left hand, so right-hand punches hit on Link's left side; sounds and voices are OoT's sword swing and Link's voice (MM has Goron and Zora punch sounds and form voices that OoT doesn't have); no Goron fist growth (MM `unk_3D0`), no spin dust or sparkles; Goron and Zora still use OoT's own animations for everything else (idle, walking).
 - Not checked in game (no ROM in the build container): whether any form DL references MM gameplay_keep (segment 04), the eye texture format, how OoT's animations look on each form, and the attack timing (MM's active frames played at OoT's attack speed).
 - Leg IK still uses OoT adult values (feet may float or clip on slopes). A C port with MM's per-form constants can replace the calls at 0x8007aa20 / 0x8007aa64.

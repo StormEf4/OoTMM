@@ -12,6 +12,9 @@
 #include <combo/oot/player_action.h>
 #include <combo/common/animation.h>
 #include <combo/custom_animations.h>
+#include <combo/effect.h>
+#include <combo/boss_kit.h>
+#include <combo/magic.h>
 
 /*
  * MM transformation masks (OoT): Deku Mask, MM Goron Transformation Mask, MM Zora Transformation Mask
@@ -31,6 +34,7 @@
  * - Attacks, with MM's animations (imported from MM's link_animetion, see data/defs/link-animations.yml):
  *   Goron and Zora punch combos and the Zora jump kick reuse OoT's sword attack code with MM's entries in its
  *   attack table; the Deku spin (A button) is its own player action.
+ * - Goron roll (A) with spikes, and ground pound (B while curled): its own player action, see "Goron roll" below.
  * - Instruments: playing the ocarina as a form uses MM's instrument animations and draws MM's Deku pipes, Goron drums
  *   or Zora guitar (see "Instruments" below).
  *
@@ -878,6 +882,7 @@ static f32 sSpinSpeed;
 static f32 sSpinLeft;
 static ColliderCylinder sSpinCollider;
 static Actor* sSpinColliderOwner;
+static ColliderCylinderInit* sSpinColliderSetup;
 
 /* MM's Player_SetCylinderForAttack(this, DMG_DEKU_SPIN, 1, 30), with an OoT damage type (see the research notes) */
 static ColliderCylinderInit sSpinColliderInit = {
@@ -1020,16 +1025,16 @@ static void TransformOot_StartSpinCharge(PlayState* play, Player* player)
 
 PATCH_CALL(0x8083a6cc, TransformOot_StartSpinCharge);
 
-/* func_8083BA90: jump attacks. Zora jump kicks (MM's func_808395F0), Goron rolls instead (MM has no Goron jump attack) */
+/* func_8083BA90: jump attacks. Zora jump kicks (MM's func_808395F0), Goron curls up instead (MM has no Goron jump attack) */
+static void TransformOot_StartGoronRoll(PlayState* play, Player* player);
+
 static void TransformOot_StartJumpAttack(PlayState* play, Player* player, s32 mwa, f32 xzSpeed, f32 yVelocity)
 {
     void (*Player_StartJumpAttack)(PlayState*, Player*, s32, f32, f32);
-    void (*Player_SetupRoll)(Player*, PlayState*);
 
     if (sDrawnForm == TRANSFORM_OOT_FORM_GORON)
     {
-        Player_SetupRoll = OverlayAddr(OOT_PLAYER_SETUP_ROLL);
-        Player_SetupRoll(player, play);
+        TransformOot_StartGoronRoll(play, player);
         return;
     }
 
@@ -1120,17 +1125,29 @@ static void TransformOot_StartDekuSpin(PlayState* play, Player* player)
     Player_PlaySfx(player, NA_SE_IT_SWORD_SWING_HARD);
 }
 
-static void TransformOot_SpinAttack(PlayState* play, Player* player)
+/* One attack cylinder on Player, like MM's Player_SetCylinderForAttack: Deku spin, Goron roll, spikes and pound */
+static void TransformOot_AttackCylinder(PlayState* play, Player* player, ColliderCylinderInit* init)
 {
     if (sSpinColliderOwner != &player->actor)
     {
         Collider_InitCylinder(play, &sSpinCollider);
-        Collider_SetCylinder(play, &sSpinCollider, &player->actor, &sSpinColliderInit);
         sSpinColliderOwner = &player->actor;
+        sSpinColliderSetup = NULL;
+    }
+
+    if (sSpinColliderSetup != init)
+    {
+        Collider_SetCylinder(play, &sSpinCollider, &player->actor, init);
+        sSpinColliderSetup = init;
     }
 
     Collider_UpdateCylinder(&player->actor, &sSpinCollider);
     CollisionCheck_SetAT(play, &play->colChkCtx, &sSpinCollider.base);
+}
+
+static void TransformOot_SpinAttack(PlayState* play, Player* player)
+{
+    TransformOot_AttackCylinder(play, player, &sSpinColliderInit);
 }
 
 static void TransformOot_DekuSpinAction(Player* player, PlayState* play)
@@ -1189,7 +1206,370 @@ static void TransformOot_DekuSpinAction(Player* player, PlayState* play)
     }
 }
 
-/* Player_ActionHandler_Roll: A spins as Deku, like MM's Player_ActionHandler_6 */
+/*
+ * Goron roll and ground pound: MM's func_80839F98 / func_80836AD8 / Player_Action_96 / func_80857640 / func_80857950,
+ * simplified. A curls up (pg_maru_change), holding A rolls (the stick steers, walls bounce the ball back), and rolling
+ * at full speed for a while with magic grows spikes (2 magic, then a drain) for an 18 speed dash. B while curled on the
+ * ground hops, and landing pounds the ground like the Megaton Hammer (func_80842A28). Letting go of A takes the spikes
+ * away first, then Goron uncurls (maru_change backwards). The curled ball replaces the skeleton in the draw
+ * (TransformOot_DrawGoronBall, from MM's Player_Draw).
+ */
+#define GORON_CURL_FRAME        7.0f
+#define GORON_ROLL_SPEED_SCALE  2.6f
+#define GORON_SPIKE_SPEED       18.0f
+#define GORON_SPIKE_SPIN        0x36B0
+#define GORON_SPIKE_CHARGE      54
+#define GORON_SPIKE_MAGIC       2
+#define GORON_SPIKE_DRAIN       10
+#define GORON_SPIKE_POP         3
+#define GORON_BOUNCE_SPEED      6.0f
+#define GORON_HOP_SPEED         14.0f
+#define GORON_POUND_ACTIVE      3
+#define GORON_POUND_SETTLE      10
+
+#define DL_GORON_CURLED         0x0600bdd8 /* gLinkGoronCurledDL */
+#define DL_GORON_SPIKES         0x0600c540 /* lg_spike_model */
+
+enum
+{
+    GORON_PHASE_CURL,
+    GORON_PHASE_BALL,
+    GORON_PHASE_UNCURL,
+};
+
+enum
+{
+    GORON_POUND_NONE,
+    GORON_POUND_AIR,
+    GORON_POUND_LANDED,
+};
+
+static s32 sGoronPhase;
+static s32 sGoronPound;
+static s32 sGoronTimer;
+static s32 sGoronCharge;
+static s32 sGoronSpikes;
+static s32 sGoronDrain;
+static s32 sGoronSpin;
+static s16 sGoronAngle;
+
+/* MM: DMG_NORMAL_ROLL / DMG_GORON_SPIKES (radius 25) and DMG_GORON_POUND (radius 60), with OoT damage types */
+static ColliderCylinderInit sGoronRollColliderInit = {
+    { COL_MATERIAL_NONE, AT_ON | AT_TYPE_PLAYER, AC_NONE, OC1_NONE, OC2_TYPE_1, COLSHAPE_CYLINDER },
+    { ELEM_MATERIAL_UNK2, { DMG_SLASH_KOKIRI, 0x00, 1 }, { 0x00000000, 0x00, 0x00 }, ATELEM_ON | ATELEM_NEAREST | ATELEM_SFX_NORMAL, ACELEM_NONE, OCELEM_NONE },
+    { 25, 40, 0, { 0, 0, 0 } },
+};
+
+static ColliderCylinderInit sGoronSpikesColliderInit = {
+    { COL_MATERIAL_NONE, AT_ON | AT_TYPE_PLAYER, AC_NONE, OC1_NONE, OC2_TYPE_1, COLSHAPE_CYLINDER },
+    { ELEM_MATERIAL_UNK2, { DMG_HAMMER_SWING, 0x00, 2 }, { 0x00000000, 0x00, 0x00 }, ATELEM_ON | ATELEM_NEAREST | ATELEM_SFX_NORMAL, ACELEM_NONE, OCELEM_NONE },
+    { 25, 40, 0, { 0, 0, 0 } },
+};
+
+static ColliderCylinderInit sGoronPoundColliderInit = {
+    { COL_MATERIAL_NONE, AT_ON | AT_TYPE_PLAYER, AC_NONE, OC1_NONE, OC2_TYPE_1, COLSHAPE_CYLINDER },
+    { ELEM_MATERIAL_UNK2, { DMG_HAMMER_JUMP, 0x00, 4 }, { 0x00000000, 0x00, 0x00 }, ATELEM_ON | ATELEM_NEAREST | ATELEM_SFX_NORMAL, ACELEM_NONE, OCELEM_NONE },
+    { 60, 40, 0, { 0, 0, 0 } },
+};
+
+static void TransformOot_GoronRollAction(Player* player, PlayState* play);
+
+static s32 TransformOot_IsGoronBall(Player* player)
+{
+    return sDrawnForm == TRANSFORM_OOT_FORM_GORON && player->actionFunc == (void*)TransformOot_GoronRollAction
+        && sGoronPhase == GORON_PHASE_BALL;
+}
+
+static s32 TransformOot_GoronHasMagic(s32 amount)
+{
+    return comboIsChateauActive() || gSave.info.playerData.magic >= amount;
+}
+
+static void TransformOot_GoronUseMagic(s32 amount)
+{
+    if (comboIsChateauActive())
+        return;
+    if (gSave.info.playerData.magic > amount)
+        gSave.info.playerData.magic -= amount;
+    else
+        gSave.info.playerData.magic = 0;
+}
+
+static void TransformOot_StartGoronRoll(PlayState* play, Player* player)
+{
+    void (*Player_AnimChangeOnceMorph)(PlayState*, Player*, LinkAnimationHeader*);
+
+    Player_SetupActionOoT(play, player, TransformOot_GoronRollAction, 0);
+    player->stateFlags1 &= ~(PLAYER_STATE1_PARALLEL | PLAYER_STATE1_LOCK_ON_FORCED_TO_RELEASE);
+    player->state3 |= PLAYER_STATE3_1;
+
+    Player_AnimChangeOnceMorph = OverlayAddr(OOT_PLAYER_ANIM_CHANGE_ONCE_MORPH);
+    Player_AnimChangeOnceMorph(play, player, ANIM(gPlayerAnim_pg_maru_change));
+
+    sGoronPhase = GORON_PHASE_CURL;
+    sGoronPound = GORON_POUND_NONE;
+    sGoronTimer = 0;
+    sGoronCharge = 0;
+    sGoronSpikes = 0;
+    sGoronDrain = 0;
+    sGoronSpin = 0;
+    sGoronAngle = 0;
+    Player_PlaySfx(player, NA_SE_PL_ROLL);
+}
+
+static void TransformOot_GoronUncurl(Player* player)
+{
+    SkelAnime* skel;
+
+    sGoronPhase = GORON_PHASE_UNCURL;
+    sGoronSpikes = 0;
+    sGoronCharge = 0;
+    sGoronPound = GORON_POUND_NONE;
+
+    /* MM's func_80857950: maru_change backwards from the curled frame */
+    skel = &player->skelAnime;
+    skel->curFrame = GORON_CURL_FRAME;
+    skel->startFrame = GORON_CURL_FRAME;
+    skel->endFrame = 0.0f;
+    if (skel->playSpeed > 0.0f)
+        skel->playSpeed = -skel->playSpeed;
+    Player_PlaySfx(player, NA_SE_PL_ROLL);
+}
+
+static void TransformOot_GoronRetractSpikes(Player* player)
+{
+    sGoronSpikes = 0;
+    sGoronCharge = 0;
+}
+
+/* func_80842A28 (Megaton Hammer on the ground), with MM's shockwave */
+static void TransformOot_GoronPound(PlayState* play, Player* player)
+{
+    static Vec3f zero = { 0.0f, 0.0f, 0.0f };
+
+    /* Player_RequestQuake(play, 27767, 7, 20) in OoT, through Camera_RequestQuake (same quake type, speed 25000) */
+    BossKit_Quake(play, 7, 20);
+    play->actorCtx.unk_02 = 4;
+    Player_PlaySfx(player, NA_SE_IT_HAMMER_HIT);
+    EffectSsBlast_SpawnWhiteShockwave(play, &player->actor.world.pos, &zero, &zero);
+
+    sGoronPound = GORON_POUND_LANDED;
+    sGoronTimer = GORON_POUND_SETTLE;
+    sGoronSpin = 0;
+    player->speedXZ = 0.0f;
+}
+
+/* MM bounces off walls (Player_Action_96), and loses its spikes on a head-on hit (func_80840A30) */
+static void TransformOot_GoronWall(PlayState* play, Player* player)
+{
+    s16 diff;
+    s16 rounded;
+
+    if (!(player->actor.bgCheckFlags & BGCHECKFLAG_WALL) || player->speedXZ < GORON_BOUNCE_SPEED)
+        return;
+
+    diff = player->yaw - (s16)(player->actor.wallYaw + 0x8000);
+    if (sGoronSpikes && ABS(diff) < 0x1c00)
+    {
+        TransformOot_GoronRetractSpikes(player);
+        player->speedXZ *= 0.1f;
+        player->actor.velocity.y = 10.0f;
+        Player_PlaySfx(player, NA_SE_IT_WALL_HIT_HARD);
+        return;
+    }
+
+    rounded = ((diff >= 0) ? 1 : -1) * ((ABS(diff) + 0x100) & ~0x1ff);
+    player->yaw += (s16)(0x8000 - (s16)(rounded * 2));
+    player->actor.shape.rot.y = player->yaw;
+    player->speedXZ *= 0.7f;
+    Player_PlaySfx(player, NA_SE_EV_STONE_BOUND);
+}
+
+static void TransformOot_GoronBall(Player* player, PlayState* play)
+{
+    s32 (*Player_GetMovementSpeedAndYaw)(Player*, f32*, s16*, f32, PlayState*);
+    Input* input;
+    f32 speedTarget;
+    s16 yawTarget;
+    s32 spinTarget;
+    f32 accel;
+    s32 onGround;
+
+    input = &play->state.input[0];
+    onGround = (player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) != 0;
+
+    /* Letting go of A: spikes first, then uncurl (func_80857950) */
+    if (!(input->cur.button & BTN_A))
+    {
+        if (!sGoronSpikes)
+        {
+            TransformOot_GoronUncurl(player);
+            return;
+        }
+        TransformOot_GoronRetractSpikes(player);
+    }
+
+    if (sGoronSpikes && sGoronSpikes < GORON_SPIKE_POP)
+        sGoronSpikes++;
+
+    /* Landing (func_80857AEC) */
+    if (player->actor.bgCheckFlags & BGCHECKFLAG_GROUND_TOUCH)
+    {
+        if (sGoronPound == GORON_POUND_AIR)
+            TransformOot_GoronPound(play, player);
+        else
+            Player_PlaySfx(player, NA_SE_PL_BOUND);
+    }
+
+    TransformOot_GoronWall(play, player);
+
+    Player_GetMovementSpeedAndYaw = OverlayAddr(OOT_PLAYER_GET_SPEED_AND_YAW);
+    Player_GetMovementSpeedAndYaw(player, &speedTarget, &yawTarget, 0.0f, play);
+    speedTarget *= GORON_ROLL_SPEED_SCALE;
+    if (sGoronSpikes)
+        speedTarget = GORON_SPIKE_SPEED;
+
+    if (sGoronPound == GORON_POUND_LANDED)
+    {
+        speedTarget = 0.0f;
+        yawTarget = player->yaw;
+        if (--sGoronTimer <= 0)
+            sGoronPound = GORON_POUND_NONE;
+    }
+
+    if (onGround)
+    {
+        if (sGoronPound == GORON_POUND_NONE && !sGoronSpikes && (input->press.button & BTN_B))
+        {
+            /* func_80857640: hop, then pound on landing */
+            player->actor.velocity.y = GORON_HOP_SPEED;
+            player->speedXZ = 0.0f;
+            sGoronPound = GORON_POUND_AIR;
+            sGoronCharge = 0;
+            Player_PlaySfx(player, NA_SE_IT_SWORD_SWING_HARD);
+        }
+        else
+        {
+            /* Spikes: full speed for a while, with magic */
+            if (!sGoronSpikes && sGoronPound == GORON_POUND_NONE)
+            {
+                if (sGoronSpin >= GORON_SPIKE_SPIN && gSaveContext.magicState == MAGIC_STATE_IDLE
+                    && TransformOot_GoronHasMagic(GORON_SPIKE_MAGIC))
+                {
+                    Actor_PlaySfx(&player->actor, NA_SE_IT_SWORD_CHARGE - SFX_FLAG);
+                    if (++sGoronCharge >= GORON_SPIKE_CHARGE)
+                    {
+                        TransformOot_GoronUseMagic(GORON_SPIKE_MAGIC);
+                        sGoronSpikes = 1;
+                        sGoronDrain = 0;
+                        sGoronCharge = 0;
+                        player->speedXZ = GORON_SPIKE_SPEED;
+                        Player_PlaySfx(player, NA_SE_IT_ROLLING_CUT_LV1);
+                    }
+                }
+                else
+                {
+                    sGoronCharge = 0;
+                }
+            }
+
+            accel = sGoronSpin * 0.0003f;
+            if (accel < 0.1f)
+                accel = 0.1f;
+            Math_AsymStepToF(&player->speedXZ, speedTarget, accel, 0.6f);
+            Math_ScaledStepToS(&player->yaw, yawTarget, (s16)(ABS(player->speedXZ) * 20.0f) + 300);
+        }
+    }
+    else
+    {
+        /* In the air: MM's pound hangs at the top of the hop, then drops */
+        if (sGoronPound == GORON_POUND_AIR)
+        {
+            if (player->actor.velocity.y > 0.0f)
+            {
+                if (player->actor.velocity.y + player->actor.gravity < 0.0f)
+                    player->actor.velocity.y = -player->actor.gravity;
+            }
+            else if (player->actor.velocity.y > -1.0f)
+                player->actor.gravity = -0.2f;
+            else
+                player->actor.gravity = -10.0f;
+        }
+        Math_ScaledStepToS(&player->yaw, yawTarget, 0x190);
+    }
+
+    player->actor.shape.rot.y = player->yaw;
+
+    /* Ball spin (actionVar2 in MM) */
+    spinTarget = onGround ? (s32)(speedTarget * 900.0f) : sGoronSpin;
+    if (sGoronPound != GORON_POUND_NONE)
+        spinTarget = 0;
+    if (sGoronSpin < spinTarget)
+        sGoronSpin = MIN(sGoronSpin + 0x7d0, spinTarget);
+    else
+        sGoronSpin = MAX(sGoronSpin - 0x4b0, spinTarget);
+    sGoronAngle += (s16)sGoronSpin;
+
+    if (onGround && player->speedXZ > 1.0f)
+        Actor_PlaySfx(&player->actor, NA_SE_EV_BIGBALL_ROLL - SFX_FLAG);
+
+    /* Spikes drain magic (MAGIC_CONSUME_GORON_ZORA) */
+    if (sGoronSpikes)
+    {
+        if (++sGoronDrain >= GORON_SPIKE_DRAIN)
+        {
+            sGoronDrain = 0;
+            TransformOot_GoronUseMagic(1);
+        }
+        if (!TransformOot_GoronHasMagic(1))
+            TransformOot_GoronRetractSpikes(player);
+    }
+
+    /* Attacks */
+    if (sGoronPound == GORON_POUND_LANDED && sGoronTimer > GORON_POUND_SETTLE - GORON_POUND_ACTIVE)
+        TransformOot_AttackCylinder(play, player, &sGoronPoundColliderInit);
+    else if (sGoronSpikes)
+        TransformOot_AttackCylinder(play, player, &sGoronSpikesColliderInit);
+    else if (player->speedXZ >= GORON_BOUNCE_SPEED)
+        TransformOot_AttackCylinder(play, player, &sGoronRollColliderInit);
+}
+
+static void TransformOot_GoronRollAction(Player* player, PlayState* play)
+{
+    s32 (*LinkAnimation_Update)(PlayState*, SkelAnime*);
+    void (*Player_SetupIdle)(Player*, PlayState*);
+
+    /* The ball rolls off ledges instead of starting OoT's fall (func_8083AA10), and faces where it rolls */
+    player->state3 |= PLAYER_STATE3_1;
+    player->stateFlags2 |= PLAYER_STATE2_6;
+
+    LinkAnimation_Update = (void*)OOT_LINK_ANIMATION_UPDATE;
+    switch (sGoronPhase)
+    {
+    case GORON_PHASE_CURL:
+        LinkAnimation_Update(play, &player->skelAnime);
+        if (player->skelAnime.curFrame >= GORON_CURL_FRAME)
+        {
+            /* func_80857A44 */
+            sGoronPhase = GORON_PHASE_BALL;
+            sGoronSpin = (s32)(player->speedXZ * 500.0f);
+        }
+        break;
+    case GORON_PHASE_UNCURL:
+        Math_StepToF(&player->speedXZ, 0.0f, 1.0f);
+        if (LinkAnimation_Update(play, &player->skelAnime))
+        {
+            Player_SetupIdle = OverlayAddr(OOT_PLAYER_SETUP_IDLE);
+            Player_SetupIdle(player, play);
+        }
+        break;
+    default:
+        TransformOot_GoronBall(player, play);
+        break;
+    }
+}
+
+/* Player_ActionHandler_Roll: A spins as Deku and curls up as Goron, like MM's Player_ActionHandler_6 */
 static s32 TransformOot_TryRoll(Player* player, PlayState* play)
 {
     s32 (*Player_TryRoll)(Player*, PlayState*);
@@ -1199,6 +1579,11 @@ static s32 TransformOot_TryRoll(Player* player, PlayState* play)
         TransformOot_StartDekuSpin(play, player);
         return 1;
     }
+    if (sDrawnForm == TRANSFORM_OOT_FORM_GORON && sState == TF_STATE_FORM)
+    {
+        TransformOot_StartGoronRoll(play, player);
+        return 1;
+    }
 
     Player_TryRoll = OverlayAddr(OOT_PLAYER_TRY_ROLL);
     return Player_TryRoll(player, play);
@@ -1206,7 +1591,7 @@ static s32 TransformOot_TryRoll(Player* player, PlayState* play)
 
 PATCH_CALL(0x8083a314, TransformOot_TryRoll);
 
-/* Player_ActionHandler_10: Z-target + A forward with no sword spins as Deku, like MM */
+/* Player_ActionHandler_10: Z-target + A forward with no sword spins as Deku and curls up as Goron, like MM */
 static void TransformOot_SetupLockOnRoll(Player* player, PlayState* play)
 {
     void (*Player_SetupRoll)(Player*, PlayState*);
@@ -1214,6 +1599,11 @@ static void TransformOot_SetupLockOnRoll(Player* player, PlayState* play)
     if (sDrawnForm == TRANSFORM_OOT_FORM_DEKU && sState == TF_STATE_FORM)
     {
         TransformOot_StartDekuSpin(play, player);
+        return;
+    }
+    if (sDrawnForm == TRANSFORM_OOT_FORM_GORON && sState == TF_STATE_FORM)
+    {
+        TransformOot_StartGoronRoll(play, player);
         return;
     }
 
@@ -1750,6 +2140,48 @@ static void TransformOot_SetFace(PlayState* play, const TransformFormInfo* info,
     CLOSE_DISPS();
 }
 
+/* MM's Player_Draw for a curled Goron (PLAYER_STATE3_1000): the ball and its spikes instead of the skeleton */
+static const Gfx kGoronRenderModeNone[] = { gsSPEndDisplayList() };
+
+static void TransformOot_DrawGoronBall(PlayState* play, Player* player)
+{
+    f32 glow;
+    f32 scale;
+    s32 i;
+
+    /* No limbs are drawn to move the feet, so the feet shadow follows the ball */
+    for (i = 0; i < 2; ++i)
+        player->actor.shape.feetPos[i] = player->actor.world.pos;
+
+    /* MM tints the ball blue (80, 80, 200) for the pound; here also while the spikes charge */
+    glow = (f32)sGoronCharge / (f32)GORON_SPIKE_CHARGE;
+    if (sGoronSpikes || (sGoronPound == GORON_POUND_AIR && player->actor.velocity.y < 0.0f))
+        glow = 1.0f;
+
+    OPEN_DISPS(play->state.gfxCtx);
+    Matrix_Push();
+    Matrix_Translate(0.0f, 1200.0f, 0.0f, MTXMODE_APPLY);
+    Matrix_Scale(1.15f, 1.15f, 1.15f, MTXMODE_APPLY);
+    Matrix_RotateXF(BINANG_TO_RAD(sGoronAngle), MTXMODE_APPLY);
+    gSPSegment(POLY_OPA_DISP++, 0x0c, kGoronRenderModeNone);
+    gDPSetEnvColor(POLY_OPA_DISP++, (u8)(255.0f - 175.0f * glow), (u8)(255.0f - 175.0f * glow), (u8)(255.0f - 55.0f * glow), 255);
+    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPDisplayList(POLY_OPA_DISP++, DL_GORON_CURLED);
+    if (sGoronSpikes)
+    {
+        if (sGoronSpikes < GORON_SPIKE_POP)
+        {
+            scale = (f32)sGoronSpikes / (f32)GORON_SPIKE_POP;
+            Matrix_Scale(scale, scale, scale, MTXMODE_APPLY);
+            MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        }
+        gSPDisplayList(POLY_OPA_DISP++, DL_GORON_SPIKES);
+    }
+    Matrix_Pop();
+    gDPSetEnvColor(POLY_OPA_DISP++, 0xff, 0xff, 0xff, 0xff);
+    CLOSE_DISPS();
+}
+
 s32 TransformOot_DrawSkeleton(PlayState* play, Vec3s* jointTable, s32 dListCount, void* overrideLimbDraw, void* postLimbDraw, void* arg, s32 lod)
 {
     const TransformFormInfo* info;
@@ -1787,11 +2219,18 @@ s32 TransformOot_DrawSkeleton(PlayState* play, Vec3s* jointTable, s32 dListCount
     CLOSE_DISPS();
     TransformOot_SetFace(play, info, obj, jointTable, (Player*)arg);
 
-    /* Draw as adult: no child root scaling, adult leg IK, like Fierce Deity */
-    savedAge = gSave.age;
-    gSave.age = AGE_ADULT;
-    SkelAnime_DrawFlexLod(play, limbs, jointTable, count, TransformOot_OverrideLimbDraw, TransformOot_PostLimbDraw, arg, lod);
-    gSave.age = savedAge;
+    if (!sDrawFirstPerson && TransformOot_IsGoronBall((Player*)arg))
+    {
+        TransformOot_DrawGoronBall(play, (Player*)arg);
+    }
+    else
+    {
+        /* Draw as adult: no child root scaling, adult leg IK, like Fierce Deity */
+        savedAge = gSave.age;
+        gSave.age = AGE_ADULT;
+        SkelAnime_DrawFlexLod(play, limbs, jointTable, count, TransformOot_OverrideLimbDraw, TransformOot_PostLimbDraw, arg, lod);
+        gSave.age = savedAge;
+    }
 
     gSegments[6] = savedSegment;
     OPEN_DISPS(play->state.gfxCtx);

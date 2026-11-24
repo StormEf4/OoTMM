@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-24: Goron roll, spikes and ground pound (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "MM Goron Transformation Mask" row, OoT column (no new control; changes that item, also with its Shared options)
+- What it does: as a Goron in OoT, A now curls up into a ball like MM (before, it did Link's roll). Holding A rolls the ball, the stick steers it, and it bounces off walls and rolls off ledges. Rolling at full speed for a moment with at least 2 magic grows spikes for a faster dash that costs magic while it lasts. B while curled hops and pounds the ground on landing, with a quake and a shockwave, hitting like the Megaton Hammer. Letting go of A uncurls. The roll hits enemies, the spikes and the pound hit like the hammer. A simplified version of MM's (no slope rolling, no MM sounds or trails). Compile-checked only, not tested in game yet
+- Files: `packages/generator/src/oot/transform_mask.c`, `data/defs/link-animations.yml`, `packages/generator/include/combo/custom_animations.h`, `docs/custom/transform-masks.md`
+
 ## 2026-11-24: Goron and Zora use their MM idle (OoT)
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "MM Goron Transformation Mask" and "MM Zora Transformation Mask" rows, OoT column (no new control; changes those items)
