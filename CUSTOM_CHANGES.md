@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-24: Fix magic staying busy after a Magic Hookshot latch
+
+- Where in the app: Custom > Ocarina of Time > "Magic Hookshot (OoT)" and Custom > Majora's Mask > "Magic Hookshot (MM)" (no new control; fixes that item)
+- What it does: after the first latch that cost magic, the magic meter stayed flashing and every later use of magic failed (another magic latch, spells, magic arrows, the Lens of Truth, the Giant's and Fierce Deity's Masks) until the next scene or a song. The 2 magic are now taken straight from the meter, so magic keeps working. Same cost, same Chateau Romani and no-meter rules as before
+- Files: `packages/generator/src/common/hookshot_magic.c`
+
 ## 2026-11-24: Deku bubble and water hops (OoT)
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "Deku Mask" row, OoT column (no new control; changes that item, also with its Shared option)
