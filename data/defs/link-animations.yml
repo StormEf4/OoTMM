@@ -211,3 +211,9 @@ animations:
     home_game: mm
     header_offset: 0xE260
     frame_data_offset: 0xFD5B0
+
+  # MM transformation masks in OoT: Goron curling into a ball for the roll
+  - name: gPlayerAnim_pg_maru_change
+    home_game: mm
+    header_offset: 0xE208
+    frame_data_offset: 0x234E80
