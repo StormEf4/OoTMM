@@ -2141,7 +2141,6 @@ static void TransformOot_SetFace(PlayState* play, const TransformFormInfo* info,
 }
 
 /* MM's Player_Draw for a curled Goron (PLAYER_STATE3_1000): the ball and its spikes instead of the skeleton */
-static const Gfx kGoronRenderModeNone[] = { gsSPEndDisplayList() };
 
 static void TransformOot_DrawGoronBall(PlayState* play, Player* player)
 {
@@ -2163,7 +2162,6 @@ static void TransformOot_DrawGoronBall(PlayState* play, Player* player)
     Matrix_Translate(0.0f, 1200.0f, 0.0f, MTXMODE_APPLY);
     Matrix_Scale(1.15f, 1.15f, 1.15f, MTXMODE_APPLY);
     Matrix_RotateXF(BINANG_TO_RAD(sGoronAngle), MTXMODE_APPLY);
-    gSPSegment(POLY_OPA_DISP++, 0x0c, kGoronRenderModeNone);
     gDPSetEnvColor(POLY_OPA_DISP++, (u8)(255.0f - 175.0f * glow), (u8)(255.0f - 175.0f * glow), (u8)(255.0f - 55.0f * glow), 255);
     MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
     gSPDisplayList(POLY_OPA_DISP++, DL_GORON_CURLED);
@@ -2181,6 +2179,18 @@ static void TransformOot_DrawGoronBall(PlayState* play, Player* player)
     gDPSetEnvColor(POLY_OPA_DISP++, 0xff, 0xff, 0xff, 0xff);
     CLOSE_DISPS();
 }
+
+/*
+ * Segment 0x0C: MM's form models call a render mode list there. Every Deku limb calls 0x0C000000, and the curled Goron
+ * ball and spikes call 0x0C000010. MM points it at sRenderModeSetNoneDL (four end commands, Scene_SetRenderModeXlu(play,
+ * 0, 1)) or gEmptyDL; OoT sets nothing there for the player, so the draw sets it.
+ */
+static const Gfx kRenderModeNoneDL[] = {
+    gsSPEndDisplayList(),
+    gsSPEndDisplayList(),
+    gsSPEndDisplayList(),
+    gsSPEndDisplayList(),
+};
 
 s32 TransformOot_DrawSkeleton(PlayState* play, Vec3s* jointTable, s32 dListCount, void* overrideLimbDraw, void* postLimbDraw, void* arg, s32 lod)
 {
@@ -2215,6 +2225,7 @@ s32 TransformOot_DrawSkeleton(PlayState* play, Vec3s* jointTable, s32 dListCount
     gSegments[6] = (u32)obj - K0BASE;
     OPEN_DISPS(play->state.gfxCtx);
     gSPSegment(POLY_OPA_DISP++, 0x06, obj);
+    gSPSegment(POLY_OPA_DISP++, 0x0c, kRenderModeNoneDL);
     gDPSetEnvColor(POLY_OPA_DISP++, 0xff, 0xff, 0xff, 0xff);
     CLOSE_DISPS();
     TransformOot_SetFace(play, info, obj, jointTable, (Player*)arg);
