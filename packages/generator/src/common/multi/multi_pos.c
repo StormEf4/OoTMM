@@ -1,4 +1,5 @@
 #include <combo/context.h>
+#include <combo/boss_kit.h>
 #include "multi.h"
 
 #define MAX_WISPS 16
@@ -20,6 +21,12 @@ static u16 Multi_GetSceneKey(PlayState* play)
 {
     u16 sceneKey;
     int instanceId;
+    s32 fightId;
+
+    /* Fork: a boss kit arena reuses a real boss room (the Pot God uses Volvagia's lair), so give it its own key */
+    fightId = BossKit_CurrentFight(play);
+    if (fightId != BOSS_KIT_FIGHT_NONE)
+        return 0x1f0 + (u16)fightId;
 
     instanceId = Instance_Get(play);
     if (instanceId)

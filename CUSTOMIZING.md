@@ -57,6 +57,7 @@ More reference notes live in `docs/custom/`:
 - [transform-masks.md](docs/custom/transform-masks.md): the Deku Mask and the MM Goron and Zora Transformation Masks in OoT: items, forms, per-form data, hooks, and what is left to do.
 - [boss-kit.md](docs/custom/boss-kit.md): the OoT boss kit for custom boss fights: arenas, cutscene camera, object and effect helpers, health bar, and how to add a fight.
 - [oot-addresses.md](docs/custom/oot-addresses.md): finding OoT 1.0 addresses without the ROM (rebuilt from the decomp), and the rules for hooking the player overlay.
+- [multiplayer.md](docs/custom/multiplayer.md): playing Multiworld and Co-op with this fork: Project64-EM, building every ROM in this app, why the fork's items and bosses stay in sync, and the known limits.
 
 A custom setting can also use an upstream category when it belongs next to upstream options, as long as it stays in `custom.ts`. The Giant's Mask (OoT) settings use `items.extensions.crossGame.masks`, so they show in Items > Extended Items > Cross-Game Masks with the other masks.
 
