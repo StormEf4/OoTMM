@@ -1,0 +1,4 @@
+- [c-patch-verification](c-patch-verification.md): finding/verifying patch addresses and building C patches without ROMs
+- [fork-custom-items](fork-custom-items.md): how new items are added in the fork (Magic Hookshot example)
+- [fork-cosmetics](fork-cosmetics.md): adding fork cosmetics (Cosmetics tab, enum drop-downs, Fairy Companion/Furby)
+- [fork-pot-god](fork-pot-god.md): Pot God mini boss, reverse Saria warp and OoT boss kit (PRs #9-#11): arenas, custom actor ids, crash root cause (CSMC-patched DLs need segs 0x0A/0x0B), emulator notes
