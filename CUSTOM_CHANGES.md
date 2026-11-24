@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-24: Fix possible crash drawing the Deku and the curled Goron (OoT)
+
+- Where in the app: Items > Extended Items > Cross-Game Masks > "Deku Mask" and "MM Goron Transformation Mask" rows, OoT column (no new control; fixes those items)
+- What it does: MM's Deku model calls a render setting list through segment 0x0C on every limb, and the curled Goron ball and its spikes call the second entry of that list. OoT never sets that segment for the player, and the Goron roll only set a one-entry list, so these draws could jump to garbage and crash. The form draw now always points segment 0x0C at MM's four-entry empty list, like MM's own player draw. Found by reading the display lists from the MM ROM. Builds and makes a seed with the ROMs, not tested in game yet
+- Files: `packages/generator/src/oot/transform_mask.c`, `docs/custom/transform-masks.md`
+
 ## 2026-11-24: Goron roll, spikes and ground pound (OoT)
 
 - Where in the app: Items > Extended Items > Cross-Game Masks > "MM Goron Transformation Mask" row, OoT column (no new control; changes that item, also with its Shared options)
