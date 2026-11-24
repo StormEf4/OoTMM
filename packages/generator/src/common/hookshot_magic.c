@@ -46,14 +46,21 @@ void HookshotMagic_Toggle(void)
 /* Magic spent each time the magic mode latches onto a surface the normal hookshot can't */
 #define HOOKSHOT_MAGIC_COST 2
 
+/*
+ * Taken straight from the meter. Magic_RequestChange with MAGIC_CONSUME_NOW leaves the meter busy
+ * (MAGIC_STATE_METER_FLASH_1) until something calls Magic_Reset, which the hookshot never does: every later latch,
+ * spell, magic arrow and the Lens failed until the next scene or song.
+ */
 static int HookshotMagic_Consume(void)
 {
-#if defined(GAME_OOT)
-    /* Handles the Chateau Romani (free magic) */
-    return Magic_RequestChangeCustom(gPlay, HOOKSHOT_MAGIC_COST, MAGIC_CONSUME_NOW);
-#else
-    return Magic_RequestChange(gPlay, HOOKSHOT_MAGIC_COST, MAGIC_CONSUME_NOW);
-#endif
+    if (!gSave.info.playerData.isMagicAcquired)
+        return 0;
+    if (comboIsChateauActive())
+        return 1;
+    if (gSave.info.playerData.magic < HOOKSHOT_MAGIC_COST)
+        return 0;
+    gSave.info.playerData.magic -= HOOKSHOT_MAGIC_COST;
+    return 1;
 }
 
 /* Called by Arms_Hook in place of SurfaceType_IsHookshotSurface */

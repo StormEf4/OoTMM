@@ -217,3 +217,51 @@ animations:
     home_game: mm
     header_offset: 0xE208
     frame_data_offset: 0x234E80
+
+  # MM transformation masks in OoT: Zora fast swimming
+  - name: gPlayerAnim_pz_fishswim
+    home_game: mm
+    header_offset: 0xE3D8
+    frame_data_offset: 0x330C0
+
+  # MM transformation masks in OoT: Zora boomerang fins
+  - name: gPlayerAnim_pz_cutterattack
+    home_game: mm
+    header_offset: 0xE398
+    frame_data_offset: 0x2C49A0
+
+  - name: gPlayerAnim_pz_cuttercatch
+    home_game: mm
+    header_offset: 0xE3A0
+    frame_data_offset: 0x25A550
+
+  - name: gPlayerAnim_pz_cutterwaitA
+    home_game: mm
+    header_offset: 0xE3A8
+    frame_data_offset: 0xB680
+
+  - name: gPlayerAnim_pz_cutterwaitB
+    home_game: mm
+    header_offset: 0xE3B0
+    frame_data_offset: 0xAD00
+
+  - name: gPlayerAnim_pz_cutterwaitC
+    home_game: mm
+    header_offset: 0xE3B8
+    frame_data_offset: 0xB1C0
+
+  - name: gPlayerAnim_pz_cutterwaitanim
+    home_game: mm
+    header_offset: 0xE3C0
+    frame_data_offset: 0x193030
+
+  # MM transformation masks in OoT: Deku bubble
+  - name: gPlayerAnim_pn_tamahaki
+    home_game: mm
+    header_offset: 0xE2F0
+    frame_data_offset: 0x13D4F0
+
+  - name: gPlayerAnim_pn_tamahakidf
+    home_game: mm
+    header_offset: 0xE2F8
+    frame_data_offset: 0x125B0

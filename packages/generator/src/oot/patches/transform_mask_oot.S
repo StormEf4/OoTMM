@@ -63,3 +63,8 @@ PATCH_END
 PATCH_START 0x808540f4
 .int 0
 PATCH_END
+
+/* Deku water hops: func_8083D53C: jal func_8083D36C (0x8083b720) */
+PATCH_START 0x808543a8
+.int 0
+PATCH_END
