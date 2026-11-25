@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-25: Manual app builds publish a release
+
+- Where in the app: not in the app. GitHub > Actions > Build My App > Run workflow
+- What it does: a manual run of Build My App on master now publishes a release (app-<run number>) like a push to master does. Before, a manual run only kept the zip as a run artifact. Pull requests still build without publishing
+- Files: .github/workflows/my-app.yml
+
 ## 2026-11-25: Sync with upstream OoTMM (up to upstream b127286)
 
 - Where in the app: everywhere upstream changed things, mostly Items > Extended Items (upstream's new cross-game swords and shields) and the logic. No new Custom control. The app build log now shows how much game code space is left
