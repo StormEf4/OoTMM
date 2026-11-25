@@ -13,7 +13,7 @@ static void fixSpawn(void)
 {
     u32 entrance;
     u32 entranceOriginal;
-    s32 override;
+    u32 override;
 
     gSaveContext.respawnFlag = 0;
     gSaveContext.respawn[RESPAWN_MODE_DOWN].entrance = 0xffff;
@@ -57,8 +57,8 @@ static void fixSpawn(void)
     entrance = gSave.age == AGE_CHILD ? ENTR_OOT_SPAWN_CHILD : ENTR_OOT_SPAWN_ADULT;
     entranceOriginal = entrance;
     override = comboEntranceOverride(entrance);
-    if (override != -1)
-        entrance = (u32)override;
+    if (override != ENTR_INVALID)
+        entrance = override;
     gSave.entrance = entrance;
 
     Multi_InfoEntrance(entranceOriginal, gSave.entrance, gSave.age);
@@ -339,10 +339,6 @@ void comboCreateSave(void* unk, void* buffer)
         memset(gSharedCustomSave.rustyKeysOot, 0xff, sizeof(gSharedCustomSave.rustyKeysOot));
     if (!Config_Flag(CFG_MM_RUSTY_KEYS))
         memset(gSharedCustomSave.rustyKeysMm, 0xff, sizeof(gSharedCustomSave.rustyKeysMm));
-
-    /* Apply deku shield flag */
-    if (Config_Flag(CFG_MM_DEKU_SHIELD))
-        gSharedCustomSave.mmShieldIsDeku = 1;
 
     /* Apply bronze scale flag */
     if (!Config_Flag(CFG_BRONZE_SCALE))

@@ -127,6 +127,9 @@ void Sram_SaveEndOfCycle(PlayState* play)
         }
     }
 
+    if (Config_Flag(CFG_MM_GIANTS_KNIFE_CYCLE_REPAIR) && gSharedCustomSave.mm.swords.giantSword == 1)
+        MmSword_SetGiantsKnifeHealth(gComboConfig.giantsKnifeDurabilityMm);
+
     /* Reload bottles */
     for (int i = 1; i <= 3; ++i)
     {

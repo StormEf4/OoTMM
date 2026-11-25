@@ -14,6 +14,7 @@ import { Patchfile } from './combo/patch-build/patchfile';
 import { CodeGen } from './combo/util/codegen';
 
 import { setupAssetsMap } from './build/build-assets-map';
+import { checkPayloadSizes } from './build/payload-size';
 
 const env = process.env.NODE_ENV || 'development';
 const isProd = (env === 'production');
@@ -100,6 +101,7 @@ async function build() {
   ]);
 
   const installDir = await buildNative();
+  await checkPayloadSizes(installDir, isProd); /* Fork: fail the app build instead of every seed */
 
   /* Create the zip */
   const zip = new JSZip();

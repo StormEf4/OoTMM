@@ -6,6 +6,58 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added MM Master Sword
+- Added MM Giants Knife and Biggoron Sword
+- Added MM Hylian Shield
+- Added OoT Hero's Shield
+- Added equipment swapping in MM
+- Added sword and shield cycling in OoT
+- Giants knife health settings
+- Giants Knife can now be repaired by medigoron like in vanilla
+- Giants knife in MM can now be repaired by medigoron at goron village
+- Add glitch: "Skulltula Elevator"
+- Add trick for jumping to the small slither of space in front of Forest MQ's first room skulltula (on the tree) and then getting past the skulltula using either hammer, bombchu or (if enabled) Skulltula Elevator.
+
+### Changed
+
+- Added Deku Stick Fighting to Captain Keeta logic for the logic trick.
+- Accounted for Boomerang logic for Odolwa.
+- Blitz settings adjustments:
+ - Added Master Sword to MM and shared it while adjusting the item specific hint to make sure Master Sword is still hinted.
+ - Added Goron Swords to MM and shared it.
+ - Added Hylian Shield to MM and shared it.
+ - Bottles are back to being shared due to the setting adjustment that was made.
+ - Kamaro Mask was mistakenly enabled, turned it back off.
+ - Added Adult Mask to MM and made it a starting item.
+ - Age restricted Master Sword and Goron Swords to Adult in MM.
+ - Age restricted Child Swords to Child in MM.
+ - Age restricted Deku Shield to Child in MM.
+ - Age restricted Mirror Shield to Adult in MM.
+ - Enabled the Minor Cutscene Skips for both OOT and MM.
+- Change item drop behavior to prevent dropped items from going out of bounds.
+- Names for Rusty Keys in the spoiler log now match those seen in-game.
+- Change age requirement backend to use enums instead of two booleans
+- Child swords are now independently ownable instead of being forced to progressive
+- Add stone mask as a way to get past the skulltulas at the top of Deku Tree.
+- Using climb anywhere pass the initial BotW skulltula is now logical
+- Add stone mask, blast mask and deku nuts as logical ways to get past the initial forest temple skulltula
+- Changed logic for Dodongo MQ mudwall at the end of the cooridor before the upper lizalfos fight. Logic now understands that this mudwall can be destroyed in one age and then returned to as the other.
+- Added sword/stick (using jumpslash) as a logical way to get past Forest MQ's first room skulltula.
+
+### Fixed
+
+- Fix an issue where keaton grass would sometimes not respect CAMC.
+- Fix Twinmold logic expecting GFS when it shouldn't.
+- Fix logic not understanding that the Kokiri Forest (adult) Skulltula can block the player
+- Fix logic not accounting for the Skulltulas in the staircase room of Dodongo MQ. Climb anywhere is a way past these Skulltulas
+- Fix logic for Dodongo MQ three-torch puzzle (vanilla bomb bag room) not accounting for a temp flag: you cannot return to this dungeon as a different age whilst keeping the puzzle in 'solved' state. 
+- Fix logic for Forest Temple MQ's burnable webs not accounting for a temp flag: if you return to this dungeon as a different age, the webs will be back.
+- Fix logic not accounting for some of the skulltulas in Shadow Temple MQ's scythe silver rupees room.
+
+## [33.0] - 2026-10-13
+
+### Added
+
 - Add a setting to add extra OoT bottles without having to share bottles.
 - Add gossip fairies / big fairies shuffle.
 - Added MM Adult Mask
@@ -1876,7 +1928,8 @@ All notable changes to this project will be documented in this file.
 
 - Initial stable release.
 
-[Unreleased]: https://github.com/OoTMM/OoTMM/compare/v32.3...HEAD
+[Unreleased]: https://github.com/OoTMM/OoTMM/compare/v33.0...HEAD
+[33.0]: https://github.com/OoTMM/OoTMM/compare/v32.2...v33.0
 [32.3]: https://github.com/OoTMM/OoTMM/compare/v32.2...v32.3
 [32.2]: https://github.com/OoTMM/OoTMM/compare/v32.1...v32.2
 [32.1]: https://github.com/OoTMM/OoTMM/compare/v32.0...v32.1
