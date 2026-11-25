@@ -2668,8 +2668,10 @@ int comboAddItemRaw(PlayState* play, s16 gi)
             otherGi = si->gi;
         else
             continue;
-        if (Config_Flag(si->cfg))
-            addItem(play, otherGi);
+        /* Fork: GI_MM_MASK_GORON/ZORA are in two rows (upstream's shared mask and the fork's shared MM transform mask), so skip a disabled row instead of stopping at it */
+        if (!Config_Flag(si->cfg))
+            continue;
+        addItem(play, otherGi);
         break;
     }
     return count;

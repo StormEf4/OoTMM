@@ -68,6 +68,7 @@ static void PotGod_Slam(PotGod* this, PlayState* play);
 static void PotGod_Summon(PotGod* this, PlayState* play);
 static void PotGod_Damage(PotGod* this, PlayState* play);
 static void PotGod_Death(PotGod* this, PlayState* play);
+static void PotGod_LeaveArena(PotGod* this, PlayState* play);
 
 /* Each arm: where it comes out of the mouth (relative to the body's yaw) and how it writhes */
 static const s16 kArmYaw[POT_GOD_ARMS] = { 0x1C00, -0x1C00, 0x6000, -0x6000 };
@@ -259,6 +260,14 @@ void PotGod_Init(Actor* thisx, PlayState* play)
     this->floorY = this->actor.world.pos.y;
     this->bodyRise = -(POT_GOD_BODY_HEIGHT + 20.0f);
     this->actionFunc = PotGod_WaitIntro;
+
+    /* The arena was reloaded after the Pot God was already beaten (Link voided out during its death,
+     * for example from another player's trap in multiplayer): no second fight, just go back */
+    if (this->inArena && SaveFlag_Get(SAVE_FLAG_POT_GOD_DEFEATED))
+    {
+        this->actor.draw = NULL;
+        this->actionFunc = PotGod_LeaveArena;
+    }
 }
 
 void PotGod_Destroy(Actor* thisx, PlayState* play)
@@ -299,6 +308,26 @@ static void PotGod_WaitIntro(PotGod* this, PlayState* play)
     BossKit_StopBgm();
     this->csTimer = 0;
     this->actionFunc = PotGod_Intro;
+}
+
+/* Already beaten: once Link is free, send him back to the Pot House like a normal win */
+static void PotGod_LeaveArena(PotGod* this, PlayState* play)
+{
+    if (BossKit_PlayerIsCalm(play))
+        this->calmFrames++;
+    else
+        this->calmFrames = 0;
+
+    if (this->calmFrames < POT_GOD_CALM_FRAMES)
+        return;
+    BossKit_FinishFight(play);
+    Actor_Kill(&this->actor);
+}
+
+/* A received multiplayer item or boss message is showing (or about to): wait so our text doesn't replace it */
+static int PotGod_MessagePending(PlayState* play)
+{
+    return play->msgCtx.msgMode != MSGMODE_NONE || g.decoysCount || g.blockingMessage;
 }
 
 static void PotGod_EndIntro(PotGod* this, PlayState* play)
@@ -659,6 +688,11 @@ static void PotGod_Death(PotGod* this, PlayState* play)
 
     if (this->timer == 75)
     {
+        if (PotGod_MessagePending(play))
+        {
+            this->timer--;
+            return;
+        }
         BossKit_ShowText(play, "The Pot God shattered..." TEXT_NL "Its pots are scattered all over" TEXT_NL TEXT_COLOR_RED "Hyrule Field" TEXT_CZ "!" TEXT_END);
         if (!this->inArena)
             Actor_Kill(&this->actor);
@@ -666,7 +700,7 @@ static void PotGod_Death(PotGod* this, PlayState* play)
     }
 
     /* Arena: once the text is read (and the hearts picked up), back to the Pot House */
-    if (this->timer >= 100 && play->msgCtx.msgMode == MSGMODE_NONE)
+    if (this->timer >= 100 && !PotGod_MessagePending(play))
     {
         BossKit_FinishFight(play);
         Actor_Kill(&this->actor);

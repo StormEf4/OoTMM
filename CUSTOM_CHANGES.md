@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-24: Multiplayer fixes and how-to
+
+- Where in the app: Custom > Change Log (no new control). Matters when General > Mode is Multiworld or Co-op, and for Items > Extended Items > Cross-Game Masks > "Shared MM Goron Transformation Mask" and "Shared MM Zora Transformation Mask"
+- What it does: checked that the official OoTMM multiplayer client works with the fork's items, checks and bosses (it does, see `docs/custom/multiplayer.md`: everyone needs Project64-EM and should build their ROM in this app's Patch mode), and fixed what the check found. (1) A shared MM Goron or Zora Transformation Mask found in an MM location now also gives the OoT copy; before, only the MM mask was given (also in single-player). (2) If Link voids out in the Pot God arena after the Pot God is beaten (for example from another player's trap during its death), the arena no longer makes him fight it again: he is sent back to the Pot House. (3) The Pot God's death text and the arena exit wait for a received item's or boss event's text box instead of replacing it. (4) Players in the Pot God arena no longer show up as wisps in the real Volvagia fight, and the other way round. (5) Upstream's two November auto-tracker fixes are included (dungeon items and stray fairies are reported by their real names, and co-op reports a check's location even when a partner got it). Compile-checked and seeds generated, not tested in game or online yet
+- Files: `packages/generator/src/common/item/item_add.c`, `packages/generator/src/oot/ovl/actors/Custom_Pot_God/Custom_Pot_God.c`, `packages/generator/src/common/multi/multi_pos.c`, upstream 70f41036 and 9ba17638 (`src/common/item/item.c`, `item_resolve.c`, `multi/multi.c`, `include/combo/item.h`, `include/combo/multi.h`, `src/mm/actors/Obj/Obj_Warpstone.c`, `src/mm/play/play.c`, `src/oot/play/play.c`), `docs/custom/multiplayer.md`, `CUSTOMIZING.md`
+
 ## 2026-11-24: Fix magic staying busy after a Magic Hookshot latch
 
 - Where in the app: Custom > Ocarina of Time > "Magic Hookshot (OoT)" and Custom > Majora's Mask > "Magic Hookshot (MM)" (no new control; fixes that item)

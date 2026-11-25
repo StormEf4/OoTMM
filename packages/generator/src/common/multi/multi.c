@@ -100,7 +100,7 @@ static void Multi_ProcessMessagesDisconnected(void)
     return;
 }
 
-static void Multi_GiveItem(PlayState* play, s16 gi, u8 from, int flags, const char* name)
+static void Multi_GiveItem(PlayState* play, s16 gi, u8 from, u32 infoKey, int flags, const char* name)
 {
     ComboItemQuery q = ITEM_QUERY_INIT;
 
@@ -114,7 +114,7 @@ static void Multi_GiveItem(PlayState* play, s16 gi, u8 from, int flags, const ch
         q.gi = GI_RECOVERY_HEART;
     }
 
-    Item_AddWithDecoyNamed(play, &q, name);
+    Item_ReceiveWithDecoy(play, &q, infoKey, name);
 }
 
 u8 Multi_WorldID(void)
@@ -176,7 +176,7 @@ static int MultiProcessMessageItemWAL(MultiPacketWalItemIn* pkt, int size)
         /* Need to actually give the item */
         if (!Item_SafeToReceive(play) || g.decoysCount)
             return 0;
-        Multi_GiveItem(play, gi, pkt->wal.from, pkt->flags, (char*)pkt->wal.playerName);
+        Multi_GiveItem(play, gi, pkt->wal.from, isSamePlayer ? pkt->key : 0, pkt->flags, (char*)pkt->wal.playerName);
         if (needsMark)
         {
             if (pkt->key & 0x80000000)
@@ -490,12 +490,16 @@ static int Multi_BeforeSend(void)
     return 1;
 }
 
-void Multi_InfoItem(u32 ovKey, s16 gi, u8 flags)
+void Multi_InfoItem(PlayState* play, u32 ovKey, s16 gi, u8 flags)
 {
     MultiPacketOutInfoItem pkt;
 
     if (!gComboCtx.isMultiConnected)
         return;
+
+    /* KLUDGE: This should probably be moved somwehere up the call sites */
+    if (play)
+        gi = Item_ResolveGeneric(play, gi);
 
     memset(&pkt, 0, sizeof(pkt));
     pkt.header.op = MULTI_OP_INFO_ITEM;
@@ -548,7 +552,7 @@ void Multi_SendItem(u8 to, s16 gi, s16 flags, u32 key)
     pkt.wal.header.op = MULTI_OP_WAL;
     pkt.wal.type = WAL_ITEM;
     pkt.to = to;
-    pkt.gi = comboItemResolve(gPlay, gi);
+    pkt.gi = Item_ResolveGeneric(gPlay, gi);
     pkt.flags = flags;
     pkt.key = key;
 
