@@ -4,9 +4,9 @@ Written 2026-11-23 to hand this project to a new Claude account. Read this first
 
 ## 1. What this project is
 
-- A personal fork of the OoTMM randomizer (Ocarina of Time + Majora's Mask combo). Repo: https://github.com/StormEf4/OoTMM, default branch `master`. Upstream is https://github.com/OoTMM/OoTMM (PR #1 was the last sync, 2026-10-11).
+- A personal fork of the OoTMM randomizer (Ocarina of Time + Majora's Mask combo). Repo: https://github.com/StormEf4/OoTMM-personal-fork, default branch `master`. Upstream is https://github.com/OoTMM/OoTMM (PR #1 was the last sync, 2026-10-11).
 - It ships its own **desktop app** that is the same generator as ootmm.com plus a **Custom** page (fork settings) and a **Change Log** view (renders `CUSTOM_CHANGES.md`).
-- Every merge to `master` builds the app for Windows, Mac and Linux via `.github/workflows/my-app.yml` and publishes a GitHub release (`app-<run>`, latest at https://github.com/StormEf4/OoTMM/releases/latest). The app is a Neutralino build (`packages/desktop`). The General page shows the version as `custom-<commit>`.
+- Every merge to `master` builds the app for Windows, Mac and Linux via `.github/workflows/my-app.yml` and publishes a GitHub release (`app-<run>`, latest at https://github.com/StormEf4/OoTMM-personal-fork/releases/latest). The app is a Neutralino build (`packages/desktop`). The General page shows the version as `custom-<commit>`.
 - Owner: Elijah (GitHub `StormEf4`). He tests seeds himself on an emulator (Rosalie's Mupen GUI; his RetroArch ParaLLEl install was broken and caused a false crash once, so rule out the emulator first).
 
 ## 2. Working rules (from CLAUDE.md and Elijah's preferences)
@@ -116,6 +116,6 @@ From the project's shared files (copied to the `handoff/` folder Elijah received
 Elijah must supply himself (never commit these):
 
 - **ROMs**: `oot.z64` (OoT U or J 1.0) and `mm.z64` (MM U), big-endian, in `roms/`. Only needed to build/play locally; cloud sessions work without them.
-- **GitHub access** for the new Claude account: connect GitHub on the new account and install the Claude GitHub App on `StormEf4/OoTMM`, so it can push branches and open PRs.
+- **GitHub access** for the new Claude account: connect GitHub on the new account and install the Claude GitHub App on `StormEf4/OoTMM-personal-fork`, so it can push branches and open PRs.
 - **Repo secrets**: none are needed for the fork's app build (`my-app.yml` only uses the built-in `GITHUB_TOKEN`). The upstream `ci.yml`/`cleanup.yml` reference Netlify and AWS secrets for upstream's website deploy; the fork doesn't need them and they should not be added to code.
 - **Project instructions** for the new Claude project: point it at this file, e.g. "Read HANDOFF.md, CLAUDE.md and CUSTOMIZING.md first."

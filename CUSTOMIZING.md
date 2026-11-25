@@ -4,7 +4,7 @@ This fork runs the same generator as ootmm.com on your own computer, with a **Cu
 
 ## Use the app (easiest)
 
-Download the zip for your computer from https://github.com/StormEf4/OoTMM/releases/latest, unzip it, and open the `ootmm` app inside. It opens straight to your generator, with the Custom page. Drag your ROMs in just like on ootmm.com. Keep `resources.neu` next to the app.
+Download the zip for your computer from https://github.com/StormEf4/OoTMM-personal-fork/releases/latest, unzip it, and open the `ootmm` app inside. It opens straight to your generator, with the Custom page. Drag your ROMs in just like on ootmm.com. Keep `resources.neu` next to the app.
 
 - Windows: `ootmm-win_x64.zip`. If Windows warns you, click "More info" then "Run anyway".
 - Mac: `ootmm-mac_arm64.zip` (Apple Silicon) or `ootmm-mac_x64.zip` (Intel). The first time, right-click the app and choose Open.
