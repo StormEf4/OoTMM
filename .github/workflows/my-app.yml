@@ -39,7 +39,7 @@ jobs:
           echo "ENV_KEYS=dev" >> $GITHUB_ENV
 
       - name: Build GUI
-        run: pnpm nx run @ootmm/gui:build:desktop --prod
+        run: pnpm nx run @ootmm/gui:build:desktop --prod --output-style=static # static: show the generator build log (Payload oot/mm sizes)
 
       - name: Build Desktop
         run: pnpm nx run @ootmm/desktop:build --prod
