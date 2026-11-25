@@ -1,7 +1,7 @@
 import type { Game } from '@ootmm/data';
 import type { DmaDataRecord } from './dma';
 
-import { compressFile } from './compress';
+import { compressFile } from '#generator-platform';
 import { CONFIG } from './config';
 import { DmaData } from './dma';
 import { bufReadU32BE, bufWriteU32BE } from './util/buffer';
@@ -149,13 +149,15 @@ export class RomBuilder {
     return this.files;
   }
 
-  private addPaddr(size: number) {
-    const oldAddr = this.paddr;
-    this.paddr += size;
-    if (this.paddr > 0x3fff000) {
-      throw new Error(`ROM too large`);
+  private addPaddr(size: number, name?: string) {
+    const end = this.paddr + size;
+    const limit = this.out.length - 0x1000;
+    if (end > limit) {
+      throw new Error(`ROM too large while packing ${name ?? 'an unnamed file'} (${end.toLocaleString()} bytes, limit ${limit.toLocaleString()})`);
     }
-    return oldAddr;
+    const address = this.paddr;
+    this.paddr = end;
+    return address;
   }
 
   async inject(file: RomFile) {
@@ -178,7 +180,7 @@ export class RomBuilder {
       switch (file.type) {
       case 'uncompressed': {
         if (file.paddr === undefined) {
-          file.paddr = this.addPaddr((file.data.length + 0xf) & ~0xf);
+            file.paddr = this.addPaddr((file.data.length + 0xf) & ~0xf, file.name);
         }
         const vaddr = file.vaddr || 0;
         if (!file.alias) {
@@ -196,7 +198,7 @@ export class RomBuilder {
         const compressedSize = compressedData.length;
         const compressedSizeAligned = (compressedSize + 0xf) & ~0xf;
         if (file.paddr === undefined) {
-          file.paddr = this.addPaddr(compressedSizeAligned);
+            file.paddr = this.addPaddr(compressedSizeAligned, file.name);
         }
         const vaddr = file.vaddr || 0;
         this.out.set(compressedData, file.paddr);
@@ -251,6 +253,14 @@ export class RomBuilder {
       f.vsize = f.data.length;
       f.data = new Uint8Array(0);
     }
+  }
+
+  replaceFileData(name: string, data: Uint8Array) {
+    const file = this.fileByNameRequired(name);
+    if (file.injected || file.alias || file.type === 'dummy' || file.paddr !== undefined)
+      throw new Error(`Cannot replace audio file: ${name}`);
+    file.data = data;
+    file.vsize = undefined;
   }
 
   alias(to: string, from: string) {
@@ -324,7 +334,7 @@ export class RomBuilder {
     }
 
     /* Write extra DMA */
-    const extraDmaPaddr = this.paddr;
+    const extraDmaPaddr = this.addPaddr(extraDmaBuffer.length, 'extra DMA table');
     this.out.set(extraDmaBuffer, extraDmaPaddr);
 
     /* Build meta */

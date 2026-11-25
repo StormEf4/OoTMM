@@ -4,7 +4,7 @@ This fork runs the same generator as ootmm.com on your own computer, with a **Cu
 
 ## Use the app (easiest)
 
-Download the zip for your computer from https://github.com/StormEf4/OoTMM/releases/latest, unzip it, and open the `ootmm` app inside. It opens straight to your generator, with the Custom page. Drag your ROMs in just like on ootmm.com. Keep `resources.neu` next to the app.
+Download the zip for your computer from https://github.com/StormEf4/OoTMM-personal-fork/releases/latest, unzip it, and open the `ootmm` app inside. It opens straight to your generator, with the Custom page. Drag your ROMs in just like on ootmm.com. Keep `resources.neu` next to the app.
 
 - Windows: `ootmm-win_x64.zip`. If Windows warns you, click "More info" then "Run anyway".
 - Mac: `ootmm-mac_arm64.zip` (Apple Silicon) or `ootmm-mac_x64.zip` (Intel). The first time, right-click the app and choose Open.
@@ -59,6 +59,7 @@ More reference notes live in `docs/custom/`:
 - [oot-addresses.md](docs/custom/oot-addresses.md): finding OoT 1.0 addresses without the ROM (rebuilt from the decomp), and the rules for hooking the player overlay.
 - [multiplayer.md](docs/custom/multiplayer.md): playing Multiworld and Co-op with this fork: Project64-EM, building every ROM in this app, why the fork's items and bosses stay in sync, and the known limits.
 - [upstream-sync.md](docs/custom/upstream-sync.md): bringing upstream OoTMM into the fork, the spots that conflict every time, and how much game code space (payload) is left.
+- [enemy-shuffle-preview.md](docs/custom/enemy-shuffle-preview.md): the test branch with upstream's enemy randomizer preview: what the fork had to change (Pot God actor id, OoT memory layout, MM code size), how to re-merge upstream's newer preview commits, and what to test.
 
 A custom setting can also use an upstream category when it belongs next to upstream options, as long as it stays in `custom.ts`. The Giant's Mask (OoT) settings use `items.extensions.crossGame.masks`, so they show in Items > Extended Items > Cross-Game Masks with the other masks.
 

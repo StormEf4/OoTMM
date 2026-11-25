@@ -4,9 +4,9 @@ Written 2026-11-23 to hand this project to a new Claude account. Read this first
 
 ## 1. What this project is
 
-- A personal fork of the OoTMM randomizer (Ocarina of Time + Majora's Mask combo). Repo: https://github.com/StormEf4/OoTMM, default branch `master`. Upstream is https://github.com/OoTMM/OoTMM (PR #1 was the last sync, 2026-10-11).
+- A personal fork of the OoTMM randomizer (Ocarina of Time + Majora's Mask combo). Repo: https://github.com/StormEf4/OoTMM-personal-fork (renamed from StormEf4/OoTMM on 2026-11-25), default branch `master`. Upstream is https://github.com/OoTMM/OoTMM (PR #1 was the last sync, 2026-10-11).
 - It ships its own **desktop app** that is the same generator as ootmm.com plus a **Custom** page (fork settings) and a **Change Log** view (renders `CUSTOM_CHANGES.md`).
-- Every merge to `master` builds the app for Windows, Mac and Linux via `.github/workflows/my-app.yml` and publishes a GitHub release (`app-<run>`, latest at https://github.com/StormEf4/OoTMM/releases/latest). The app is a Neutralino build (`packages/desktop`). The General page shows the version as `custom-<commit>`.
+- Every merge to `master` builds the app for Windows, Mac and Linux via `.github/workflows/my-app.yml` and publishes a GitHub release (`app-<run>`, latest at https://github.com/StormEf4/OoTMM-personal-fork/releases/latest). The app is a Neutralino build (`packages/desktop`). The General page shows the version as `custom-<commit>`.
 - Owner: Elijah (GitHub `StormEf4`). He tests seeds himself on an emulator (Rosalie's Mupen GUI; his RetroArch ParaLLEl install was broken and caused a false crash once, so rule out the emulator first).
 
 ## 2. Working rules (from CLAUDE.md and Elijah's preferences)
@@ -58,7 +58,7 @@ Cloud sessions have no ROMs, so nothing can be tested in game; everything is com
 
 ### Custom actors and the OoT boss kit
 
-- Custom OoT actors go in unused actor ids (0x003 and 0x006 are taken by the Pot God) as `src/oot/ovl/actors/<Name>/` with `OVL_INFO_ACTOR`; the CMake glob picks up a new dir, no TS wiring. Ids live in `include/combo/actor_id.h`.
+- Custom OoT actors go in unused actor ids (0x003 and 0x006 are taken by the Pot God; upstream's enemy shuffle preview also uses 0x003, so the enemy shuffle test branch moves the Pot God to 0x180, see `docs/custom/enemy-shuffle-preview.md`) as `src/oot/ovl/actors/<Name>/` with `OVL_INFO_ACTOR`; the CMake glob picks up a new dir, no TS wiring. Ids live in `include/combo/actor_id.h`.
 - Objects not in the scene load into extra slots via the patched `Object_GetSlot`; draw from them with `BossKit_UseObject` (CPU + RSP segment 6).
 - Runtime-spawned check actors: `g.xflagOverride = TRUE; g.xflagId = Xflag_Lookup(&xf)`. Hyrule Field Pot God pots use room 0, actor ids 0xc0-0xd3.
 - Boss kit (`include/combo/boss_kit.h`, `src/oot/boss_kit.c`, doc `docs/custom/boss-kit.md`): arenas, cutscene camera, title cards, quakes, music, debris, health bar. Fight state is a non-saved static (`sFightId`), cleared on any non-arena scene init; dying then Continue reloads the arena so the fight retries. Arena scenes must skip the `CUSTOM_RESPAWN_MODE_DUNGEON_ENTRANCE` copy in `Play_AfterInit`. Arena actors are blocked in `canSpawnActor` (`src/oot/actors.c`); room actors spawn after `Play_AfterInit` so they can't be killed there. Heat off: `play->roomCtx.curRoom.behaviorType2 = 0`. Link's sink is visual (`shape.yOffset`); OoT csAction 37 is the Wallmaster "grabbed" pose; child voice clips = adult + 0x20. `NA_SE_VO_*` ids are missing from the OoT part of `sfx_id.h`: define locally, verify against zeldaret/oot `include/tables/sfx/*.h`.
@@ -116,6 +116,6 @@ From the project's shared files (copied to the `handoff/` folder Elijah received
 Elijah must supply himself (never commit these):
 
 - **ROMs**: `oot.z64` (OoT U or J 1.0) and `mm.z64` (MM U), big-endian, in `roms/`. Only needed to build/play locally; cloud sessions work without them.
-- **GitHub access** for the new Claude account: connect GitHub on the new account and install the Claude GitHub App on `StormEf4/OoTMM`, so it can push branches and open PRs.
+- **GitHub access** for the new Claude account: connect GitHub on the new account and install the Claude GitHub App on `StormEf4/OoTMM-personal-fork`, so it can push branches and open PRs.
 - **Repo secrets**: none are needed for the fork's app build (`my-app.yml` only uses the built-in `GITHUB_TOKEN`). The upstream `ci.yml`/`cleanup.yml` reference Netlify and AWS secrets for upstream's website deploy; the fork doesn't need them and they should not be added to code.
 - **Project instructions** for the new Claude project: point it at this file, e.g. "Read HANDOFF.md, CLAUDE.md and CUSTOMIZING.md first."

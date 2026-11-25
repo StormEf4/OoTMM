@@ -26,7 +26,9 @@
 # define HEAP_BASE      0x80700000
 # define HEAP_SIZE      0x100000
 # define PAYLOAD_RAM    0x80400000
-# define PAYLOAD_SIZE   0x80000
+/* Fork: 0x90000 instead of upstream's 0x80000 so the fork's OoT code fits next to the enemy shuffle.
+ * The enemy arena and gameplay pool after it were shrunk to make room (include/combo/oot_gameplay_memory.h). */
+# define PAYLOAD_SIZE   0x90000
 # define LOADER_ADDR    0x80006600
 
 # define COMBO_CTX_ADDR_READ    COMBO_CTX_ADDR_OOT
@@ -34,7 +36,7 @@
 #endif
 
 #ifdef GAME_MM
-# define PAYLOAD_SIZE   0x60000
+# define PAYLOAD_SIZE   0x80000
 # define PAYLOAD_RAM    (0x80780000 - PAYLOAD_SIZE)
 # define HEAP_SIZE      0x40000
 # define HEAP_BASE      (PAYLOAD_RAM - HEAP_SIZE)

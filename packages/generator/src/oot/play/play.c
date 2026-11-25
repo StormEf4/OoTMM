@@ -1,4 +1,5 @@
 #include <combo.h>
+#include <combo/enemy.h>
 #include <combo/audio.h>
 #include <combo/boss_kit.h>
 #include <combo/checks.h>
@@ -577,6 +578,8 @@ static void Play_ApplyClock(void)
 void hookPlay_Init(PlayState* play)
 {
     gPlay = play;
+    comboEnemyCollisionReset();
+    comboEnemyEncounterReset();
 
     /* Init */
     gIsEntranceOverride = 0;
@@ -628,6 +631,8 @@ void Play_MainWrapper(PlayState* play)
         Multi_Disconnect();
 
     Play_Main(play);
+    if (play->gameOverCtx.state == GAMEOVER_INACTIVE)
+        comboEnemyEncounterPostFrame(play);
     Message_UpdateBlocking(play);
     Dpad_Draw(play);
     Audio_DisplayMusicName(play);

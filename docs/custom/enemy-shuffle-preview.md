@@ -1,0 +1,79 @@
+# Enemy shuffle preview (test branch)
+
+Upstream OoTMM is building an enemy randomizer (this fork is merged up to upstream preview commit `afc74a6c`) on its `preview/enemy-shuffle` branch (https://github.com/OoTMM/OoTMM/tree/preview/enemy-shuffle). Any enemy can become another one, in OoT and in MM, and there's an option to bring MM enemies into OoT and OoT enemies into MM. It isn't in upstream's `master` or in any release yet.
+
+Elijah asked for a **test build** with it (2026-11-25). It lives on the branch `claude/project-thread-oc38hb`, **not on master**. When upstream merges the enemy shuffle into its `master`, it arrives through a normal upstream sync instead (`upstream-sync.md`), and the fork changes below have to be carried over again.
+
+## Where it shows in the app
+
+A new **Enemies** page (sword icon, between Entrances and Advanced) with upstream's settings:
+
+- Enemy Randomizer (OoT) and (MM), or Mini Boss Only for either game
+- Enemy Placement (OoT/MM): Individual (each enemy on its own) or Grouped (every enemy of one kind in an area becomes the same thing)
+- Shuffle Laggy Enemy Spawns (MM Leevers and Boes)
+- Gold Skulltula Enemy Shuffle, Include Minibosses, Keep Original Minibosses Vanilla, Mini Boss Shuffle Type
+- Bari Shuffle and Eeno Shuffle (what they split into)
+- Cross-Game Enemies
+- Enemy Soul Ghosts (moved here from the souls settings)
+
+These are upstream settings, so they live in upstream's `data.ts`, not in `custom.ts`.
+
+## What the fork had to change
+
+| What | Why | Where |
+|---|---|---|
+| Pot God actor id `0x003` -> `0x180` | Upstream now uses OoT actor `0x003` for `ACTOR_ENEMY_POE_ENCOUNTER`. `0x180` is unused in vanilla OoT and by upstream (MM's `0x180` is a different table). The watcher stays at `0x006`. | `include/combo/actor_id.h` |
+| OoT code area `0x80000` -> `0x90000` | The fork's OoT code plus upstream's enemy shuffle code is 570 KB with the cloud's gcc 12 (a little less with the real toolchain), over the 512 KB upstream reserves. | `include/combo/defs.h`, `lib/build.ts`, `lib/build/payload-size.ts`, `lib/combo/patch-build/index.ts`, `lib/combo/randomizer/enemies.ts` (`verifyNativeActivationSource`) |
+| OoT enemy arena moved to `0x80490000` and shrunk by `0x6000` to `0xfa000`; OoT gameplay pool moved to `0x8058a000` and shrunk by `0xa000` to `0x76000` | Upstream puts its enemy memory right after the OoT code (`0x80480000`, then the gameplay pool, then the audio heap at `0x80600000`), so the bigger code area had to come out of them. Both still pass upstream's own checks: arena 8 KB above `selectedEnemyBytes + nativeReserve`, pool 15 KB above two copies of the custom models plus `contiguousReserve`. The per-room enemy budget is unchanged. | `include/combo/oot_gameplay_memory.h`, `src/oot/enemy_arena.c`, `packages/core/src/oot-gameplay-memory-data.ts` (`arenaBytes`, `customReserve`, `customBase`), `lib/combo/enemies/overlay.ts` (`installOotEnemyNativeArena`) |
+| MM Giant's Mask Anywhere hooks share one register save/restore routine | MM code was over its limit too (upstream already raised it to `0x80000`). The hooks used to inline about 230 bytes of saves and loads each; now they call `GiantMask_SaveRegs` / `GiantMask_RestoreRegs`. Same registers, same frame layout, so the hooks behave the same. Saves about 4.5 KB. | `src/mm/patches/giant_mask_anywhere.S` |
+| App workflow can publish a test pre-release | Running "Build My App" by hand on a branch other than master publishes a pre-release `test-<run>`. Pre-releases never become "latest". | `.github/workflows/my-app.yml` |
+
+If upstream changes any of these numbers, every place in the table must move together. Upstream's checks catch most mismatches when a seed is generated (they throw instead of crashing the game).
+
+### Merge conflicts resolved
+
+`actor_id.h` (took upstream's file, added the Pot God ids), `En_Item00.h` and both `En_Ishi.c` (upstream `master` replaced `EnItem00_DropCustomNoInertiaEx` with `EnItem00_DropCustomEx(..., XFDROP_NO_INERTIA)`; the enemy branch's small-rock drop now uses the new call), `custom.h` (regenerated from the ROMs; the fork's Zora fins and Deku bubble objects are now `0x2056`/`0x2057`, after upstream's), `custom-objects-builder.ts` (kept upstream's Redead dances and the fork's `buildFork`), `build.ts` (both the fork's payload check and upstream's enemy memory refresh), `link_mm.in`, MM `Player.c` (upstream's Dark Link wrapper calls `Player_Update`; the Giant's Mask after-update runs right after it), `Generator.tsx` (both the Enemies and Custom pages).
+
+## Building and generating seeds in the cloud
+
+The build runs `refreshEnemyMemory`, which measures every enemy overlay and rewrites `packages/core/src/enemy-memory-data.ts` when it isn't in CI. **Don't commit that file from a cloud build**: gcc 12 makes different (bigger) overlays than the real toolchain, and CI (`CI=true`) fails with "Enemy memory facts are stale" if the committed numbers don't match the real toolchain. If CI ever does fail with that message, its log lists the real numbers (`Enemy memory: <overlay>: old -> new`); copy those in.
+
+For the same reason, generating an enemy shuffle seed from a cloud build needs two local-only tweaks, never committed:
+
+- `lib/combo/enemies/oot-gameplay-memory.ts`: the "Refresh OoT gameplay memory bounds" checks fail on gcc 12 sizes; turn them into warnings for the test.
+- Keep the refreshed `enemy-memory-data.ts` while generating, then `git checkout` it.
+
+## Seeds tested in the cloud (2026-11-25)
+
+| Settings | Seed | Result |
+|---|---|---|
+| Enemy shuffle in both games | `enemytest1` | Generated |
+| Grouped mode, Enemy Souls (OoT, MM, lens ghosts), Pot God with its arena | `enemytest3` | Generated |
+| Fork customs (Giant's Mask, Fierce Deity, transform masks in OoT, Magic Hookshot, progressive infinite magic, Pot God with warp song and arena, boss health bar) plus enemy shuffle in both games | `enemytest3` | Generated |
+| Fork customs without enemy shuffle | `enemytest2` | Generated |
+| Every enemy option (minibosses, Cross-Game, Gold Skulltulas, Bari, Eeno) plus every fork custom | `enemytest3` | Generated (one enemy fight reroll) |
+| Enemy shuffle in both games, nothing else | `enemytest2` | **Fails** (gives up after 100 solver retries) |
+| Every enemy option, no fork customs | `enemytest2` | **Fails** (stuck in the entrances pass) |
+
+The two failures are upstream preview bugs, not fork ones: the same seeds fail with no fork settings at all.
+
+- With `enemytest2`, MM's regular Big Poe becomes a Red-Ice ReDead. Upstream ties the whole Poe soul to every enemy that replaced a Poe, so `soul_poe` now needs blue fire, and *MM Ghost Hut HP* and *Beneath The Graveyard Dampe Chest* can never be reached. The enemy plan isn't rerolled when the item solver retries, so the seed never recovers.
+- With minibosses and the other extra options, the "Rerolling impossible enemy fights" step passes, then every entrance attempt fails with "No reachable locations for item" for a dungeon reward (stones, medallions, remains).
+
+For players: if a seed fails to generate with the enemy shuffle on, change the seed and try again.
+
+## Re-merging upstream's newer preview commits
+
+1. `git fetch https://github.com/OoTMM/OoTMM.git preview/enemy-shuffle` and merge it into this branch.
+2. Check every row of the table above still holds (grep for `0x80480000`, `0x80580000`, `0x100000`, `base + 0x80000` and `0x003`).
+3. Build with the ROMs, generate seeds with the enemy shuffle on, then restore `enemy-memory-data.ts`.
+4. Run "Build My App" on the branch to publish a new test pre-release.
+
+## What to test in game
+
+Nothing here has been played yet. Most useful first:
+
+1. Enemy shuffle on, a few overworld areas and one dungeon in each game.
+2. The Pot God fight with the enemy shuffle on and off (Pot House and Hellfire Arena), because its actor id moved and the object loading code it uses was rewritten upstream.
+3. Giant's Mask Anywhere in MM (walk, jump, swim, climb a ledge, dive), because its hooks were shrunk.
+4. Cross-Game Enemies, then the Grouped mode and Enemy Souls.

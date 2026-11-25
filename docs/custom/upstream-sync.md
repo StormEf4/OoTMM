@@ -27,7 +27,7 @@ The fork always appends after upstream, so upstream's ids never move and the nex
 
 ## Code space
 
-The game code (the "payload") has a fixed size per game: 0x80000 bytes for OoT and 0x60000 for MM (`lib/combo/patch-build/index.ts`). Over it, every seed fails with "Payload too large". Since 2026-11 the app build checks this and prints how much room is left (`lib/build/payload-size.ts`, look for `Payload mm:` in the "Build GUI" step of the app build log).
+The game code (the "payload") has a fixed size per game: 0x80000 bytes for OoT and 0x60000 for MM (`lib/combo/patch-build/index.ts`). Over it, every seed fails with "Payload too large". Since 2026-11 the app build checks this and prints how much room is left (`lib/build/payload-size.ts`, look for `Payload mm:` in the "Build GUI" step of the app build log). Upstream's enemy shuffle (not in upstream `master` yet) raises MM to 0x80000, and the fork's test branch for it raises OoT to 0x90000: see `enemy-shuffle-preview.md` before syncing a version of upstream that contains it.
 
 - The cloud's gcc 12 wrapper makes code about 1.6% bigger than the real toolchain (`ghcr.io/ootmm/toolchain`). Measured on build 48: MM 375,936 bytes with gcc 12, 369,904 in the released app. So a cloud build that is a little over the limit can still fit in the app.
 - To generate a test seed in the cloud when the cloud build is over, raise the limit in `buildPatchfiles` locally for the test only and never commit that.

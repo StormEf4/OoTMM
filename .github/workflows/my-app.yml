@@ -2,8 +2,9 @@ name: Build My App
 
 # Builds the desktop app (Windows, Mac, Linux) from this fork. Every push to
 # master publishes a new release; the newest is always at
-# https://github.com/StormEf4/OoTMM/releases/latest
+# https://github.com/StormEf4/OoTMM-personal-fork/releases/latest
 # Pull requests build the app too, without publishing it, to catch breakage.
+# Running it by hand on another branch publishes a test pre-release (see "Publish Test Build").
 
 on:
   push:
@@ -49,6 +50,23 @@ jobs:
         with:
           name: my-app
           path: packages/desktop/dist/ootmm-*.zip
+
+      # Fork: a manual run on any branch other than master publishes a test build as a pre-release.
+      # Pre-releases never become "latest", so the normal app link keeps pointing at master's build.
+      - name: Publish Test Build
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/master' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: OoTMM Custom TEST (${{ github.ref_name }}, build ${{ github.run_number }}, ${{ env.VERSION_SUFFIX }})
+          prerelease: true
+          make_latest: false
+          files: packages/desktop/dist/ootmm-*.zip
+          body: |
+            Test build from the `${{ github.ref_name }}` branch. It is not on master, and it is not the normal app.
+
+            Download the zip for your computer, unzip it, and open the `ootmm` app inside, like the normal app. Keep the `resources.neu` file next to the app.
 
       - name: Publish Release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}

@@ -12,8 +12,8 @@ import path from 'path';
  * Only production builds (the app) fail. Debug builds (pnpm local) are bigger and only warn.
  */
 const PAYLOAD_LIMITS = {
-  oot: 0x80000,
-  mm: 0x60000,
+  oot: 0x90000, /* Fork: grown for the enemy shuffle merge, see include/combo/defs.h */
+  mm: 0x80000, /* Upstream enemy shuffle raised MM PAYLOAD_SIZE to 0x80000 (include/combo/defs.h) */
 } as const;
 
 export async function checkPayloadSizes(binDir: string, isProd: boolean) {
