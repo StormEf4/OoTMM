@@ -3152,7 +3152,7 @@ export const ENEMY_MEMORY_FACTS = {
     'ovl/mm/mm_ovl_En_Tanron1.zovlx': { 'memory': 8672, 'profileOffset': 8076, 'instance': 452 },
     'ovl/oot/oot_ovl_Enemy_Poe_Encounter.zovlx': { 'memory': 864, 'profileOffset': 736, 'instance': 332 },
     'ovl/mm/mm_ovl_Enemy_Poe_Encounter.zovlx': { 'memory': 864, 'profileOffset': 736, 'instance': 340 },
-    'ovl/oot/oot_ovl_En_Tubo_Trap.zovlx': { 'memory': 3472, 'profileOffset': 2928, 'instance': 416 },
+    'ovl/oot/oot_ovl_En_Tubo_Trap.zovlx': { 'memory': 3488, 'profileOffset': 2944, 'instance': 416 },
     'ovl/mm/mm_ovl_En_Tubo_Trap.zovlx': { 'memory': 3760, 'profileOffset': 3168, 'instance': 424 },
     'ovl/oot/oot_ovl_Native_Enemy_mm_en_kaizoku.zovlx': { 'memory': 18064, 'profileOffset': 15600, 'instance': 1512 },
     'ovl/mm/mm_ovl_Native_Enemy_oot_en_geldb.zovlx': { 'memory': 20960, 'profileOffset': 18268, 'instance': 1244 },
