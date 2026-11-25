@@ -89,7 +89,7 @@ Nothing above has been tested in game by Claude (no ROMs). Elijah tests on his m
 - **Emulator first.** A crash unrelated to the change may be the emulator (see section 1).
 - **Song collisions.** Songs match on suffix; a new song must not equal the tail of any OoT or MM song.
 - **Flag budget.** About 149 config flags left (section 4).
-- **MM code space.** The MM payload is limited to 0x60000 bytes and only about 3.7 KB is left after the 2026-11-25 sync. See `docs/custom/upstream-sync.md`.
+- **MM code space.** The MM payload is limited to 0x60000 bytes and only 3,896 bytes (3.8 KB) are left after the 2026-11-25 sync. See `docs/custom/upstream-sync.md`.
 - **CRLF.** Some files keep CRLF endings (e.g. `mmAgeRequirements.tsx`, see commit f736a8c). Don't normalize them.
 - **gcc 12 vs C23** `bool` (section 3 wrapper).
 
