@@ -50,7 +50,7 @@ Cloud sessions have no ROMs, so nothing can be tested in game; everything is com
 | Logic | YAML in `data/world/`, `data/macros/` (`setting(x)`), TS in `packages/logic/src/` (`settings.x`) |
 | Reference notes | `docs/custom/*.md` (one per feature; listed in `CUSTOMIZING.md`) |
 
-**Config flag budget:** `config[0x40]` (512 bits). After PR #11 the next free bit was about 0x1d6 (from the old memory notes; recount before relying on it), so roughly 40 flags are left. Each drop-down option costs one flag; numbers and multi-selects cost none.
+**Config flag budget:** `config[0x40]` (512 bits). After the 2026-11-25 upstream sync, upstream uses bits 0-337 and the fork's 25 custom flags 338-362, so 149 are left (upstream dropped its MM age requirement flags). Each drop-down option costs one flag; numbers and multi-selects cost none.
 
 ### Adding a new item (pattern, modeled on upstream's Shovel)
 
@@ -88,7 +88,8 @@ Nothing above has been tested in game by Claude (no ROMs). Elijah tests on his m
 - **No ROMs in the cloud.** Verify addresses against the decomps (section 3); say clearly in PRs and the change log that a change is compile-checked only.
 - **Emulator first.** A crash unrelated to the change may be the emulator (see section 1).
 - **Song collisions.** Songs match on suffix; a new song must not equal the tail of any OoT or MM song.
-- **Flag budget.** About 40 config flags left (section 4).
+- **Flag budget.** About 149 config flags left (section 4).
+- **MM code space.** The MM payload is limited to 0x60000 bytes and only about 3.7 KB is left after the 2026-11-25 sync. See `docs/custom/upstream-sync.md`.
 - **CRLF.** Some files keep CRLF endings (e.g. `mmAgeRequirements.tsx`, see commit f736a8c). Don't normalize them.
 - **gcc 12 vs C23** `bool` (section 3 wrapper).
 
@@ -100,7 +101,7 @@ Nothing above has been tested in game by Claude (no ROMs). Elijah tests on his m
 4. **Pot God extras:** no recorded "OH GOD!" voice (text box + vanilla screams), no kneeling animation. Only one arena exists (`BOSS_KIT_ARENA_HELLFIRE`); the kit is ready for more bosses.
 5. **Transformation masks (OoT)**, from `docs/custom/transform-masks.md`: phases 3-5 not done (Zora fins / Deku bubble, Goron roll / pound, Zora swim / barrier, Deku hops, instruments); punches hit on Link's left; OoT sounds; leg IK uses OoT adult values; logic uses no form abilities.
 6. **Fierce Deity (OoT)** unverified items and ideas: `docs/custom/fierce-deity.md` (segment 04 references, transformation flash, keeping the form across scenes).
-7. Upstream has not been re-synced since 2026-10-11.
+7. Upstream was last synced on 2026-11-25 (upstream `b127286`). How to sync: `docs/custom/upstream-sync.md`.
 
 ## 8. What the new account needs besides the GitHub repo
 

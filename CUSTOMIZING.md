@@ -43,7 +43,7 @@ A new setting is only a control until code reads it. There are three places code
 - **C patches** (`packages/generator/src/oot/`, `src/mm/`, `src/common/`): toggles and drop-downs on the Custom page are sent to the game automatically.
   - A toggle `fasterEpona` is `Config_Flag(CFG_CUSTOM_FASTER_EPONA)`.
   - A drop-down `eponaSpeed` set to `double` is `Config_Flag(CFG_CUSTOM_EPONA_SPEED_DOUBLE)`.
-  - The game has room for about 65 more flags in total, and each drop-down option uses one. Numbers and multi-selects don't use any; read those from TypeScript.
+  - The game has room for about 149 more flags in total (counted 2026-11-25), and each drop-down option uses one. Numbers and multi-selects don't use any; read those from TypeScript.
 - **Logic YAML** (`data/world/`, `data/macros/`): `setting(fasterEpona)` or `setting(eponaSpeed, double)`.
 - **TypeScript generator or logic** (`packages/generator/lib/`, `packages/logic/src/`): `settings.fasterEpona`.
 
@@ -58,6 +58,7 @@ More reference notes live in `docs/custom/`:
 - [boss-kit.md](docs/custom/boss-kit.md): the OoT boss kit for custom boss fights: arenas, cutscene camera, object and effect helpers, health bar, and how to add a fight.
 - [oot-addresses.md](docs/custom/oot-addresses.md): finding OoT 1.0 addresses without the ROM (rebuilt from the decomp), and the rules for hooking the player overlay.
 - [multiplayer.md](docs/custom/multiplayer.md): playing Multiworld and Co-op with this fork: Project64-EM, building every ROM in this app, why the fork's items and bosses stay in sync, and the known limits.
+- [upstream-sync.md](docs/custom/upstream-sync.md): bringing upstream OoTMM into the fork, the spots that conflict every time, and how much game code space (payload) is left.
 
 A custom setting can also use an upstream category when it belongs next to upstream options, as long as it stays in `custom.ts`. The Giant's Mask (OoT) settings use `items.extensions.crossGame.masks`, so they show in Items > Extended Items > Cross-Game Masks with the other masks.
 

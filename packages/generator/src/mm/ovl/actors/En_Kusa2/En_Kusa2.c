@@ -329,7 +329,7 @@ void func_80A5BD14(EnKusa2* this, PlayState* play, s32 arg2) {
         }
 
         if (Xflag_IsShuffledEx(sXflagCurrent)) {
-            EnItem00_DropCustomEx(play, &this->actor.world.pos, sXflagCurrent);
+            EnItem00_DropCustomEx(play, &this->actor.world.pos, sXflagCurrent, XFDROP_NONE);
         } else {
             Item_DropCollectible(play, &this->actor.world.pos, D_80A5EB24[kusa2->unk_1BC]);
         }
@@ -1364,6 +1364,11 @@ static void EnKusa2_DrawImpl(EnKusa2* this, PlayState* play)
         xflag = sXflagCurrent;
 
     Xflag_ItemOverride(&o, xflag, GI_NONE);
+    if (Xflag_Get(xflag))
+    {
+        o.gi = GI_NONE;
+        o.cloakGi = GI_NONE;
+    }
 
     /* Prepare */
     csmcGrassPreDraw(play, o.gi, o.cloakGi, CSMC_GRASS_NORMAL, 0, 0);
