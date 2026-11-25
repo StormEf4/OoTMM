@@ -2,7 +2,7 @@ name: Build My App
 
 # Builds the desktop app (Windows, Mac, Linux) from this fork. Every push to
 # master publishes a new release; the newest is always at
-# https://github.com/StormEf4/OoTMM/releases/latest
+# https://github.com/StormEf4/OoTMM-personal-fork/releases/latest
 # A manual run on master (Run workflow) publishes a release too.
 # Pull requests build the app too, without publishing it, to catch breakage.
 
