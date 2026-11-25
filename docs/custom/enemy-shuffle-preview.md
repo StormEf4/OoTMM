@@ -26,6 +26,7 @@ These are upstream settings, so they live in upstream's `data.ts`, not in `custo
 | OoT code area `0x80000` -> `0x90000` | The fork's OoT code plus upstream's enemy shuffle code is 570 KB with the cloud's gcc 12 (a little less with the real toolchain), over the 512 KB upstream reserves. | `include/combo/defs.h`, `lib/build.ts`, `lib/build/payload-size.ts`, `lib/combo/patch-build/index.ts`, `lib/combo/randomizer/enemies.ts` (`verifyNativeActivationSource`) |
 | OoT enemy arena moved to `0x80490000` and shrunk by `0x6000` to `0xfa000`; OoT gameplay pool moved to `0x8058a000` and shrunk by `0xa000` to `0x76000` | Upstream puts its enemy memory right after the OoT code (`0x80480000`, then the gameplay pool, then the audio heap at `0x80600000`), so the bigger code area had to come out of them. Both still pass upstream's own checks: arena 8 KB above `selectedEnemyBytes + nativeReserve`, pool 15 KB above two copies of the custom models plus `contiguousReserve`. The per-room enemy budget is unchanged. | `include/combo/oot_gameplay_memory.h`, `src/oot/enemy_arena.c`, `packages/core/src/oot-gameplay-memory-data.ts` (`arenaBytes`, `customReserve`, `customBase`), `lib/combo/enemies/overlay.ts` (`installOotEnemyNativeArena`) |
 | MM Giant's Mask Anywhere hooks share one register save/restore routine | MM code was over its limit too (upstream already raised it to `0x80000`). The hooks used to inline about 230 bytes of saves and loads each; now they call `GiantMask_SaveRegs` / `GiantMask_RestoreRegs`. Same registers, same frame layout, so the hooks behave the same. Saves about 4.5 KB. | `src/mm/patches/giant_mask_anywhere.S` |
+| Reroll the enemies when a seed keeps failing | Fix for an upstream preview bug, see "Seeds tested in the cloud" below. With the enemy shuffle on, after 20 failed item placements, or 5 failed entrance tries on a world kept from an enemy fight reroll, the generator throws `EnemyRerollError` and the pipeline starts over with a fresh enemy plan and fresh entrances. It also starts over when upstream's enemy planner gives up fitting a scene in memory (`EnemyMemoryAllocationError`, "bounded selected-enemy resource search exhausted"). All of these share upstream's 16-attempt limit for fight rerolls. Nothing changes with the enemy shuffle off. Drop it once upstream fixes the cause. | `packages/logic/src/error.ts`, `pipeline.ts` (`solvedWorldState`), `solver/solve.ts` (`retry`), `solver/entrances.ts` (`run`), `packages/core/src/index.ts` (exports `EnemyMemoryAllocationError`) |
 | App workflow can publish a test pre-release | Running "Build My App" by hand on a branch other than master publishes a pre-release `test-<run>`. Pre-releases never become "latest". | `.github/workflows/my-app.yml` |
 
 If upstream changes any of these numbers, every place in the table must move together. Upstream's checks catch most mismatches when a seed is generated (they throw instead of crashing the game).
@@ -47,20 +48,24 @@ For the same reason, generating an enemy shuffle seed from a cloud build needs t
 
 | Settings | Seed | Result |
 |---|---|---|
-| Enemy shuffle in both games | `enemytest1` | Generated |
-| Grouped mode, Enemy Souls (OoT, MM, lens ghosts), Pot God with its arena | `enemytest3` | Generated |
+| Enemy shuffle in both games | `enemytest1` | Generated, under 1 min |
+| Grouped mode, Enemy Souls (OoT, MM, lens ghosts), Pot God with its arena | `enemytest3` | Generated, 1 min |
 | Fork customs (Giant's Mask, Fierce Deity, transform masks in OoT, Magic Hookshot, progressive infinite magic, Pot God with warp song and arena, boss health bar) plus enemy shuffle in both games | `enemytest3` | Generated |
 | Fork customs without enemy shuffle | `enemytest2` | Generated |
-| Every enemy option (minibosses, Cross-Game, Gold Skulltulas, Bari, Eeno) plus every fork custom | `enemytest3` | Generated (one enemy fight reroll) |
-| Enemy shuffle in both games, nothing else | `enemytest2` | **Fails** (gives up after 100 solver retries) |
-| Every enemy option, no fork customs | `enemytest2` | **Fails** (stuck in the entrances pass) |
+| Enemy shuffle in both games, nothing else | `enemytest2` | Failed before the reroll fix; now generates in 2.5 min (1 enemy reroll) |
+| Every enemy option (minibosses, Cross-Game, Gold Skulltulas, Bari, Eeno), with and without every fork custom | `enemytest2` | Failed before the reroll fix; now generates in about 17 min (13 fight rerolls, 1 enemy reroll) |
+| Every enemy option plus every fork custom | `enemytest3`, `4`, `6` | Generated in 2 to 10 min |
+| Every enemy option plus every fork custom | `enemytest5` | Failed before the memory reroll fix ("OoT scene 83: bounded selected-enemy resource search exhausted"); now generates in 25 min (8 fight rerolls, 1 memory reroll) |
 
-The two failures are upstream preview bugs, not fork ones: the same seeds fail with no fork settings at all.
+Times are from the cloud with up to three seeds generating at once, and the cloud uses gcc 12 overlay sizes (bigger than the real app), so the memory planner has less room here than in the app.
 
-- With `enemytest2`, MM's regular Big Poe becomes a Red-Ice ReDead. Upstream ties the whole Poe soul to every enemy that replaced a Poe, so `soul_poe` now needs blue fire, and *MM Ghost Hut HP* and *Beneath The Graveyard Dampe Chest* can never be reached. The enemy plan isn't rerolled when the item solver retries, so the seed never recovers.
-- With minibosses and the other extra options, the "Rerolling impossible enemy fights" step passes, then every entrance attempt fails with "No reachable locations for item" for a dungeon reward (stones, medallions, remains).
+All the failures were upstream preview bugs, not fork ones: the same seeds failed with no fork settings at all.
 
-For players: if a seed fails to generate with the enemy shuffle on, change the seed and try again.
+- With `enemytest2`, MM's regular Big Poe became a Red-Ice ReDead. That swap (a "restore" row in `makeSupplementalEnemyPlan`) has no logic name, so upstream's "Rerolling impossible enemy fights" check never sees it. Its fight is ANDed into the whole Poe soul (`enemySoulSpecializations`), so *MM Ghost Hut HP* and *Beneath The Graveyard Dampe Chest* needed blue fire, which MM doesn't have. The solver retried the same world 100 times and gave up.
+- With every enemy option, upstream rerolls impossible fights many times. Each reroll keeps the last world's entrances, which makes the entrances pass run its full check, and for some enemy plans that check can't place the dungeon rewards. The same world was retried up to 1,000 times (20+ minutes) without changing.
+- With `enemytest5`, upstream's OoT planner couldn't fit the Graveyard's enemies in memory in 8 tries and stopped the whole seed.
+
+The fork's reroll fix (table above) turns all three into a fresh enemy plan instead. What's still upstream's: seeds with every enemy option take a long time because each fight reroll rebuilds the whole world.
 
 ## Re-merging upstream's newer preview commits
 

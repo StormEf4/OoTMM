@@ -10,7 +10,7 @@ import { exprAnd, exprEvent, exprOr, exprTrue } from '../expr';
 import { BOSS_INDEX_BY_DUNGEON, cloneWorld, DUNGEONS_REGIONS } from '../world';
 import { BOSS_METADATA_BY_ENTRANCE } from '../data';
 import { Pathfinder } from '../pathfind';
-import { EnemyCompatibilityError, LogicEntranceError, LogicError } from '../error';
+import { EnemyCompatibilityError, EnemyRerollError, LogicEntranceError, LogicError } from '../error';
 import { makeLocation } from '../locations';
 import { logicPassSolverValidate } from './solve';
 
@@ -1089,6 +1089,9 @@ class LogicPassEntrances {
       } catch (e) {
         if (!(e instanceof LogicError) || attempts >= 1000)
           throw e;
+        /* Fork: entrances kept from an enemy reroll make every attempt the same world, so retrying can't help */
+        if (this.input.enemyEntranceOverrides && attempts >= 5)
+          throw new EnemyRerollError(e.message);
         if (e.stack) {
           this.input.monitor.debug(e.stack);
         }

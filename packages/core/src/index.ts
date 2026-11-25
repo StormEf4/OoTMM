@@ -10,5 +10,5 @@ export * from './song-events';
 export * from './mm-age-requirements';
 export * from './enemies';
 export * from './enemy-spawn-rules';
-export { ENEMY_MEMORY_POLICY, OOT_GAMEPLAY_POLICY, enemyMemoryBuildBounds } from './enemy-memory';
+export { ENEMY_MEMORY_POLICY, OOT_GAMEPLAY_POLICY, enemyMemoryBuildBounds, EnemyMemoryAllocationError /* Fork: logic rerolls on it */ } from './enemy-memory';
 export { verifyMmRoomOverlaps, mmRoomOverlapStates } from './enemy-room-overlap';

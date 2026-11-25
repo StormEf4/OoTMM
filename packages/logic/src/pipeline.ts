@@ -6,11 +6,11 @@ import type { Analysis } from './analysis';
 import type { DungeonEntrance, ResolvedWorldFlags, World } from './world';
 import type { Location } from './types';
 
-import { Monitor, Random, enemyDefinition, enemyWeight, enemyPlacementLogicName, enemyLogicMacros } from '@ootmm/core';
+import { Monitor, Random, enemyDefinition, enemyWeight, enemyPlacementLogicName, enemyLogicMacros, EnemyMemoryAllocationError } from '@ootmm/core';
 import { MACROS } from '@ootmm/data';
 import { ExprParser, exprAnd, exprOr, exprTrue, type Expr } from './expr';
 import { ItemGroups } from './items';
-import { EnemyCompatibilityError } from './error';
+import { EnemyCompatibilityError, EnemyRerollError } from './error';
 import { logicPassConfig, logicPassFixer, logicPassHash, logicPassSongEvents } from './misc';
 import { logicPassItemProperties } from './items/properties';
 import { logicPassWorld, logicPassWorldTransform } from './world';
@@ -123,7 +123,15 @@ export const solvedWorldState = async (monitor: Monitor, opts: Options) => {
   let resolvedWorldFlags: ResolvedWorldFlags[] | undefined;
   let retryWorlds: World[] | undefined;
   for (let attempt = 0; ; ++attempt) {
-    const state = await worldState(monitor, opts, compatibility, attempt, resolvedWorldFlags);
+    let state: Awaited<ReturnType<typeof worldState>>;
+    try {
+      state = await worldState(monitor, opts, compatibility, attempt, resolvedWorldFlags);
+    } catch (error) {
+      /* Fork: the enemy planner gave up fitting a scene in memory; start over with fresh enemies like a fight reroll */
+      if (!(error instanceof EnemyMemoryAllocationError) || attempt >= 15) throw error;
+      monitor.log(`Rerolling enemies that don't fit in memory (attempt ${attempt + 2})`);
+      continue;
+    }
     resolvedWorldFlags ??= state.worlds.map(world => world.resolvedFlags);
     try {
       return pipeline(state)
@@ -141,6 +149,13 @@ export const solvedWorldState = async (monitor: Monitor, opts: Options) => {
         .apply(logicPassMinimize)
         .exec();
     } catch (error) {
+      /* Fork: start over with a fresh enemy plan (and fresh entrances) when the logic keeps failing, see EnemyRerollError */
+      if (error instanceof EnemyRerollError) {
+        if (attempt >= 15) throw new Error('Could not find beatable enemy replacements after 16 attempts: ' + error.message);
+        retryWorlds = undefined;
+        monitor.log(`Rerolling enemies after repeated logic failures (attempt ${attempt + 2})`);
+        continue;
+      }
       if (!(error instanceof EnemyCompatibilityError) || opts.settings.logic !== 'allLocations') throw error;
       if (attempt >= 15) throw new Error('Could not find compatible enemy replacements after 16 attempts');
       retryWorlds = error.worlds;

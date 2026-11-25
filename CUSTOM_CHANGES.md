@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-25: Enemy randomizer: reroll the enemies when a seed keeps failing (test build)
+
+- Where in the app: nothing to set. It works when generating with Enemy Randomizer on (Enemies page), only in the test build from the `claude/project-thread-oc38hb` branch
+- What it does: fixes seeds that never generated with upstream's enemy shuffle preview. A few enemy swaps skip upstream's "can this fight be won" check, so a seed could get an enemy that can never be beaten (a Red-Ice ReDead in Majora's Mask, which has no blue fire, blocked the Ghost Hut heart piece and Dampe's chest). The generator then retried the same bad enemies until it gave up, after 100 item placements or up to 1,000 entrance tries. Now, with the enemy shuffle on, it starts over with new enemies after 20 failed item placements, after 5 failed entrance tries on a rerolled world, or when the enemy planner can't fit a scene in memory. Nothing changes with the enemy shuffle off, so there is no setting for it. Temporary: drop it when upstream fixes the cause. Seeds that failed before (`enemytest2` with basic shuffle, `enemytest2` and `enemytest5` with every enemy option) now generate
+- Files: `packages/logic/src/error.ts`, `packages/logic/src/pipeline.ts`, `packages/logic/src/solver/solve.ts`, `packages/logic/src/solver/entrances.ts`, `packages/core/src/index.ts`, `docs/custom/enemy-shuffle-preview.md`
+
 ## 2026-11-25: Enemy randomizer preview (test build, not on master)
 
 - Where in the app: a new Enemies page (sword icon, between Entrances and Advanced) with upstream's Enemy Randomizer (OoT) and (MM), Mini Boss Only, Enemy Placement (Individual or Grouped), Shuffle Laggy Enemy Spawns, Gold Skulltula Enemy Shuffle, minibosses options, Bari and Eeno Shuffle, Cross-Game Enemies and Enemy Soul Ghosts. Only in the test build from the `claude/project-thread-oc38hb` branch (first one: pre-release `test-58`)
