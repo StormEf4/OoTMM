@@ -1,6 +1,6 @@
 # Enemy shuffle preview (test branch)
 
-Upstream OoTMM is building an enemy randomizer (this fork is merged up to upstream preview commit `afc74a6c`) on its `preview/enemy-shuffle` branch (https://github.com/OoTMM/OoTMM/tree/preview/enemy-shuffle). Any enemy can become another one, in OoT and in MM, and there's an option to bring MM enemies into OoT and OoT enemies into MM. It isn't in upstream's `master` or in any release yet.
+Upstream OoTMM is building an enemy randomizer (this fork is merged up to upstream preview commit `d5e19be6`, 2026-11-25; first merge was `afc74a6c`) on its `preview/enemy-shuffle` branch (https://github.com/OoTMM/OoTMM/tree/preview/enemy-shuffle). Any enemy can become another one, in OoT and in MM, and there's an option to bring MM enemies into OoT and OoT enemies into MM. It isn't in upstream's `master` or in any release yet.
 
 Elijah asked for a **test build** with it (2026-11-25). It lives on the branch `claude/project-thread-oc38hb`, **not on master**. When upstream merges the enemy shuffle into its `master`, it arrives through a normal upstream sync instead (`upstream-sync.md`), and the fork changes below have to be carried over again.
 
@@ -43,6 +43,7 @@ For the same reason, generating an enemy shuffle seed from a cloud build needs t
 
 - `lib/combo/enemies/oot-gameplay-memory.ts`: the "Refresh OoT gameplay memory bounds" checks fail on gcc 12 sizes; turn them into warnings for the test.
 - Keep the refreshed `enemy-memory-data.ts` while generating, then `git checkout` it.
+- Since `d5e19be6`, MM code is over 512 KB with gcc 12 (it fits with the real toolchain). For a cloud seed, raise the MM limit to `0x81000` in `lib/build.ts`, `lib/build/payload-size.ts`, `lib/combo/patch-build/index.ts` and `lib/combo/randomizer/enemies.ts` (`verifyNativeActivationSource`), and the `0x80780000` payload-end checks in `lib/combo/enemies/overlay.ts` (`verifyMmEnemySetupFilter`) and `lib/combo/randomizer/enemies.ts`. Mark each `LOCAL-ONLY` and restore them all before committing.
 
 ## Seeds tested in the cloud (2026-11-25)
 
@@ -68,6 +69,8 @@ All the failures were upstream preview bugs, not fork ones: the same seeds faile
 The fork's reroll fix (table above) turns all three into a fresh enemy plan instead. What's still upstream's: seeds with every enemy option take a long time because each fight reroll rebuilds the whole world.
 
 ## Re-merging upstream's newer preview commits
+
+Re-merges so far: 2026-11-26, `afc74a6c` -> `d5e19be6` (9 commits: death crash fix, Wizzrobe drawing, Snapper death color, spawn rules rewritten into `data/enemy-logic/spawn-encounters.yml`, animation dedupe). No conflicts; MM code grew about 3.6 KB (gcc 12: 525,448 bytes, so a cloud build needs the MM limit raised locally, see below).
 
 1. `git fetch https://github.com/OoTMM/OoTMM.git preview/enemy-shuffle` and merge it into this branch.
 2. Check every row of the table above still holds (grep for `0x80480000`, `0x80580000`, `0x100000`, `base + 0x80000` and `0x003`).

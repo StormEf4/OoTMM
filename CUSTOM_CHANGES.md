@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-26: Enemy randomizer: upstream's newer preview fixes (test build)
+
+- Where in the app: the Enemies page, only in the test build from the `claude/project-thread-oc38hb` branch
+- What it does: pulls in upstream's 9 newer enemy shuffle commits (up to d5e19be6): a fix for a crash when an enemy dies, Wizzrobe drawing and Snapper death color fixes, a rewrite of the per-room spawn rules, and animation dedupe. Also brings the test build up to date with master (links to the renamed repo, manual app builds publish a release). Merged without conflicts with the fork. MM's game code is about 3.6 KB bigger, leaving roughly 6 KB free in the app. Test seeds generated again: basic shuffle, Grouped mode with Enemy Souls, the seed that needed the reroll fix, and every enemy option plus every custom
+- Files: merge of upstream `preview/enemy-shuffle` (no conflicts) and of `master`; `docs/custom/enemy-shuffle-preview.md`
+
 ## 2026-11-25: Enemy randomizer: reroll the enemies when a seed keeps failing (test build)
 
 - Where in the app: nothing to set. It works when generating with Enemy Randomizer on (Enemies page), only in the test build from the `claude/project-thread-oc38hb` branch
