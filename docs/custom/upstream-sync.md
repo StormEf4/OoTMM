@@ -31,4 +31,4 @@ The game code (the "payload") has a fixed size per game: 0x80000 bytes for OoT a
 
 - The cloud's gcc 12 wrapper makes code about 1.6% bigger than the real toolchain (`ghcr.io/ootmm/toolchain`). Measured on build 48: MM 375,936 bytes with gcc 12, 369,904 in the released app. So a cloud build that is a little over the limit can still fit in the app.
 - To generate a test seed in the cloud when the cloud build is over, raise the limit in `buildPatchfiles` locally for the test only and never commit that.
-- After the 2026-11 sync, MM has only about 3.7 KB left with the real toolchain. MM code is the fork's tightest spot: shrink something before adding much more MM (or common) code.
+- After the 2026-11 sync, MM has only 3,896 bytes (3.8 KB) left with the real toolchain (app build of PR #20: MM 389,320 / 393,216, OoT 405,824 / 524,288). MM code is the fork's tightest spot: shrink something before adding much more MM (or common) code.

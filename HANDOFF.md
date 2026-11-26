@@ -4,7 +4,7 @@ Written 2026-11-23 to hand this project to a new Claude account. Read this first
 
 ## 1. What this project is
 
-- A personal fork of the OoTMM randomizer (Ocarina of Time + Majora's Mask combo). Repo: https://github.com/StormEf4/OoTMM-personal-fork (renamed from StormEf4/OoTMM on 2026-11-25), default branch `master`. Upstream is https://github.com/OoTMM/OoTMM (PR #1 was the last sync, 2026-10-11).
+- A personal fork of the OoTMM randomizer (Ocarina of Time + Majora's Mask combo). Repo: https://github.com/StormEf4/OoTMM-personal-fork, default branch `master`. Upstream is https://github.com/OoTMM/OoTMM (PR #1 was the last sync, 2026-10-11).
 - It ships its own **desktop app** that is the same generator as ootmm.com plus a **Custom** page (fork settings) and a **Change Log** view (renders `CUSTOM_CHANGES.md`).
 - Every merge to `master` builds the app for Windows, Mac and Linux via `.github/workflows/my-app.yml` and publishes a GitHub release (`app-<run>`, latest at https://github.com/StormEf4/OoTMM-personal-fork/releases/latest). The app is a Neutralino build (`packages/desktop`). The General page shows the version as `custom-<commit>`.
 - Owner: Elijah (GitHub `StormEf4`). He tests seeds himself on an emulator (Rosalie's Mupen GUI; his RetroArch ParaLLEl install was broken and caused a false crash once, so rule out the emulator first).
@@ -89,7 +89,7 @@ Nothing above has been tested in game by Claude (no ROMs). Elijah tests on his m
 - **Emulator first.** A crash unrelated to the change may be the emulator (see section 1).
 - **Song collisions.** Songs match on suffix; a new song must not equal the tail of any OoT or MM song.
 - **Flag budget.** About 149 config flags left (section 4).
-- **MM code space.** The MM payload is limited to 0x60000 bytes and only about 3.7 KB is left after the 2026-11-25 sync. See `docs/custom/upstream-sync.md`.
+- **MM code space.** The MM payload is limited to 0x60000 bytes and only 3,896 bytes (3.8 KB) are left after the 2026-11-25 sync. See `docs/custom/upstream-sync.md`.
 - **CRLF.** Some files keep CRLF endings (e.g. `mmAgeRequirements.tsx`, see commit f736a8c). Don't normalize them.
 - **gcc 12 vs C23** `bool` (section 3 wrapper).
 

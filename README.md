@@ -11,7 +11,7 @@
 
 ## Overview
 
-OoTMM is a randomizer for the N64 games Ocarina of Time and Majora's Mask.
+THIS IS A FAN FORK MADE WITH SLOP FOR TESTING. OoTMM is a randomizer for the N64 games Ocarina of Time and Majora's Mask.
 It combines both games into a single rom and randomizes the placement of most items in the games.
 A large number of settings are available to customize the experience.
 
