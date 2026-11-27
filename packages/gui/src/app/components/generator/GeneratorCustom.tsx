@@ -1,6 +1,6 @@
 import type { TabViewRoute } from '../nav';
 
-import { LuWrench, LuSword, LuDrama, LuScrollText } from 'react-icons/lu';
+import { LuWrench, LuSword, LuDrama, LuSwords, LuScrollText } from 'react-icons/lu';
 import { CUSTOM_CATEGORIES, CUSTOM_SETTINGS } from '@ootmm/core';
 
 import { TabView } from '../nav';
@@ -11,6 +11,7 @@ const ICONS: { [k: string]: TabViewRoute['icon'] } = {
   'custom.general': LuWrench,
   'custom.oot': LuSword,
   'custom.mm': LuDrama,
+  'custom.versus': LuSwords,
 };
 
 function CustomCategory({ category }: { category: string }) {

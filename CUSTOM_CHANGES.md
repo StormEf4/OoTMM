@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-27: Rupee Sabotage Shop (1v1)
+
+- Where in the app: a new Custom > Versus (1v1) area (crossed swords icon) with "Rupee Sabotage Shop", "Sabotage Effects", "Sabotage Prices (%)" and "Sabotage Cooldown (seconds)". In game: pause, go to the Map page and press L or C-Up to open the "Sabotage Shop" page
+- What it does: lets players spend rupees to mess with each other. The shop sells 10 effects: Ice, Fire, Shock, Knockback, Anti-Magic and Drain traps, Rupee Thief (five Rupoors), Bomb Drop (three lit bombs around Link), Reverse Controls (stick flipped for 20 seconds) and Enemy Ambush (a Wallmaster or three Keese, bombs if neither can spawn). Prices go from 20 to 99 rupees and can be scaled; a cooldown stops spamming. Purchases go through the official multiplayer client (Project64-EM), and the other player gets a text box saying who sabotaged them with what. Works on a Multiworld seed, and on a Singleplayer seed for a 1v1 race: the other player builds their ROM from the same `.ootmm` file in Patch mode and both open it with the client (with the shop on, the patch connects like a co-op one, but items stay unshared). Builds without the shop ignore sabotages. Off by default, so nothing changes without it. Compile-checked and seeds generated with the ROMs (Singleplayer, Multiworld, Patch mode); not tested in game or online yet. Uses about 3.6 KB of code space in each game, leaving MM with roughly 2.2 KB. Details: `docs/custom/sabotage-shop.md`
+- Files: `packages/core/src/settings/custom.ts`, `packages/gui/src/app/components/generator/GeneratorCustom.tsx`, `scripts/custom.mts`, `packages/generator/src/common/sabotage.c` (new), `packages/generator/include/combo/sabotage.h` (new), `packages/generator/src/common/menu.c`, `packages/generator/include/combo/menu.h`, `packages/generator/src/common/multi/multi.c`, `packages/generator/lib/combo/randomizer/custom-versus.ts` (new), `packages/generator/lib/combo/randomizer/index.ts`, `packages/generator/lib/combo/generator.ts`, `docs/custom/sabotage-shop.md` (new), `docs/custom/multiplayer.md`, `docs/custom/upstream-sync.md`, `CUSTOMIZING.md`, `CLAUDE.md`, `HANDOFF.md`
+
 ## 2026-11-27: Enemy randomizer in the main app
 
 - Where in the app: the Enemies page (sword icon, between Entrances and Advanced), now in the normal app instead of only the test builds

@@ -12,7 +12,7 @@ Written 2026-11-23 to hand this project to a new Claude account. Read this first
 ## 2. Working rules (from CLAUDE.md and Elijah's preferences)
 
 1. Log every change at the top of `CUSTOM_CHANGES.md` (below the marker comment): date, title, where it shows in the app, what it does, files changed. `pnpm custom:log` / `pnpm custom:add` write entries in the right format.
-2. Every new behavior gets a control on the Custom page, defined in `packages/core/src/settings/custom.ts` with category `custom.general`, `custom.oot` or `custom.mm` (or an upstream category if it belongs next to upstream options, still in `custom.ts`). Never add fork settings to `data.ts`, to keep upstream merges clean.
+2. Every new behavior gets a control on the Custom page, defined in `packages/core/src/settings/custom.ts` with category `custom.general`, `custom.oot`, `custom.mm` or `custom.versus` (Versus (1v1), added 2026-11-27) (or an upstream category if it belongs next to upstream options, still in `custom.ts`). Never add fork settings to `data.ts`, to keep upstream merges clean.
 3. Toggles and drop-downs become C flags automatically: `CFG_CUSTOM_<KEY>` and `CFG_CUSTOM_<KEY>_<VALUE>` (`packages/generator/lib/combo/confvars.ts`).
 4. Run `pnpm typecheck` and `pnpm test` before pushing.
 5. **Exception, cosmetics:** Elijah wants cosmetic options in the **Cosmetics** tab, not the Custom page. They live in `packages/core/src/cosmetics/custom.ts`.

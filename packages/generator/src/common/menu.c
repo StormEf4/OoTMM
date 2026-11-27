@@ -7,6 +7,7 @@
 #include <combo/config.h>
 #include <combo/global.h>
 #include <combo/notes.h>
+#include <combo/sabotage.h>
 
 #define VTX_COUNT 2048
 
@@ -1363,6 +1364,13 @@ static void updateCursor(PlayState* play)
 
 void comboMenuUpdate(PlayState* play)
 {
+    /* Fork: Rupee Sabotage Shop */
+    if (g.menuScreen == MENU_SABOTAGE)
+    {
+        Sabotage_MenuUpdate(play);
+        return;
+    }
+
     switch (g.menuScreen)
     {
     case MENU_INFO:
@@ -1549,11 +1557,18 @@ void comboMenuDraw(PlayState* play)
     case MENU_RUSTY_KEYS_MM:
         drawMenuBitmap(play, "MM Rusty Keys", kRustyKeysNamesMm, gSharedCustomSave.rustyKeysMm);
         break;
+    case MENU_SABOTAGE: /* Fork: Rupee Sabotage Shop */
+        Sabotage_MenuDraw(play);
+        break;
     }
 }
 
 void comboMenuNext(void)
 {
+    /* Fork: Rupee Sabotage Shop, the first page when it's on */
+    if (Sabotage_MenuNext())
+        return;
+
     if (Config_Flag(CFG_MENU_NOTEBOOK) && !gMmSave.info.inventory.quest.notebook)
     {
         PlaySound(0x4806);
@@ -1596,4 +1611,15 @@ void comboMenuNext(void)
 
     if (g.menuScreen >= MENU_MAX)
         g.menuScreen = MENU_NONE;
+}
+
+/* Fork: text helpers for the Sabotage Shop page (src/common/sabotage.c) */
+void Menu_PrintStr(PlayState* play, const char* str, int x, int y)
+{
+    printStr(play, str, x, y);
+}
+
+void Menu_PrintNum(PlayState* play, int num, int x, int y)
+{
+    printNum(play, num, 0, 3, x, y, 0);
 }

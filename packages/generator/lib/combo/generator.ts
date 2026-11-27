@@ -10,6 +10,7 @@ import { buildPatchfiles } from './patch-build';
 import { Patchfile } from './patch-build/patchfile';
 import { makeAddresses } from './addresses';
 import { makeEnemySpoilerLog, makeSpoilerLog } from './spoiler';
+import { versusPatchMode } from './randomizer/custom-versus';
 
 const env = process.env.NODE_ENV || 'development';
 const isDev = (env !== 'production');
@@ -168,7 +169,7 @@ export class Generator {
 
       for (let i = 0; i < patchfiles.length; i++) {
         const patchfile = patchfiles[i];
-        patchfile.meta['mode'] = this.opts.settings.mode;
+        patchfile.meta['mode'] = versusPatchMode(this.opts.settings); /* Fork: Custom > Versus (1v1) */
         patchfile.meta['worldId'] = (i + 1);
         for (let team = 0; team < this.opts.settings.teams; ++team) {
           const sessionId = sessionIds[team];

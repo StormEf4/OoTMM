@@ -20,6 +20,7 @@
 #define MENU_RUSTY_KEYS_OOT     14
 #define MENU_RUSTY_KEYS_MM      15
 #define MENU_MAX                16
+#define MENU_SABOTAGE           0x40 /* Fork: Rupee Sabotage Shop, outside the L/C-Up cycle (src/common/sabotage.c) */
 
 typedef struct PlayState PlayState;
 
