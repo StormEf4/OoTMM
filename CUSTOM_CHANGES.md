@@ -4,6 +4,12 @@ Every change made in this fork, newest first. Each entry says where the change s
 
 <!-- new entries go below this line -->
 
+## 2026-11-27: Enemy randomizer in the main app
+
+- Where in the app: the Enemies page (sword icon, between Entrances and Advanced), now in the normal app instead of only the test builds
+- What it does: merges the enemy randomizer test branch into master, with everything from the test builds up to test-61: upstream's enemy shuffle preview (up to upstream d5e19be6), the fork changes it needed (Pot God actor id, bigger OoT code area, smaller Giant's Mask hooks) and the reroll fix for seeds that wouldn't generate. With the Enemy Randomizer settings off no enemies change, but the code and memory changes apply to every seed (the Pot God and Giant's Mask Anywhere are the fork features most worth re-checking). Still not played in game. Until upstream releases the enemy shuffle, newer upstream preview fixes come in through re-merges; after that, upstream's version replaces the fork's. Details: `docs/custom/enemy-shuffle-preview.md`
+- Files: merge of `claude/project-thread-oc38hb`; `docs/custom/enemy-shuffle-preview.md`
+
 ## 2026-11-26: Enemy randomizer: upstream's newer preview fixes (test build)
 
 - Where in the app: the Enemies page, only in the test build from the `claude/project-thread-oc38hb` branch

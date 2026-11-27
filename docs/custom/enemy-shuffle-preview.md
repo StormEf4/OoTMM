@@ -1,8 +1,8 @@
-# Enemy shuffle preview (test branch)
+# Enemy shuffle preview
 
 Upstream OoTMM is building an enemy randomizer (this fork is merged up to upstream preview commit `d5e19be6`, 2026-11-25; first merge was `afc74a6c`) on its `preview/enemy-shuffle` branch (https://github.com/OoTMM/OoTMM/tree/preview/enemy-shuffle). Any enemy can become another one, in OoT and in MM, and there's an option to bring MM enemies into OoT and OoT enemies into MM. It isn't in upstream's `master` or in any release yet.
 
-Elijah asked for a **test build** with it (2026-11-25). It lives on the branch `claude/project-thread-oc38hb`, **not on master**. When upstream merges the enemy shuffle into its `master`, it arrives through a normal upstream sync instead (`upstream-sync.md`), and the fork changes below have to be carried over again.
+Elijah asked for a test build with it (2026-11-25), on the branch `claude/project-thread-oc38hb` (pre-releases `test-58` to `test-61`). On 2026-11-27 he asked to merge it into master, so it is now in the main app. The plan is to keep fixing it in the fork until upstream releases the enemy shuffle, then switch to upstream's version: when upstream merges it into its `master`, take it through a normal upstream sync (`upstream-sync.md`), let upstream's code win where it conflicts with the fork's temporary fixes, and carry over only the fork changes in the table below that are still needed.
 
 ## Where it shows in the app
 
@@ -72,10 +72,10 @@ The fork's reroll fix (table above) turns all three into a fresh enemy plan inst
 
 Re-merges so far: 2026-11-26, `afc74a6c` -> `d5e19be6` (9 commits: death crash fix, Wizzrobe drawing, Snapper death color, spawn rules rewritten into `data/enemy-logic/spawn-encounters.yml`, animation dedupe). No conflicts; MM code grew about 3.6 KB (gcc 12: 525,448 bytes, so a cloud build needs the MM limit raised locally, see below).
 
-1. `git fetch https://github.com/OoTMM/OoTMM.git preview/enemy-shuffle` and merge it into this branch.
+1. `git fetch https://github.com/OoTMM/OoTMM.git preview/enemy-shuffle` and merge it into a `claude/...` branch made from master.
 2. Check every row of the table above still holds (grep for `0x80480000`, `0x80580000`, `0x100000`, `base + 0x80000` and `0x003`).
 3. Build with the ROMs, generate seeds with the enemy shuffle on, then restore `enemy-memory-data.ts`.
-4. Run "Build My App" on the branch to publish a new test pre-release.
+4. Optionally run "Build My App" on the branch for a test pre-release, then open a PR to master.
 
 ## What to test in game
 
