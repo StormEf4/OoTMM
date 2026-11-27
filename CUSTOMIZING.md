@@ -30,7 +30,7 @@ Then, any time:
 
 Run `pnpm custom:add` and answer the questions: which game, the name, the description, and the kind of control (toggle, drop-down, number or multi-select). It then:
 
-- adds the setting to `packages/core/src/settings/custom.ts`, so it appears on the Custom page under General, Ocarina of Time or Majora's Mask;
+- adds the setting to `packages/core/src/settings/custom.ts`, so it appears on the Custom page under General, Ocarina of Time, Majora's Mask or Versus (1v1);
 - adds an entry to `CUSTOM_CHANGES.md`;
 - prints the game flag(s) the C code can check.
 
@@ -59,6 +59,7 @@ More reference notes live in `docs/custom/`:
 - [oot-addresses.md](docs/custom/oot-addresses.md): finding OoT 1.0 addresses without the ROM (rebuilt from the decomp), and the rules for hooking the player overlay.
 - [multiplayer.md](docs/custom/multiplayer.md): playing Multiworld and Co-op with this fork: Project64-EM, building every ROM in this app, why the fork's items and bosses stay in sync, and the known limits.
 - [upstream-sync.md](docs/custom/upstream-sync.md): bringing upstream OoTMM into the fork, the spots that conflict every time, and how much game code space (payload) is left.
+- [sabotage-shop.md](docs/custom/sabotage-shop.md): the Rupee Sabotage Shop for 1v1 races (Custom > Versus (1v1)): how to play it on a Singleplayer or Multiworld seed, the effects, how purchases travel through the multiplayer client, and the known limits.
 - [enemy-shuffle-preview.md](docs/custom/enemy-shuffle-preview.md): the test branch with upstream's enemy randomizer preview: what the fork had to change (Pot God actor id, OoT memory layout, MM code size), how to re-merge upstream's newer preview commits, and what to test.
 
 A custom setting can also use an upstream category when it belongs next to upstream options, as long as it stays in `custom.ts`. The Giant's Mask (OoT) settings use `items.extensions.crossGame.masks`, so they show in Items > Extended Items > Cross-Game Masks with the other masks.

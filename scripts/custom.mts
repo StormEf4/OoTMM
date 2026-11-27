@@ -73,6 +73,7 @@ async function addSetting() {
     { value: 'general', label: 'Both / general' },
     { value: 'oot', label: 'Ocarina of Time' },
     { value: 'mm', label: "Majora's Mask" },
+    { value: 'versus', label: 'Versus (1v1 / multiplayer)' },
   ], 'general');
   const name = await ask('Name shown in the app (e.g. "Faster Epona")');
   if (!name) throw new Error('A name is required');
@@ -153,7 +154,7 @@ async function addSetting() {
   }
   await fs.writeFile(CUSTOM_FILE, custom.replace(SETTINGS_MARKER, `${lines.join('\n')}\n${SETTINGS_MARKER}`));
 
-  const page = { general: 'General', oot: 'Ocarina of Time', mm: "Majora's Mask" }[game];
+  const page = { general: 'General', oot: 'Ocarina of Time', mm: "Majora's Mask", versus: 'Versus (1v1)' }[game];
   await appendLog(`Added setting "${name}"`, [
     `Where in the app: Custom > ${page}`,
     `Control: ${summary}`,

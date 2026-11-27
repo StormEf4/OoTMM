@@ -27,6 +27,10 @@ Don't mix patch files from different app versions in one session. The fork adds 
 - `multi_pos.c`: players in a boss kit arena get their own wisp room key (`0x1f0 + fight id`), so they don't show up as wisps in the real Volvagia fight.
 - Upstream's 2026-11-12 auto-tracker fixes 70f41036 and 9ba17638 are cherry-picked. Upstream's e24c3176 (entrance info) needs upstream's entrance refactor and comes with the next full sync.
 
+## Rupee Sabotage Shop (2026-11-27)
+
+Custom > Versus (1v1) adds a pause menu shop that sends traps and enemies to the other players through the client (see `sabotage-shop.md`). Purchases are WAL item entries for player 0xFE, which builds without the shop ignore. With the shop on, a Singleplayer seed's patch is marked `coop` so the client connects it: two racers on one Singleplayer seed each build a ROM from the same `.ootmm` file and open it with the client.
+
 ## Known limits
 
 - The Pot God and its 20 field pots are not tested in game. In multiworld another player's item can be in one of those pots, so until the fight has been played, turn Pot God off for multiworld or add the 20 "Hyrule Field Pot God Pot NN" locations to Junk Locations.

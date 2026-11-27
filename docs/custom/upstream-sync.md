@@ -23,6 +23,7 @@ The fork always appends after upstream, so upstream's ids never move and the nex
 - **Link animations** (`data/defs/link-animations.yml`): upstream's new entries go before the fork's block.
 - **Config flags**: custom flags start at `CONFVARS.length` (`lib/combo/confvars.ts`), never at the number of names, because upstream's list can repeat a name.
 - **GI numbers** (`data/defs/gi.yml`): both sides insert in the middle. That's fine within one build, but patches from different builds don't mix (see `multiplayer.md`).
+- **Rupee Sabotage Shop** (`sabotage-shop.md`): three one-line hooks in `src/common/menu.c` (`comboMenuNext`, `comboMenuUpdate`, `comboMenuDraw`) plus the `Menu_PrintStr`/`Menu_PrintNum` wrappers at its end, `MENU_SABOTAGE` in `include/combo/menu.h` (keep it above upstream's `MENU_MAX`), and in `src/common/multi/multi.c` the `SABOTAGE_TO` check at the top of `MultiProcessMessageItemWAL`, the `Multi_Resend` gate, `Sabotage_Update` at the end of `Multi_Update`, and `Multi_SabotageId`/`Multi_SendSabotage`. `lib/combo/generator.ts` sets the patch `mode` through `versusPatchMode`. If upstream changes the WAL packet or the menu pages, redo these on top.
 - **Generated headers** (`include/combo/custom.h`, `custom_animations.h`): take upstream's version in the merge, then rebuild with the ROMs to regenerate them with the fork's entries.
 
 ## Code space
@@ -32,3 +33,4 @@ The game code (the "payload") has a fixed size per game: 0x80000 bytes for OoT a
 - The cloud's gcc 12 wrapper makes code about 1.6% bigger than the real toolchain (`ghcr.io/ootmm/toolchain`). Measured on build 48: MM 375,936 bytes with gcc 12, 369,904 in the released app. So a cloud build that is a little over the limit can still fit in the app.
 - To generate a test seed in the cloud when the cloud build is over, raise the limit in `buildPatchfiles` locally for the test only and never commit that.
 - After the 2026-11 sync, MM has only 3,896 bytes (3.8 KB) left with the real toolchain (app build of PR #20: MM 389,320 / 393,216, OoT 405,824 / 524,288). MM code is the fork's tightest spot: shrink something before adding much more MM (or common) code.
+- The Rupee Sabotage Shop (2026-11-27) adds about 3.6 KB to MM (gcc 12 measure: 525,448 to 529,080 bytes). The app build before it had 5,832 bytes free in MM (CI run 63, MM 518,456 / 524,288 with the enemy shuffle), so about 2.2 KB is left.

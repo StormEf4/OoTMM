@@ -2,6 +2,7 @@
 #include <combo/context.h>
 #include <combo/message.h>
 #include <combo/dungeon.h>
+#include <combo/sabotage.h>
 #include "multi.h"
 
 #define TTL_RESEND 60
@@ -133,6 +134,10 @@ static int MultiProcessMessageItemWAL(MultiPacketWalItemIn* pkt, int size)
     u8 isMarked;
     u8 isSamePlayer;
     u8 needsMark;
+
+    /* Fork: Rupee Sabotage Shop (src/common/sabotage.c) */
+    if (pkt->to == SABOTAGE_TO)
+        return Sabotage_Receive(gPlay, pkt->gi, pkt->key, pkt->wal.from, pkt->wal.playerName);
 
     if (!Item_IsPlayerSelf(pkt->to))
         return 1;
@@ -371,7 +376,8 @@ int Multi_SendPacket(MultiPacketHeader* pkt, u32 size)
 
 static void Multi_Resend(void)
 {
-    if (!Config_Flag(CFG_MULTIPLAYER))
+    /* Fork: the Sabotage Shop also sends from Singleplayer seeds */
+    if (!Config_Flag(CFG_MULTIPLAYER) && !Config_Flag(CFG_CUSTOM_SABOTAGE_SHOP))
         return;
 
     if (!gComboCtx.isMultiConnected)
@@ -441,6 +447,7 @@ void Multi_Update(PlayState* play)
     }
 
     Multi_UpdateWisps();
+    Sabotage_Update(play); /* Fork: Rupee Sabotage Shop */
 }
 
 void Multi_Disconnect(void)
@@ -557,6 +564,38 @@ void Multi_SendItem(u8 to, s16 gi, s16 flags, u32 key)
     pkt.key = key;
 
     Multi_ReliableSendWAL(&pkt.wal, sizeof(pkt));
+}
+
+/* Fork: Rupee Sabotage Shop. This player's 24-bit id: the ROM's random player
+ * id mixed with the file name, so two players sharing one ROM still differ */
+u32 Multi_SabotageId(void)
+{
+    u32 id;
+
+    id = (sPlayerId[0] << 16) | (sPlayerId[1] << 8) | sPlayerId[2];
+    for (int i = 0; i < 8; ++i)
+        id = (id * 31) ^ gOotSave.info.playerData.playerName[i];
+    return id & 0xffffff;
+}
+
+/* Fork: Rupee Sabotage Shop. Never waits: fails unless the client is
+ * connected and nothing else is waiting to be sent */
+int Multi_SendSabotage(u8 effect)
+{
+    MultiPacketWalItemOut pkt;
+
+    if (!gComboCtx.isMultiConnected || gSharedCustomSave.multi.sendBufferSize)
+        return 0;
+
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.wal.header.op = MULTI_OP_WAL;
+    pkt.wal.type = WAL_ITEM;
+    pkt.to = SABOTAGE_TO;
+    pkt.gi = effect;
+    pkt.flags = OVF_RENEW; /* The client adds a nonce, so repeats aren't merged */
+    pkt.key = ((u32)SABOTAGE_KEY_MAGIC << 24) | Multi_SabotageId();
+    Multi_ReliableSendWAL(&pkt.wal, sizeof(pkt));
+    return 1;
 }
 
 void Multi_SendSelfItem(s16 gi, s16 flags, u32 key)

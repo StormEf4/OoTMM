@@ -10,6 +10,7 @@ import { RandomizerPatcherEntrances } from './entrances';
 import { RandomizerPatcherChecks } from './checks';
 import { toU8Buffer } from '../util';
 import { RandomizerPatcherXflags } from './xflags';
+import { patchCustomVersus } from './custom-versus';
 
 export function patchRandomizer(worldId: number, logic: LogicResult, settings: Settings, patchfile: Patchfile) {
   const bufConfig = RandomizerPatcherConfig.run({ worldId, logic, settings });
@@ -21,6 +22,7 @@ export function patchRandomizer(worldId: number, logic: LogicResult, settings: S
   const bufEntrances = RandomizerPatcherEntrances.run({ worldId, logic });
 
   patchfile.addSymbolPatch('MULTI_WORLD_ID', toU8Buffer([worldId + 1]));
+  patchCustomVersus(settings, patchfile); /* Fork: Custom > Versus (1v1) */
   patchfile.addNewFile({ vrom: 0xf0200000, data: bufConfig, compressed: true });
   patchfile.addNewFile({ vrom: 0xf0300000, data: bufStartingItems, compressed: false });
   patchfile.addNewFile({ vrom: 0xf0400000, data: bufChecks, compressed: false });
