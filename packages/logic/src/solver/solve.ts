@@ -8,7 +8,7 @@ import { Monitor, Random, sample, shuffle, countMapAdd, countMapArray, countMapC
 import { ItemHelpers, ItemGroups, Items, makePlayerItem } from '../items';
 import { cloneWorld } from '../world';
 import { mustStartWithMasterSword } from '../helpers';
-import { LogicError, LogicSeedError } from '../error';
+import { EnemyRerollError, LogicError, LogicSeedError } from '../error';
 import { exprTrue } from '../expr';
 import { isLocationChestFairy, isLocationOtherFairy, isLocationRenewable, locationData, makeLocation } from '../locations';
 import { Pathfinder } from '../pathfind';
@@ -319,6 +319,7 @@ class LogicPassSolver {
   private modeValidate = false;
   private attempts = 0;
   private attemptsMax = 100;
+  private readonly enemyRerollAttempts = 20; /* Fork: see EnemyRerollError */
 
   constructor(
     private readonly input: LogicPassSolverState,
@@ -347,6 +348,9 @@ class LogicPassSolver {
         return;
       } catch (e) {
         this.monitor.debug((e as Error).stack!);
+        /* Fork: with the enemy shuffle on, reroll the enemies instead of retrying the same world 100 times */
+        if (e instanceof LogicError && !this.modeValidate && this.attempts >= this.enemyRerollAttempts && this.worlds.some(world => world.enemyPlan.length))
+          throw new EnemyRerollError(e.message);
         if ((e instanceof LogicError) && this.attempts < this.attemptsMax) {
           this.attempts++;
           this.state = cloneState(stateBackup);

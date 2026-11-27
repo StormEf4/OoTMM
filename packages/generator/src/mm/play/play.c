@@ -1,4 +1,6 @@
 #include <combo.h>
+#include <combo/enemy.h>
+#include <combo/enemy_room_models.h>
 #include <combo/audio.h>
 #include <combo/checks.h>
 #include <combo/config.h>
@@ -543,6 +545,9 @@ void hookPlay_Init(PlayState* play)
     u32 entrance;
 
     gPlay = play;
+    comboEnemyOverlayReset();
+    comboEnemyCollisionReset();
+    comboEnemyEncounterReset();
     int isEndOfGame;
 
     /* Init */
@@ -653,6 +658,7 @@ void hookPlay_Init(PlayState* play)
 
     comboCacheClear();
     comboObjectsReset();
+    comboExObjectsReset();
 
     /* Force alt beaver race */
     MM_SET_EVENT_WEEK(EV_MM_WEEK_BEAVER_RACE_ALT);
@@ -731,6 +737,16 @@ void Play_MainWrapper(PlayState* play)
         Multi_Disconnect();
 
     Play_Main(play);
+    /* Do not spawn, reconcile, or reap enemy objects during transitions. */
+    if (play->state.running &&
+        play->gameOverCtx.state == GAMEOVER_INACTIVE &&
+        play->transitionTrigger == TRANS_TRIGGER_OFF &&
+        play->transitionMode == 0)
+    {
+        comboEnemyEncounterPostFrame(play);
+        if (!(play->gameplayFrames & 7))
+            comboEnemyObjectReleaseUnloadedRooms(play);
+    }
     Message_UpdateBlocking(play);
     Play_CheckRoomChangeHook(play);
     Audio_DisplayMusicName(play);

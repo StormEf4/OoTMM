@@ -863,6 +863,21 @@ PATCH_END
 
 PATCH_GROUP_END
 
+Player_ClampRightHandPose:
+  sltiu   t9, v0, 2
+  bnez    t9, 1f
+   nop
+  move    v0, zero
+1:
+  sll     t9, v0, 2
+  jr      ra
+   lui    t1, 0x801c
+
+PATCH_START 0x80126148
+  jal     Player_ClampRightHandPose
+   nop
+PATCH_END
+
 /* Fix Adult Link arrow position */
 PATCH_START 0x80128CE4
   lbu     v1, 0x014B (s1)
@@ -1273,7 +1288,7 @@ PATCH_START 0x808336EC
   nop
   addiu     a2, sp, 0x0018
   jal       Player_SpecialMeleeWeaponAnim_Hook
-  sw	      v1, 0x0018 (sp)
+  sw        v1, 0x0018 (sp)
   lw        v1, 0x0018 (sp)
   jal       0x801241B4
 PATCH_END
@@ -1328,7 +1343,7 @@ PATCH_START 0x80861D88
 PATCH_END
 
 Player_HammerShockwaveCheck_Hook:
-  lw	      a0, 0x0044 (sp)
+  lw        a0, 0x0044 (sp)
   sw        ra, 0x0024 (sp)
   jal       Player_HammerShockwaveCheck
   lw        a1, 0x0020 (sp)
@@ -1417,4 +1432,8 @@ _Player_SetCsAction:
 PATCH_START Player_SetCsAction
   j Player_SetCsActionHook
    nop
+PATCH_END
+
+PATCH_START 0x808606d4
+.int 0
 PATCH_END

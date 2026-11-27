@@ -1,4 +1,5 @@
 #include <combo.h>
+#include <combo/enemy.h>
 #include <combo/audio.h>
 #include <combo/boss_kit.h>
 #include <combo/checks.h>
@@ -577,6 +578,9 @@ static void Play_ApplyClock(void)
 void hookPlay_Init(PlayState* play)
 {
     gPlay = play;
+    comboEnemyOverlayReset();
+    comboEnemyCollisionReset();
+    comboEnemyEncounterReset();
 
     /* Init */
     gIsEntranceOverride = 0;
@@ -628,6 +632,14 @@ void Play_MainWrapper(PlayState* play)
         Multi_Disconnect();
 
     Play_Main(play);
+    /* Do not spawn or reconcile enemies while gameplay is transitioning. */
+    if (play->state.running &&
+        play->gameOverCtx.state == GAMEOVER_INACTIVE &&
+        play->transitionTrigger == TRANS_TRIGGER_OFF &&
+        play->transitionMode == 0)
+    {
+        comboEnemyEncounterPostFrame(play);
+    }
     Message_UpdateBlocking(play);
     Dpad_Draw(play);
     Audio_DisplayMusicName(play);

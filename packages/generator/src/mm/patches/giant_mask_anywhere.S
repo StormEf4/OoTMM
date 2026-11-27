@@ -25,9 +25,33 @@
 #define GM_D(n)     (0x60 + (n) * 4)
 #define GM_F(n)     (GM_D(n) + 4)
 
+/*
+ * Fork (2026-11-25): GM_SAVE and GM_RESTORE_REGS used to inline every store and load in each of
+ * the ~30 hooks (about 6 KB of MM code space). They now call the two shared routines below, which
+ * save and restore the same registers in the same frame layout. Only ra is touched by the calls,
+ * and ra is saved first and restored last, so each hook behaves exactly as before.
+ */
 .macro GM_SAVE
   addiu sp, sp, -GM_FRAME
   sw    ra, GM_RA (sp)
+  jal   GiantMask_SaveRegs
+   nop
+.endm
+
+/* Restores everything but sp */
+.macro GM_RESTORE_REGS
+  jal   GiantMask_RestoreRegs
+   nop
+  lw    ra, GM_RA (sp)
+.endm
+
+.macro GM_RESTORE
+  GM_RESTORE_REGS
+  addiu sp, sp, GM_FRAME
+.endm
+
+/* Saves v0-v1, a0-a3, t0-t9 and f0-f18 into the hook frame at sp. Clobbers nothing. */
+GiantMask_SaveRegs:
   sw    v0, GM_V0 (sp)
   sw    v1, GM_V1 (sp)
   sw    a0, GM_A0 (sp)
@@ -54,11 +78,11 @@
   sdc1  $f14, GM_D(14) (sp)
   sdc1  $f16, GM_D(16) (sp)
   sdc1  $f18, GM_D(18) (sp)
-.endm
+  jr    ra
+   nop
 
-/* Restores everything but sp */
-.macro GM_RESTORE_REGS
-  lw    ra, GM_RA (sp)
+/* Restores v0-v1, a0-a3, t0-t9 and f0-f18 from the hook frame at sp (not ra or sp). */
+GiantMask_RestoreRegs:
   lw    v0, GM_V0 (sp)
   lw    v1, GM_V1 (sp)
   lw    a0, GM_A0 (sp)
@@ -85,12 +109,8 @@
   ldc1  $f14, GM_D(14) (sp)
   ldc1  $f16, GM_D(16) (sp)
   ldc1  $f18, GM_D(18) (sp)
-.endm
-
-.macro GM_RESTORE
-  GM_RESTORE_REGS
-  addiu sp, sp, GM_FRAME
-.endm
+  jr    ra
+   nop
 
 /*
  * Calls a C function returning a float, and stores the result in the given float register

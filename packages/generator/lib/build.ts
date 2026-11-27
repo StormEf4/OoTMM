@@ -15,6 +15,7 @@ import { CodeGen } from './combo/util/codegen';
 
 import { setupAssetsMap } from './build/build-assets-map';
 import { checkPayloadSizes } from './build/payload-size';
+import { refreshEnemyMemory } from './build/refresh-enemy-memory';
 
 const env = process.env.NODE_ENV || 'development';
 const isProd = (env === 'production');
@@ -56,6 +57,11 @@ export async function buildNative() {
   await runCommand('cmake', ['--build', buildDir]);
   await runCommand('cmake', ['--install', buildDir, '--prefix', installDir]);
 
+  for (const game of ['oot', 'mm']) {
+    const { size } = await fs.stat(path.join(binDir, `${game}_payload.bin`));
+    const limit = game === 'oot' ? 0x90000 : 0x80000; /* Fork: OoT payload is 0x90000 (include/combo/defs.h) */
+    if (size > limit) throw new Error(`${game} payload exceeds its reserved ${limit / 1024} KiB by ${size - limit} bytes`);
+  }
   return binDir;
 }
 
@@ -102,6 +108,11 @@ async function build() {
 
   const installDir = await buildNative();
   await checkPayloadSizes(installDir, isProd); /* Fork: fail the app build instead of every seed */
+  await refreshEnemyMemory(
+    installDir,
+    path.resolve(import.meta.dirname, '../../core/src/enemy-memory-data.ts'),
+    !!process.env.CI,
+  );
 
   /* Create the zip */
   const zip = new JSZip();

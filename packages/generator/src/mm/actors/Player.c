@@ -1,4 +1,6 @@
 #include <combo.h>
+#include <combo/enemy.h>
+#include <combo/mm/dark_link.h>
 #include <assets/mm/objects/gameplay_keep.h>
 #include <combo/custom_animations.h>
 #include <combo/custom.h>
@@ -12,6 +14,7 @@
 #include <combo/dpad.h>
 #include <combo/global.h>
 #include <combo/effect.h>
+#include <combo/sfx.h>
 #include "../actors.h"
 #include <combo/mm/boomerang.h>
 #include <combo/mm/adultmask.h>
@@ -73,12 +76,15 @@ static void Player_HandleBurningDekuShield(Player* this, PlayState* play)
 {
     int shouldBurn;
 
+    if (this->transformation != MM_PLAYER_FORM_HUMAN || MmShield_GetEquipped() != MM_SHIELD_DEKU)
+        return;
+
     shouldBurn = 0;
     if (this->isBurning)
         shouldBurn = 1;
-    else if ((this->shieldCylinder.base.acFlags & AC_HIT) && this->shieldCylinder.elem.acHitElem->atDmgInfo.effect == 1)
+    else if ((this->shieldCylinder.base.acFlags & AC_HIT) && this->shieldCylinder.elem.acHitElem && this->shieldCylinder.elem.acHitElem->atDmgInfo.effect == 1)
         shouldBurn = 1;
-    else if ((this->shieldQuad.base.acFlags & AC_HIT) && this->shieldQuad.elem.acHitElem->atDmgInfo.effect == 1)
+    else if ((this->shieldQuad.base.acFlags & AC_HIT) && this->shieldQuad.elem.acHitElem && this->shieldQuad.elem.acHitElem->atDmgInfo.effect == 1)
         shouldBurn = 1;
 
     if (shouldBurn)
@@ -298,8 +304,16 @@ void Player_UpdateWrapper(Player* this, PlayState* play)
         Inventory_UpdateDeitySwordEquip(play);
     }
 
-    Player_Update(this, play);
+    Actor* hand = this->actor.parent;
+    int heldByHand = hand && hand->id == 0xca5 && (this->stateFlags2 & PLAYER_STATE2_MM_80);
+    comboMmDarkLinkUpdatePlayer(this, play); /* Calls Player_Update */
     GiantMask_AfterPlayerUpdate(this, play);
+    if (heldByHand && this->actor.parent == hand && !(this->stateFlags2 & PLAYER_STATE2_MM_80))
+    {
+        this->actor.parent = NULL;
+        if (this->invincibilityTimer > -30)
+            this->invincibilityTimer = -30;
+    }
     PlayerVoice_UpdateHumanAgeRouting(this);
     if (this->transformation == MM_PLAYER_FORM_HUMAN)
     {
